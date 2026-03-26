@@ -160,33 +160,71 @@ interface TextModeOptions {
   initialPrompt?: string;
 }
 
-// Quick connection + model verification
-async function pingModel(providerName: string, modelId: string): Promise<{ ok: boolean; latency: number; error?: string }> {
+// Quick connection + model verification + warmup
+async function pingModel(providerName: string, modelId: string): Promise<{ ok: boolean; latency: number; loaded: boolean; error?: string }> {
   const start = Date.now();
   try {
-    // For Ollama and other local providers, try a minimal completion
-    if (LOCAL_PROVIDERS.has(providerName as ProviderName)) {
-      const baseURL = providerName === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8000';
-      const resp = await fetch(`${baseURL}/api/tags`, { signal: AbortSignal.timeout(5000) });
-      if (!resp.ok) return { ok: false, latency: Date.now() - start, error: `HTTP ${resp.status}` };
-      // Check if model exists
-      const data = await resp.json() as { models?: Array<{ name: string }> };
-      const models = data.models ?? [];
-      const found = models.some((m: { name: string }) =>
-        m.name === modelId || m.name.startsWith(modelId.split(':')[0] ?? ''),
-      );
-      if (!found && models.length > 0) {
-        return { ok: false, latency: Date.now() - start, error: `모델 "${modelId}" 없음. 설치: ollama pull ${modelId}` };
-      }
-      return { ok: true, latency: Date.now() - start };
+    if (!LOCAL_PROVIDERS.has(providerName as ProviderName)) {
+      return { ok: true, latency: Date.now() - start, loaded: true };
     }
 
-    // For cloud providers, just check if the base URL is reachable
-    return { ok: true, latency: Date.now() - start };
+    const baseURL = providerName === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8000';
+
+    // Step 1: Check server is up
+    const tagsResp = await fetch(`${baseURL}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    if (!tagsResp.ok) return { ok: false, latency: Date.now() - start, loaded: false, error: `HTTP ${tagsResp.status}` };
+
+    // Step 2: Check model exists
+    const data = await tagsResp.json() as { models?: Array<{ name: string }> };
+    const models = data.models ?? [];
+    const found = models.some((m: { name: string }) =>
+      m.name === modelId || m.name.startsWith(modelId.split(':')[0] ?? ''),
+    );
+    if (!found && models.length > 0) {
+      return { ok: false, latency: Date.now() - start, loaded: false, error: `모델 "${modelId}" 없음. 설치: ollama pull ${modelId}` };
+    }
+
+    // Step 3: Check if model is already loaded in memory
+    try {
+      const psResp = await fetch(`${baseURL}/api/ps`, { signal: AbortSignal.timeout(3000) });
+      if (psResp.ok) {
+        const psData = await psResp.json() as { models?: Array<{ name: string }> };
+        const loadedModels = psData.models ?? [];
+        const isLoaded = loadedModels.some((m: { name: string }) =>
+          m.name === modelId || m.name.startsWith(modelId.split(':')[0] ?? ''),
+        );
+        return { ok: true, latency: Date.now() - start, loaded: isLoaded };
+      }
+    } catch {
+      // /api/ps not available, assume not loaded
+    }
+
+    return { ok: true, latency: Date.now() - start, loaded: false };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { ok: false, latency: Date.now() - start, error: msg.includes('ECONNREFUSED') ? '서버 연결 실패 — ollama serve 실행 필요' : msg };
+    return { ok: false, latency: Date.now() - start, loaded: false, error: msg.includes('ECONNREFUSED') ? '서버 연결 실패 — ollama serve 실행 필요' : msg };
   }
+}
+
+// Force model to load into memory with a tiny request
+async function warmupModel(baseURL: string, modelId: string): Promise<number> {
+  const start = Date.now();
+  try {
+    await fetch(`${baseURL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 1,
+        stream: false,
+      }),
+      signal: AbortSignal.timeout(120_000), // 2 min max for model loading
+    });
+  } catch {
+    // Timeout or error — model may still be loading
+  }
+  return Date.now() - start;
 }
 
 async function listOllamaModels(): Promise<string[]> {
@@ -274,10 +312,19 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   async function checkConnection(): Promise<void> {
     process.stdout.write(`  ${dim('연결 확인 중...')}`);
     const ping = await pingModel(currentProvider, currentModel);
-    if (ping.ok) {
-      process.stdout.write(`\r  ${green('✓')} 연결됨 ${dim(`(${ping.latency}ms)`)}\n\n`);
-    } else {
+    if (!ping.ok) {
       process.stdout.write(`\r  ${red('✗')} ${ping.error ?? '연결 실패'}\n\n`);
+      return;
+    }
+
+    if (ping.loaded) {
+      process.stdout.write(`\r  ${green('✓')} 연결됨 — 모델 준비 완료 ${dim(`(${ping.latency}ms)`)}\n\n`);
+    } else {
+      // Model not loaded — warmup
+      process.stdout.write(`\r  ${green('✓')} 연결됨 ${dim(`(${ping.latency}ms)`)} — ${yellow('모델 로딩 중...')}`);
+      const baseURL = currentProvider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8000';
+      const warmupTime = await warmupModel(baseURL, currentModel);
+      process.stdout.write(`\r  ${green('✓')} 연결됨 — 모델 로딩 완료 ${dim(`(${(warmupTime / 1000).toFixed(1)}s)`)}       \n\n`);
     }
   }
 
