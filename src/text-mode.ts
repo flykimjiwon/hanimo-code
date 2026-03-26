@@ -160,6 +160,35 @@ interface TextModeOptions {
   initialPrompt?: string;
 }
 
+// Quick connection + model verification
+async function pingModel(providerName: string, modelId: string): Promise<{ ok: boolean; latency: number; error?: string }> {
+  const start = Date.now();
+  try {
+    // For Ollama and other local providers, try a minimal completion
+    if (LOCAL_PROVIDERS.has(providerName as ProviderName)) {
+      const baseURL = providerName === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8000';
+      const resp = await fetch(`${baseURL}/api/tags`, { signal: AbortSignal.timeout(5000) });
+      if (!resp.ok) return { ok: false, latency: Date.now() - start, error: `HTTP ${resp.status}` };
+      // Check if model exists
+      const data = await resp.json() as { models?: Array<{ name: string }> };
+      const models = data.models ?? [];
+      const found = models.some((m: { name: string }) =>
+        m.name === modelId || m.name.startsWith(modelId.split(':')[0] ?? ''),
+      );
+      if (!found && models.length > 0) {
+        return { ok: false, latency: Date.now() - start, error: `모델 "${modelId}" 없음. 설치: ollama pull ${modelId}` };
+      }
+      return { ok: true, latency: Date.now() - start };
+    }
+
+    // For cloud providers, just check if the base URL is reachable
+    return { ok: true, latency: Date.now() - start };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, latency: Date.now() - start, error: msg.includes('ECONNREFUSED') ? '서버 연결 실패 — ollama serve 실행 필요' : msg };
+  }
+}
+
 async function listOllamaModels(): Promise<string[]> {
   try {
     const { stdout: output } = await execFileAsync('ollama', ['list'], { timeout: 10000 });
@@ -242,7 +271,18 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     console.log();
   }
 
+  async function checkConnection(): Promise<void> {
+    process.stdout.write(`  ${dim('연결 확인 중...')}`);
+    const ping = await pingModel(currentProvider, currentModel);
+    if (ping.ok) {
+      process.stdout.write(`\r  ${green('✓')} 연결됨 ${dim(`(${ping.latency}ms)`)}\n\n`);
+    } else {
+      process.stdout.write(`\r  ${red('✗')} ${ping.error ?? '연결 실패'}\n\n`);
+    }
+  }
+
   printBanner();
+  await checkConnection();
 
   const rl = createInterface({ input: stdin, output: stdout, completer });
 
@@ -272,6 +312,8 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       currentModel = newModel;
       debug('model switched to:', newModel, '| provider:', currentProvider);
       console.log(`  ${green('✓')} 모델: ${cyan(newModel)}`);
+      // Verify connection with new model
+      await checkConnection();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.log(`  ${red('✗')} 모델 변경 실패: ${msg}`);
@@ -576,8 +618,12 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     let gotToken = false;
     const startTime = Date.now();
 
+    // Connection check before sending
+    process.stdout.write(`\n  ${dim('→ ' + currentProvider + '/' + currentModel + ' 요청 중...')}`);
+    process.stdout.write(`\r  ${green('→')} ${dim(currentProvider + '/' + currentModel)} `);
+
     // Show elapsed time while waiting for first token
-    process.stdout.write(`\n  ${cyan('▌')} `);
+    process.stdout.write(`${cyan('▌')} `);
     const waitTimer = setInterval(() => {
       if (!gotToken) {
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
