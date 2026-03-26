@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 .dev-anywhere/
+test-debug.ts
+test-ollama.ts
+test-textmode.ts
+.omc/
