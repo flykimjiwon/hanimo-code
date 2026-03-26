@@ -88,9 +88,9 @@ export async function runAgentLoop(
       abortSignal,
       onStepFinish(event) {
         if (event.usage) {
-          totalUsage.promptTokens += event.usage.promptTokens;
-          totalUsage.completionTokens += event.usage.completionTokens;
-          totalUsage.totalTokens += event.usage.totalTokens;
+          totalUsage.promptTokens += event.usage.promptTokens ?? 0;
+          totalUsage.completionTokens += event.usage.completionTokens ?? 0;
+          totalUsage.totalTokens += event.usage.totalTokens ?? 0;
         }
 
         if (event.toolCalls && event.toolCalls.length > 0) {
@@ -130,8 +130,8 @@ export async function runAgentLoop(
     const finalResult = await result;
     const finalUsage = await finalResult.usage;
     if (finalUsage) {
-      totalUsage.promptTokens = finalUsage.promptTokens;
-      totalUsage.completionTokens = finalUsage.completionTokens;
+      totalUsage.promptTokens = finalUsage.promptTokens ?? 0;
+      totalUsage.completionTokens = finalUsage.completionTokens ?? 0;
       totalUsage.totalTokens = finalUsage.totalTokens;
     }
 

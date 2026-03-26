@@ -12,6 +12,12 @@ import type { Message, AgentEvent, TokenUsage } from './core/types.js';
 
 const execFileAsync = promisify(execFile);
 
+// DEBUG=1 devany → stderr에 디버그 로그 출력
+const DEBUG = !!process.env['DEBUG'];
+function debug(...args: unknown[]): void {
+  if (DEBUG) console.error('[debug]', ...args);
+}
+
 // ANSI helpers
 const dim = (s: string): string => `\x1b[2m${s}\x1b[0m`;
 const cyan = (s: string): string => `\x1b[36m${s}\x1b[0m`;
@@ -561,14 +567,34 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     }
 
     // ── 일반 메시지 → LLM ──
+    debug('send:', trimmed.slice(0, 50), '| provider:', currentProvider, '| model:', currentModel);
     messages.push({ role: 'user', content: trimmed });
     isRunning = true;
     abortController = new AbortController();
+
+    let gotToken = false;
+    const startTime = Date.now();
+
+    // Show elapsed time while waiting for first token
     process.stdout.write(`\n  ${cyan('▌')} `);
+    const waitTimer = setInterval(() => {
+      if (!gotToken) {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+        process.stdout.write(`\r  ${cyan('▌')} ${dim(`waiting... ${elapsed}s`)}  `);
+      }
+    }, 1000);
 
     const onEvent = (event: AgentEvent): void => {
       switch (event.type) {
         case 'token':
+          if (!gotToken) {
+            gotToken = true;
+            clearInterval(waitTimer);
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            // Clear the waiting line, then print response
+            process.stdout.write(`\r  ${cyan('▌')} ${dim(`(${elapsed}s)`)} `);
+            debug('first token at', elapsed, 's');
+          }
           process.stdout.write(event.content);
           break;
         case 'tool-call':
@@ -581,9 +607,15 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           break;
         }
         case 'done':
-          totalUsage.promptTokens += event.usage.promptTokens;
-          totalUsage.completionTokens += event.usage.completionTokens;
-          totalUsage.totalTokens += event.usage.totalTokens;
+          if (event.usage.promptTokens) {
+            totalUsage.promptTokens += event.usage.promptTokens;
+          }
+          if (event.usage.completionTokens) {
+            totalUsage.completionTokens += event.usage.completionTokens;
+          }
+          if (event.usage.totalTokens) {
+            totalUsage.totalTokens += event.usage.totalTokens;
+          }
           break;
         case 'error':
           process.stdout.write(`\n  ${red('✗')} ${event.error.message}`);
@@ -601,23 +633,38 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
         onEvent,
         abortSignal: abortController.signal,
       });
+      debug('response length:', result.response.length, '| gotToken:', gotToken);
       if (result.response) {
         messages.push({ role: 'assistant', content: result.response });
       } else {
-        console.log(`\n  ${yellow('⚠')} 빈 응답`);
+        // Pop the user message since we got no response
+        messages.pop();
+        console.log(`\n  ${yellow('⚠')} 빈 응답 — 모델이 응답하지 않았습니다`);
         if (currentProvider === 'ollama') {
-          console.log(`  ${dim('ollama ps | /model 로 확인')}`);
+          console.log(`  ${dim('확인: ollama ps | 다른 모델: /model')}`);
         }
       }
     } catch (err) {
+      // Pop the user message on error so conversation stays clean
+      messages.pop();
       if (err instanceof Error && err.name === 'AbortError') {
-        // cancelled
+        console.log(`\n  ${dim('(취소됨)')}`);
       } else {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`\n  ${red('✗')} ${msg}`);
-        if (msg.includes('ECONNREFUSED')) console.error(`  ${dim('→ ollama serve')}`);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`\n  ${red('✗')} ${errMsg}`);
+        if (errMsg.includes('ECONNREFUSED')) {
+          console.error(`  ${dim('→ ollama serve 로 서버 시작')}`);
+        } else if (errMsg.includes('fetch failed') || errMsg.includes('ENOTFOUND')) {
+          console.error(`  ${dim('→ 네트워크 연결 확인 | /endpoint 로 URL 변경')}`);
+        } else if (errMsg.includes('404') || errMsg.includes('model')) {
+          console.error(`  ${dim('→ 모델 확인: ollama list | /model 로 변경')}`);
+        } else {
+          // Log full error for debugging
+          console.error(`  ${dim('상세:')} ${dim(String(err))}`);
+        }
       }
     } finally {
+      clearInterval(waitTimer);
       isRunning = false;
       abortController = null;
       console.log('\n');
