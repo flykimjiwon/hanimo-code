@@ -49,7 +49,9 @@ async function readJsonFile(path: string): Promise<Record<string, unknown> | nul
 
 function getEnvOverrides(): Record<string, unknown> {
   const overrides: Record<string, unknown> = {};
+  const providerOverrides: Record<string, Record<string, string>> = {};
 
+  // Explicit devany env vars
   const provider = process.env['DEV_ANYWHERE_PROVIDER'];
   if (provider) {
     overrides['provider'] = provider;
@@ -61,11 +63,49 @@ function getEnvOverrides(): Record<string, unknown> {
   }
 
   const baseURL = process.env['DEV_ANYWHERE_BASE_URL'];
-  if (baseURL) {
-    const provider_ = (overrides['provider'] ?? DEFAULT_CONFIG.provider) as string;
-    overrides['providers'] = {
-      [provider_]: { baseURL },
+  const apiKey = process.env['DEV_ANYWHERE_API_KEY'];
+
+  if (baseURL || apiKey) {
+    const p = (provider ?? DEFAULT_CONFIG.provider) as string;
+    providerOverrides[p] = {
+      ...(baseURL ? { baseURL } : {}),
+      ...(apiKey ? { apiKey } : {}),
     };
+  }
+
+  // Auto-detect well-known API key env vars
+  const autoDetect: Array<{ env: string; provider: string; model: string }> = [
+    { env: 'OPENAI_API_KEY',        provider: 'openai',    model: 'gpt-4o-mini' },
+    { env: 'ANTHROPIC_API_KEY',     provider: 'anthropic', model: 'claude-sonnet-4-20250514' },
+    { env: 'GOOGLE_API_KEY',        provider: 'google',    model: 'gemini-2.5-flash' },
+    { env: 'DEEPSEEK_API_KEY',      provider: 'deepseek',  model: 'deepseek-chat' },
+    { env: 'GROQ_API_KEY',          provider: 'groq',      model: 'qwen-qwq-32b' },
+    { env: 'TOGETHER_API_KEY',      provider: 'together',  model: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
+    { env: 'OPENROUTER_API_KEY',    provider: 'openrouter', model: 'deepseek/deepseek-chat-v3-0324:free' },
+    { env: 'FIREWORKS_API_KEY',     provider: 'fireworks', model: 'accounts/fireworks/models/qwen2p5-coder-32b-instruct' },
+    { env: 'MISTRAL_API_KEY',       provider: 'mistral',   model: 'codestral-latest' },
+  ];
+
+  for (const { env, provider: p } of autoDetect) {
+    const val = process.env[env];
+    if (val) {
+      providerOverrides[p] = { ...providerOverrides[p], apiKey: val };
+    }
+  }
+
+  // If no explicit provider set, auto-select first available key
+  if (!provider) {
+    for (const { env, provider: p, model: m } of autoDetect) {
+      if (process.env[env]) {
+        overrides['provider'] = p;
+        if (!model) overrides['model'] = m;
+        break;
+      }
+    }
+  }
+
+  if (Object.keys(providerOverrides).length > 0) {
+    overrides['providers'] = providerOverrides;
   }
 
   return overrides;

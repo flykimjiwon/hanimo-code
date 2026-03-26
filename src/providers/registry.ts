@@ -3,15 +3,38 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { ProviderName, ProviderConfig } from './types.js';
+import { PROVIDER_BASE_URLS, LOCAL_PROVIDERS } from './types.js';
 
 interface ProviderInstance {
   getModel(modelId: string): LanguageModelV1;
+}
+
+function createOpenAICompatible(
+  name: string,
+  config: ProviderConfig,
+): ProviderInstance {
+  const baseURL = config.baseURL ?? PROVIDER_BASE_URLS[name as ProviderName];
+  if (!baseURL) {
+    throw new Error(`Provider "${name}" requires a baseURL in config`);
+  }
+  const isLocal = LOCAL_PROVIDERS.has(name as ProviderName);
+  const provider = createOpenAI({
+    apiKey: config.apiKey ?? (isLocal ? 'not-needed' : undefined),
+    baseURL,
+    compatibility: 'compatible',
+  });
+  return {
+    getModel(modelId: string) {
+      return provider(modelId);
+    },
+  };
 }
 
 function createProviderInstance(
   name: ProviderName,
   config: ProviderConfig,
 ): ProviderInstance {
+  // Native SDK providers
   switch (name) {
     case 'openai': {
       const provider = createOpenAI({
@@ -49,32 +72,9 @@ function createProviderInstance(
       };
     }
 
-    // OpenAI-compatible providers share the same factory
-    case 'ollama':
-    case 'glm':
-    case 'vllm':
-    case 'custom': {
-      const baseURLMap: Record<string, string> = {
-        ollama: 'http://localhost:11434/v1',
-        glm: 'https://open.bigmodel.cn/api/paas/v4',
-        vllm: 'http://localhost:8000/v1',
-        custom: '',
-      };
-      const baseURL = config.baseURL ?? baseURLMap[name];
-      if (!baseURL) {
-        throw new Error(`Provider "${name}" requires a baseURL in config`);
-      }
-      const provider = createOpenAI({
-        apiKey: config.apiKey ?? 'not-needed',
-        baseURL,
-        compatibility: 'compatible',
-      });
-      return {
-        getModel(modelId: string) {
-          return provider(modelId);
-        },
-      };
-    }
+    // All other providers use OpenAI-compatible protocol
+    default:
+      return createOpenAICompatible(name, config);
   }
 }
 

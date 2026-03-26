@@ -18,6 +18,8 @@ export async function main(): Promise<void> {
     .argument('[prompt...]', 'Initial prompt')
     .option('-p, --provider <name>', 'LLM provider')
     .option('-m, --model <name>', 'Model name')
+    .option('-k, --api-key <key>', 'API key (overrides config/env)')
+    .option('-u, --base-url <url>', 'Base URL (OpenAI-compatible endpoint)')
     .option('-w, --workers <n>', 'Number of parallel workers', parseInt)
     .option('--resume [sessionId]', 'Resume a session')
     .option('--tui', 'Enable fullscreen TUI mode')
@@ -26,6 +28,8 @@ export async function main(): Promise<void> {
     .action(async (promptParts: string[], options: {
       provider?: string;
       model?: string;
+      apiKey?: string;
+      baseUrl?: string;
       workers?: number;
       resume?: string | boolean;
       tui?: boolean;
@@ -39,7 +43,7 @@ export async function main(): Promise<void> {
 
       const config = await loadConfig();
 
-      // Apply CLI overrides
+      // Apply CLI overrides (highest priority)
       if (options.provider) {
         config.provider = options.provider as typeof config.provider;
       }
@@ -48,6 +52,22 @@ export async function main(): Promise<void> {
       }
       if (options.workers) {
         config.maxWorkers = options.workers;
+      }
+
+      // --base-url without --provider → auto custom
+      if (options.baseUrl && !options.provider) {
+        config.provider = 'custom';
+      }
+
+      // Merge CLI --api-key / --base-url into provider config
+      if (options.apiKey || options.baseUrl) {
+        const p = config.provider;
+        config.providers = config.providers ?? {};
+        config.providers[p] = {
+          ...config.providers[p],
+          ...(options.apiKey ? { apiKey: options.apiKey } : {}),
+          ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
+        };
       }
 
       const prompt = promptParts.join(' ');

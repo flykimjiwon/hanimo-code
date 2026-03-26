@@ -6,13 +6,11 @@ import type { LanguageModelV1, ToolSet } from 'ai';
 import { runAgentLoop } from './core/agent-loop.js';
 import { getModel, clearProviderCache } from './providers/registry.js';
 import { loadConfig } from './config/loader.js';
-import { PROVIDER_NAMES } from './providers/types.js';
+import { PROVIDER_NAMES, LOCAL_PROVIDERS, KNOWN_MODELS } from './providers/types.js';
 import type { ProviderName } from './providers/types.js';
 import type { Message, AgentEvent, TokenUsage } from './core/types.js';
 
 const execFileAsync = promisify(execFile);
-
-const LOCAL_PROVIDERS = new Set(['ollama', 'vllm', 'custom']);
 
 // ANSI helpers
 const dim = (s: string): string => `\x1b[2m${s}\x1b[0m`;
@@ -24,12 +22,7 @@ const bold = (s: string): string => `\x1b[1m${s}\x1b[0m`;
 const magenta = (s: string): string => `\x1b[35m${s}\x1b[0m`;
 const inverse = (s: string): string => `\x1b[7m${s}\x1b[0m`;
 
-// Known models per cloud provider
-const KNOWN_MODELS: Record<string, string[]> = {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'o3-mini'],
-  anthropic: ['claude-sonnet-4-20250514', 'claude-haiku-4-20250414', 'claude-opus-4-20250514'],
-  google: ['gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-2.5-flash'],
-};
+// KNOWN_MODELS imported from providers/types.ts
 
 const LANGUAGES: Record<string, string> = {
   ko: '한국어로 응답해주세요.',
@@ -187,7 +180,8 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   let baseSystemPrompt = options.systemPrompt;
   const { tools, initialPrompt } = options;
 
-  let toolsEnabled = !LOCAL_PROVIDERS.has(currentProvider);
+  let toolsEnabled = !LOCAL_PROVIDERS.has(currentProvider as ProviderName);
+  let currentBaseURL = '';
   let langSuffix = '';
   let cachedOllamaModels: string[] = [];
 
@@ -206,7 +200,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   function completer(line: string): [string[], string] {
     if (!line.startsWith('/')) return [[], line];
     const cmds = ['/help', '/model', '/models', '/provider', '/providers',
-      '/tools', '/lang', '/system', '/config', '/setup', '/clear', '/usage', '/exit', '/quit', '/menu'];
+      '/endpoint', '/tools', '/lang', '/system', '/config', '/setup', '/clear', '/usage', '/exit', '/quit', '/menu'];
     const parts = line.split(' ');
     if (parts.length >= 2) {
       const cmd = parts[0];
@@ -290,7 +284,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
       currentModelInstance = getModel(newProvider as ProviderName, modelId, providerConfig);
       currentProvider = newProvider;
       currentModel = modelId;
-      toolsEnabled = !LOCAL_PROVIDERS.has(newProvider);
+      toolsEnabled = !LOCAL_PROVIDERS.has(newProvider as ProviderName);
       if (newProvider === 'ollama') {
         listOllamaModels().then(m => { cachedOllamaModels = m; }).catch(() => {});
       }
@@ -395,6 +389,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           console.log(`  ${magenta('모델 & 프로바이더')}`);
           console.log(`    ${cyan('/model')} [name]       ${dim('모델 선택/변경')}`);
           console.log(`    ${cyan('/provider')} [name]    ${dim('프로바이더 선택/변경')}`);
+          console.log(`    ${cyan('/endpoint')} url [model] [key]  ${dim('커스텀 엔드포인트 연결')}`);
           console.log();
           console.log(`  ${magenta('설정')}`);
           console.log(`    ${cyan('/tools')} [on|off]     ${dim('도구(파일/Git/셸) 토글')}`);
@@ -408,7 +403,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           console.log(`    ${cyan('/exit')}               ${dim('종료')}`);
           console.log();
           console.log(`  ${dim('키: Esc=메뉴 Tab=완성 Ctrl+C=취소/종료')}`);
-          console.log(`  ${dim('단축: /m /p /t /u /q')}`);
+          console.log(`  ${dim('단축: /m /p /e /t /u /q')}`);
           console.log();
           return true;
 
@@ -432,6 +427,49 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           }
           return true;
 
+        case 'endpoint':
+        case 'e': {
+          // /endpoint <url> [model] [apiKey]
+          if (args.length === 0) {
+            console.log();
+            console.log(`  ${bold('사용법')}  /endpoint <url> [model] [key]`);
+            console.log();
+            console.log(`  ${dim('예시:')}`);
+            console.log(`    ${cyan('/endpoint')} http://localhost:11434/v1`);
+            console.log(`    ${cyan('/endpoint')} http://서버:8000/v1 qwen3:30b`);
+            console.log(`    ${cyan('/endpoint')} https://api.example.com/v1 mymodel sk-xxx`);
+            console.log();
+            if (currentBaseURL) {
+              console.log(`  ${dim('현재:')} ${currentBaseURL}`);
+              console.log();
+            }
+            return true;
+          }
+          const endpointUrl = args[0] ?? '';
+          const endpointModel = args[1];
+          const endpointKey = args[2];
+          try {
+            clearProviderCache();
+            const providerConfig: Record<string, string> = { baseURL: endpointUrl };
+            if (endpointKey) providerConfig['apiKey'] = endpointKey;
+            currentModelInstance = getModel(
+              'custom' as ProviderName,
+              endpointModel ?? currentModel,
+              providerConfig,
+            );
+            currentProvider = 'custom';
+            currentBaseURL = endpointUrl;
+            if (endpointModel) currentModel = endpointModel;
+            toolsEnabled = false;
+            console.log(`  ${green('✓')} ${green(endpointUrl)} ${dim('/')} ${cyan(currentModel)}${endpointKey ? dim(' (key set)') : ''} ${dim('tools:')}${red('OFF')}`);
+            console.log(`  ${dim('도구 사용: /tools on')}`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.log(`  ${red('✗')} ${msg}`);
+          }
+          return true;
+        }
+
         case 'tools':
         case 't': {
           const arg = args[0]?.toLowerCase();
@@ -440,7 +478,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           else toolsEnabled = !toolsEnabled;
           if (toolsEnabled) {
             console.log(`  ${green('✓')} 도구 ${green('ON')} — 파일, Git, 셸 사용 가능`);
-            if (LOCAL_PROVIDERS.has(currentProvider)) {
+            if (LOCAL_PROVIDERS.has(currentProvider as ProviderName)) {
               console.log(`  ${yellow('⚠')} ${dim('로컬 모델은 tool calling 미지원일 수 있음')}`);
             }
           } else {
@@ -485,6 +523,7 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           console.log(`  ${bold('설정')}`);
           console.log(`    프로바이더  ${green(currentProvider)}`);
           console.log(`    모델        ${cyan(currentModel)}`);
+          if (currentBaseURL) console.log(`    엔드포인트  ${dim(currentBaseURL)}`);
           console.log(`    도구        ${toolsEnabled ? green('ON') : red('OFF')}`);
           console.log(`    언어        ${langSuffix ? dim(langSuffix) : dim('auto')}`);
           console.log(`    대화        ${messages.length}개`);

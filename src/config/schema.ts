@@ -8,7 +8,7 @@ export const ProviderConfigSchema = z.object({
 
 export const ConfigSchema = z.object({
   provider: z
-    .enum(['openai', 'anthropic', 'google', 'ollama', 'glm', 'vllm', 'custom'])
+    .enum(['openai', 'anthropic', 'google', 'deepseek', 'groq', 'together', 'openrouter', 'fireworks', 'mistral', 'glm', 'ollama', 'vllm', 'lmstudio', 'custom'])
     .default('openai'),
   model: z.string().default('gpt-4o-mini'),
   providers: z.record(z.string(), ProviderConfigSchema).optional(),
