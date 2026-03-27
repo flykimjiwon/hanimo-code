@@ -29,6 +29,18 @@ describe('todo tool', () => {
     expect(result).toMatchObject({ success: true, action: 'removed' });
   });
 
+  it('should clear all tasks', async () => {
+    // Add a couple tasks first
+    await todoTool.execute({ action: 'add', task: 'clear test 1' }, { toolCallId: '8', messages: [], abortSignal: undefined as unknown as AbortSignal });
+    await todoTool.execute({ action: 'add', task: 'clear test 2' }, { toolCallId: '9', messages: [], abortSignal: undefined as unknown as AbortSignal });
+
+    const result = await todoTool.execute({ action: 'clear' }, { toolCallId: '10', messages: [], abortSignal: undefined as unknown as AbortSignal });
+    expect(result).toMatchObject({ success: true, action: 'cleared' });
+
+    const listResult = await todoTool.execute({ action: 'list' }, { toolCallId: '11', messages: [], abortSignal: undefined as unknown as AbortSignal });
+    expect((listResult as { summary: { total: number } }).summary.total).toBe(0);
+  });
+
   it('should fail without task description on add', async () => {
     const result = await todoTool.execute({ action: 'add' }, { toolCallId: '7', messages: [], abortSignal: undefined as unknown as AbortSignal });
     expect(result).toMatchObject({ success: false });
