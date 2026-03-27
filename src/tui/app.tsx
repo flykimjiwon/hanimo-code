@@ -7,17 +7,33 @@ import { InputBar } from './components/input-bar.js';
 import { SelectMenu } from './components/select-menu.js';
 import type { MenuItem } from './components/select-menu.js';
 import { useAgent } from './hooks/use-agent.js';
-import { useCommands, COMMAND_NAMES } from './hooks/use-commands.js';
+import { useCommands, COMMAND_NAMES, COMMAND_LIST } from './hooks/use-commands.js';
 import type { CommandContext } from './hooks/use-commands.js';
-import { colors } from './theme.js';
+import { colors, setTheme } from './theme.js';
+import { THEME_PRESETS } from './themes.js';
+import type { ThemeColors } from './themes.js';
 import { LOCAL_PROVIDERS, KNOWN_MODELS, PROVIDER_NAMES } from '../providers/types.js';
 import type { ProviderName } from '../providers/types.js';
 import { getModel, clearProviderCache } from '../providers/registry.js';
 import { getModelCapability, ROLE_BADGES } from '../providers/model-capabilities.js';
 import type { ModelRole } from '../providers/model-capabilities.js';
 import { createReadOnlyTools } from '../tools/registry.js';
+import type { RoleManager } from '../roles/role-manager.js';
+import type { RoleDefinition } from '../roles/types.js';
 
-type MenuState = 'none' | 'main' | 'model' | 'provider';
+import { buildSystemPrompt } from '../core/system-prompt.js';
+import { SessionStore } from '../session/store.js';
+import { useLeaderKey } from './hooks/use-leader-key.js';
+import { CommandPalette } from './components/command-palette.js';
+import type { PaletteItem } from './components/command-palette.js';
+
+type MenuState = 'none' | 'main' | 'model' | 'provider' | 'lang' | 'role' | 'palette' | 'sessions' | 'theme';
+
+const ROLE_DESC_KO: Record<string, string> = {
+  chat: '일반 대화 — 도구 없음, 빠른 응답',
+  dev: '코딩 에이전트 — 파일 읽기/쓰기, 셸, git',
+  plan: '분석/계획 — 읽기 전용, 수정 불가',
+};
 
 interface AppProps {
   provider: string;
@@ -27,16 +43,24 @@ interface AppProps {
   tools?: ToolSet;
   initialPrompt?: string;
   providerConfig?: { apiKey?: string; baseURL?: string };
+  roleManager?: import('../roles/role-manager.js').RoleManager;
+  activeRole?: import('../roles/types.js').RoleDefinition;
 }
 
-function KeyHints({ isLoading, menuOpen }: { isLoading: boolean; menuOpen: boolean }): React.ReactElement {
-  if (menuOpen) return <Box width="100%" paddingX={1} justifyContent="center"><Text color={colors.hint}>{'Esc close menu'}</Text></Box>;
+function KeyHints({ isLoading, menuOpen, leaderActive, lang }: { isLoading: boolean; menuOpen: boolean; leaderActive: boolean; lang: string }): React.ReactElement {
+  const ko = lang === 'ko';
+  if (leaderActive) return <Box width="100%" paddingX={1} justifyContent="center"><Text color={colors.warning}>{'LEADER: K=\uD314\uB808\uD2B8  S=\uC800\uC7A5  L=\uBD88\uB7EC\uC624\uAE30  V=verbose  C=\uCD08\uAE30\uD654  H=\uB3C4\uC6C0\uB9D0'}</Text></Box>;
+  if (menuOpen) return <Box width="100%" paddingX={1} justifyContent="center"><Text color={colors.hint}>{ko ? 'Esc \uBA54\uB274 \uB2EB\uAE30' : 'Esc close menu'}</Text></Box>;
   return (
     <Box width="100%" paddingX={1} justifyContent="center">
       <Text color={colors.hint}>
         {isLoading
-          ? 'Ctrl+C cancel  |  Ctrl+C Ctrl+C exit'
-          : 'Enter send  |  Esc menu  |  Ctrl+C exit  |  /help commands'}
+          ? ko
+            ? 'Ctrl+C \uCDE8\uC18C  |  Shift+\u2191\u2193 \uC2A4\uD06C\uB864  |  Ctrl+O \uC0C1\uC138'
+            : 'Ctrl+C cancel  |  Shift+\u2191\u2193 scroll  |  Ctrl+O verbose'
+          : ko
+            ? 'Enter \uC804\uC1A1  |  Esc \uBA54\uB274  |  Ctrl+K \uD314\uB808\uD2B8  |  Ctrl+X \uB9AC\uB354\uD0A4  |  /help'
+            : 'Enter send  |  Esc menu  |  Ctrl+K palette  |  Ctrl+X leader  |  /help'}
       </Text>
     </Box>
   );
@@ -80,6 +104,8 @@ function App({
   tools,
   initialPrompt,
   providerConfig,
+  roleManager,
+  activeRole: initialRole,
 }: AppProps): React.ReactElement {
   const app = useApp();
   const { stdout } = useStdout();
@@ -90,24 +116,103 @@ function App({
   const [termRows, setTermRows] = useState(stdout?.rows ?? 24);
   const [menuState, setMenuState] = useState<MenuState>('none');
 
+  // Role state
+  const [currentRole, setCurrentRole] = useState(initialRole);
+  const [currentTools, setCurrentTools] = useState(tools);
+  const [currentSystemPrompt, setCurrentSystemPrompt] = useState(systemPrompt);
+
+  // Verbose mode (Ctrl+O toggle — expand/collapse tool results)
+  const [verbose, setVerbose] = useState(false);
+
+  // Session store
+  const sessionStoreRef = useRef(new SessionStore());
+
+  // Theme preview: save original before preview, restore on cancel
+  const themeBeforePreviewRef = useRef<ThemeColors | null>(null);
+
+  // Leader key (Ctrl+X prefix)
+  const leader = useLeaderKey();
+
   // Role-based capability detection
   const initialCap = getModelCapability(initialModel, initialProvider);
   const [modelRole, setModelRole] = useState<ModelRole>(initialCap.role);
   const [toolsEnabled, setToolsEnabled] = useState(initialCap.role !== 'chat');
 
+  // Language setting
+  const [currentLang, setCurrentLang] = useState<string>('ko');
+
   // Determine effective tools based on role
   const effectiveTools = useMemo(() => {
     if (!toolsEnabled) return undefined;
+    if (currentTools) return currentTools;
     if (modelRole === 'agent') return tools;
     if (modelRole === 'assistant') return createReadOnlyTools() as ToolSet;
     return undefined; // chat
-  }, [toolsEnabled, modelRole, tools]);
+  }, [toolsEnabled, modelRole, tools, currentTools]);
 
   const agent = useAgent({
     model: modelInstance,
-    systemPrompt,
+    systemPrompt: currentSystemPrompt,
     tools: effectiveTools,
   });
+
+  // Session save (uses refs — stable callback)
+  const saveSession = useCallback(() => {
+    const store = sessionStoreRef.current;
+    const msgs = agentRef.current.messages;
+    if (msgs.length === 0) {
+      agentRef.current.addSystemMessage('Nothing to save.');
+      return;
+    }
+    const id = store.createSession(currentProviderRef.current, currentModelRef.current);
+    for (const msg of msgs) {
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        store.saveMessage(id, msg.role, msg.content);
+      }
+    }
+    agentRef.current.addSystemMessage(`Session saved (${id.slice(0, 8)}...)`);
+  }, []);
+
+  // Session list text (for /sessions command)
+  const listRecentSessions = useCallback((): string => {
+    const sessions = sessionStoreRef.current.listSessions(10);
+    if (sessions.length === 0) return 'No saved sessions.';
+    const lines = sessions.map((s, i) => {
+      const date = new Date(s.updatedAt).toLocaleString();
+      return `  ${i + 1}. ${s.provider}/${s.model} (${s.messageCount} msgs) ${date}  [${s.id.slice(0, 8)}]`;
+    });
+    return ['Recent sessions:', '', ...lines, '', 'Use /load to open a session.'].join('\n');
+  }, []);
+
+  // Role switching
+  const switchRole = useCallback((id: string) => {
+    if (!roleManager) {
+      agent.addSystemMessage('Role system not available.');
+      return;
+    }
+    const role = roleManager.getRole(id);
+    if (!role) {
+      const available = roleManager.getAllRoles().map(r => r.id).join(', ');
+      agent.addSystemMessage(`Unknown role: "${id}". Available: ${available}`);
+      return;
+    }
+    setCurrentRole(role);
+    const newTools = roleManager.createToolSet(role);
+    setCurrentTools(newTools);
+    // Auto-toggle tools based on role
+    setToolsEnabled(role.tools.length > 0);
+    const newPrompt = buildSystemPrompt({ cwd: process.cwd(), platform: process.platform }, role);
+    setCurrentSystemPrompt(newPrompt);
+    const desc = currentLang === 'ko' ? (ROLE_DESC_KO[role.id] ?? role.description) : role.description;
+    const toolsNote = role.tools.length === 0
+      ? (currentLang === 'ko' ? ' (도구 꺼짐)' : ' (tools off)')
+      : role.id === 'plan'
+        ? (currentLang === 'ko' ? ' (읽기 전용)' : ' (read-only)')
+        : '';
+    agent.addSystemMessage(currentLang === 'ko'
+      ? `${role.icon} ${role.name} 역할로 전환: ${desc}${toolsNote}`
+      : `Role switched to ${role.icon} ${role.name}: ${role.description}${toolsNote}`);
+  }, [agent, roleManager, currentLang]);
 
   const { handleCommand } = useCommands();
 
@@ -213,6 +318,13 @@ function App({
     exitApp: () => app.exit(),
     openModelMenu: () => setMenuState('model'),
     openProviderMenu: () => setMenuState('provider'),
+    switchRole,
+    openRoleMenu: () => setMenuState('role'),
+    getAllRoles: roleManager ? () => roleManager.getAllRoles().map(r => ({ id: r.id, name: r.name, icon: r.icon, description: r.description })) : undefined,
+    currentRoleId: currentRole?.id,
+    saveSession,
+    openSessionsMenu: () => setMenuState('sessions'),
+    listRecentSessions,
   };
 
   // Input handler: routes to commands or sends as message
@@ -224,8 +336,42 @@ function App({
     }
   }, [agent, handleCommand]);
 
-  // Esc key + Ctrl+C handling
+  // Esc key + Ctrl+C + Leader key handling
   useInput(useCallback((_input: string, key: { ctrl: boolean; escape: boolean }) => {
+    // Leader key (Ctrl+X → second key dispatches action)
+    const leaderAction = leader.processKey(_input, key);
+    if (leaderAction) {
+      switch (leaderAction) {
+        case 'palette': setMenuState('palette'); break;
+        case 'save': saveSession(); break;
+        case 'load': setMenuState('sessions'); break;
+        case 'verbose':
+          setVerbose((prev) => {
+            const next = !prev;
+            agentRef.current.addSystemMessage(`Verbose mode ${next ? 'ON' : 'OFF'}`);
+            return next;
+          });
+          break;
+        case 'clear':
+          agentRef.current.clearMessages();
+          agentRef.current.addSystemMessage('Conversation cleared.');
+          break;
+        case 'help':
+          if (commandCtxRef.current) handleCommand('/help', commandCtxRef.current);
+          break;
+        case 'sessions':
+          if (commandCtxRef.current) handleCommand('/sessions', commandCtxRef.current);
+          break;
+      }
+      return;
+    }
+
+    // Ctrl+K toggles command palette
+    if (key.ctrl && _input === 'k') {
+      setMenuState((prev) => (prev === 'palette' ? 'none' : 'palette'));
+      return;
+    }
+
     if (key.ctrl && _input === 'c') {
       ctrlCCountRef.current++;
 
@@ -247,6 +393,16 @@ function App({
       if (!agentRef.current.isLoading) {
         app.exit();
       }
+      return;
+    }
+
+    // Ctrl+O toggles verbose mode (expand/collapse tool output)
+    if (key.ctrl && _input === 'o') {
+      setVerbose((prev) => {
+        const next = !prev;
+        agentRef.current.addSystemMessage(`Verbose mode ${next ? 'ON' : 'OFF'}`);
+        return next;
+      });
       return;
     }
 
@@ -276,10 +432,10 @@ function App({
       ? ('thinking' as const)
       : ('idle' as const);
 
-  // Calculate height: status bar (2) + input (3) + hints (1) + padding (1) = 7
+  // Calculate height: status bar (2) + input (7: 5 content + 2 border) + hints (1) + padding (1) = 11
   // When menu is open, reserve extra space for the menu
   const menuHeight = menuState !== 'none' ? 12 : 0;
-  const chatHeight = Math.max(termRows - 7 - menuHeight, 5);
+  const chatHeight = Math.max(termRows - 11 - menuHeight, 5);
 
   // Tab completions: slash commands + current provider's model names
   const completions = useMemo(() => {
@@ -288,14 +444,50 @@ function App({
     return [...cmds, ...models];
   }, [currentProvider]);
 
+  // i18n helper
+  const ko = currentLang === 'ko';
+
   // Menu items
-  const mainMenuItems: MenuItem[] = [
+  const langLabel = currentLang === 'auto' ? 'Auto' : currentLang === 'ko' ? '한국어' : 'English';
+  const roleLabel = currentRole ? `${currentRole.icon} ${currentRole.name}` : 'dev';
+  const mainMenuItems: MenuItem[] = ko ? [
+    { label: `역할: ${roleLabel}`, value: 'role' },
+    { label: '모델 전환', value: 'model' },
+    { label: '프로바이더 전환', value: 'provider' },
+    { label: `언어: ${langLabel}`, value: 'lang' },
+    { label: `도구: ${toolsEnabled ? 'ON → OFF' : 'OFF → ON'}`, value: 'tools' },
+    { label: '테마 변경', value: 'theme' },
+    { label: '대화 초기화', value: 'clear' },
+    { label: '도움말', value: 'help' },
+    { label: '종료', value: 'exit' },
+  ] : [
+    { label: `Role: ${roleLabel}`, value: 'role' },
     { label: 'Switch Model', value: 'model' },
     { label: 'Switch Provider', value: 'provider' },
+    { label: `Language: ${langLabel}`, value: 'lang' },
     { label: `Tools: ${toolsEnabled ? 'ON → OFF' : 'OFF → ON'}`, value: 'tools' },
+    { label: 'Theme', value: 'theme' },
     { label: 'Clear Conversation', value: 'clear' },
     { label: 'Help', value: 'help' },
     { label: 'Exit', value: 'exit' },
+  ];
+
+  const roleMenuItems: MenuItem[] = useMemo(() => {
+    if (!roleManager) return [];
+    return roleManager.getAllRoles().map(r => {
+      const desc = ko ? (ROLE_DESC_KO[r.id] ?? r.description) : r.description;
+      return {
+        label: `${r.icon} ${r.name} — ${desc}`,
+        value: r.id,
+        active: r.id === currentRole?.id,
+      };
+    });
+  }, [roleManager, currentRole, ko]);
+
+  const langMenuItems: MenuItem[] = [
+    { label: '한국어', value: 'ko', active: currentLang === 'ko' },
+    { label: 'English', value: 'en', active: currentLang === 'en' },
+    { label: 'Auto (no preference)', value: 'auto', active: currentLang === 'auto' },
   ];
 
   const modelMenuItems: MenuItem[] = useMemo(() => {
@@ -323,17 +515,62 @@ function App({
     }));
   }, [currentProvider]);
 
+  const themeMenuItems: MenuItem[] = useMemo(() => {
+    return THEME_PRESETS.map((t) => ({
+      label: `${t.name} — ${t.description}`,
+      value: t.id,
+    }));
+  }, []);
+
+  const handleThemeHighlight = useCallback((value: string) => {
+    const preset = THEME_PRESETS.find((t) => t.id === value);
+    if (preset) setTheme(preset.colors);
+  }, []);
+
+  const handleThemeMenuSelect = useCallback((value: string) => {
+    themeBeforePreviewRef.current = null; // commit the preview
+    const preset = THEME_PRESETS.find((t) => t.id === value);
+    if (preset) {
+      agent.addSystemMessage(ko ? `테마: ${preset.name} — ${preset.description}` : `Theme: ${preset.name} — ${preset.description}`);
+    }
+    setMenuState('none');
+  }, [agent, ko]);
+
+  const handleThemeMenuCancel = useCallback(() => {
+    // Restore original theme on cancel
+    if (themeBeforePreviewRef.current) {
+      setTheme(themeBeforePreviewRef.current);
+      themeBeforePreviewRef.current = null;
+    }
+    setMenuState('none');
+  }, []);
+
+  const handleRoleMenuSelect = useCallback((value: string) => {
+    switchRole(value);
+    setMenuState('none');
+  }, [switchRole]);
+
   const handleMainMenuSelect = useCallback((value: string) => {
     switch (value) {
+      case 'role':
+        setMenuState('role');
+        break;
       case 'model':
         setMenuState('model');
         break;
       case 'provider':
         setMenuState('provider');
         break;
+      case 'lang':
+        setMenuState('lang');
+        break;
       case 'tools':
         toggleTools();
         setMenuState('none');
+        break;
+      case 'theme':
+        themeBeforePreviewRef.current = { ...colors };
+        setMenuState('theme');
         break;
       case 'clear':
         agent.clearMessages();
@@ -362,9 +599,81 @@ function App({
     setMenuState('none');
   }, [switchProvider]);
 
+  const handleLangMenuSelect = useCallback((value: string) => {
+    setCurrentLang(value);
+    const langNames: Record<string, string> = { ko: '한국어', en: 'English', auto: 'Auto' };
+    agent.addSystemMessage(`Language set to ${langNames[value] ?? value}`);
+
+    // Inject language instruction into next messages via system message
+    if (value === 'ko') {
+      agent.addSystemMessage('[System] 이후 모든 응답을 한국어로 해주세요.');
+    } else if (value === 'en') {
+      agent.addSystemMessage('[System] Respond in English from now on.');
+    }
+    setMenuState('none');
+  }, [agent]);
+
   const handleMenuCancel = useCallback(() => {
     setMenuState('none');
   }, []);
+
+  // Tab role cycling — silent (no system message, input bar shows mode)
+  const cycleRole = useCallback(() => {
+    if (!roleManager) return;
+    const roles = roleManager.getAllRoles();
+    if (roles.length === 0) return;
+    const currentIdx = roles.findIndex((r) => r.id === currentRole?.id);
+    const nextIdx = (currentIdx + 1) % roles.length;
+    const role = roleManager.getRole(roles[nextIdx]?.id ?? '');
+    if (!role) return;
+    setCurrentRole(role);
+    setCurrentTools(roleManager.createToolSet(role));
+    setToolsEnabled(role.tools.length > 0);
+    setCurrentSystemPrompt(buildSystemPrompt({ cwd: process.cwd(), platform: process.platform }, role));
+  }, [roleManager, currentRole]);
+
+  // Command palette items (respect language)
+  const paletteItems: PaletteItem[] = useMemo(
+    () => COMMAND_LIST.map((c) => ({ name: c.name, description: ko ? c.descriptionKo : c.description, shortcut: c.shortcut })),
+    [ko],
+  );
+
+  const handlePaletteSelect = useCallback((name: string) => {
+    setMenuState('none');
+    if (commandCtxRef.current) handleCommand(`/${name}`, commandCtxRef.current);
+  }, [handleCommand]);
+
+  // Session menu items (refreshed when sessions menu opens)
+  const sessionMenuItems: MenuItem[] = useMemo(() => {
+    if (menuState !== 'sessions') return [];
+    const sessions = sessionStoreRef.current.listSessions(10);
+    if (sessions.length === 0) return [{ label: 'No saved sessions', value: '__none__' }];
+    return sessions.map((s) => {
+      const date = new Date(s.updatedAt).toLocaleString();
+      return {
+        label: `${s.provider}/${s.model} (${s.messageCount} msgs) ${date}`,
+        value: s.id,
+      };
+    });
+  }, [menuState]);
+
+  const handleSessionSelect = useCallback((value: string) => {
+    if (value === '__none__') {
+      setMenuState('none');
+      return;
+    }
+    const store = sessionStoreRef.current;
+    const messages = store.getMessages(value);
+    const displayMsgs = messages.map((m, i) => ({
+      id: `loaded-${i}`,
+      role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: m.content,
+    }));
+    agent.loadMessages(displayMsgs);
+    const session = store.getSession(value);
+    agent.addSystemMessage(`Session loaded: ${session?.provider}/${session?.model} (${messages.length} messages)`);
+    setMenuState('none');
+  }, [agent]);
 
   return (
     <Box flexDirection="column" width="100%">
@@ -376,6 +685,10 @@ function App({
         currentTool={agent.currentTool ?? undefined}
         toolsEnabled={toolsEnabled}
         usage={agent.usage}
+        roleIcon={currentRole?.icon}
+        roleName={currentRole?.name}
+        elapsedMs={agent.elapsedMs}
+        verbose={verbose}
       />
 
       <ChatView
@@ -383,6 +696,7 @@ function App({
         streamingText={agent.streamingText}
         isLoading={agent.isLoading}
         height={chatHeight}
+        verbose={verbose}
       />
 
       {/* Menus */}
@@ -400,6 +714,7 @@ function App({
           items={modelMenuItems}
           onSelect={handleModelMenuSelect}
           onCancel={handleMenuCancel}
+          legend="[A] Agent (full tools)  [R] Read-only  [C] Chat (no tools)"
         />
       )}
       {menuState === 'provider' && (
@@ -410,14 +725,58 @@ function App({
           onCancel={handleMenuCancel}
         />
       )}
+      {menuState === 'lang' && (
+        <SelectMenu
+          title="Language"
+          items={langMenuItems}
+          onSelect={handleLangMenuSelect}
+          onCancel={handleMenuCancel}
+        />
+      )}
+      {menuState === 'role' && (
+        <SelectMenu
+          title="Role"
+          items={roleMenuItems}
+          onSelect={handleRoleMenuSelect}
+          onCancel={handleMenuCancel}
+        />
+      )}
+      {menuState === 'theme' && (
+        <SelectMenu
+          title={ko ? '테마 선택 (실시간 미리보기)' : 'Theme (live preview)'}
+          items={themeMenuItems}
+          onSelect={handleThemeMenuSelect}
+          onCancel={handleThemeMenuCancel}
+          onHighlight={handleThemeHighlight}
+        />
+      )}
+      {menuState === 'palette' && (
+        <CommandPalette
+          items={paletteItems}
+          onSelect={handlePaletteSelect}
+          onCancel={handleMenuCancel}
+          lang={currentLang}
+        />
+      )}
+      {menuState === 'sessions' && (
+        <SelectMenu
+          title="Load Session"
+          items={sessionMenuItems}
+          onSelect={handleSessionSelect}
+          onCancel={handleMenuCancel}
+        />
+      )}
 
       <InputBar
         onSubmit={handleInput}
         isDisabled={agent.isLoading}
         completions={completions}
+        onCycleRole={cycleRole}
+        roleIcon={currentRole?.icon}
+        roleName={currentRole?.name}
       />
 
-      <KeyHints isLoading={agent.isLoading} menuOpen={menuState !== 'none'} />
+      <KeyHints isLoading={agent.isLoading} menuOpen={menuState !== 'none'} leaderActive={leader.leaderActive} lang={currentLang} />
     </Box>
   );
 }
@@ -428,8 +787,12 @@ export interface StartAppOptions {
   modelInstance: LanguageModelV1;
   systemPrompt: string;
   tools?: ToolSet;
+  maxSteps?: number;
   initialPrompt?: string;
   providerConfig?: { apiKey?: string; baseURL?: string };
+  roleManager?: RoleManager;
+  activeRole?: RoleDefinition;
+  networkMode?: string;
 }
 
 export function startApp(options: StartAppOptions): void {
@@ -450,6 +813,8 @@ export function startApp(options: StartAppOptions): void {
         tools={options.tools}
         initialPrompt={options.initialPrompt}
         providerConfig={options.providerConfig}
+        roleManager={options.roleManager}
+        activeRole={options.activeRole}
       />
     </ErrorBoundary>,
     { exitOnCtrlC: false, patchConsole: true },

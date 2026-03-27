@@ -15,9 +15,12 @@ interface SelectMenuProps {
   items: MenuItem[];
   onSelect: (value: string) => void;
   onCancel: () => void;
+  legend?: string;
+  /** Called when cursor moves — use for live preview (e.g. theme) */
+  onHighlight?: (value: string) => void;
 }
 
-export function SelectMenu({ title, items, onSelect, onCancel }: SelectMenuProps): React.ReactElement {
+export function SelectMenu({ title, items, onSelect, onCancel, legend, onHighlight }: SelectMenuProps): React.ReactElement {
   const [cursor, setCursor] = useState(0);
 
   useInput((input, key) => {
@@ -27,12 +30,20 @@ export function SelectMenu({ title, items, onSelect, onCancel }: SelectMenuProps
     }
 
     if (key.upArrow) {
-      setCursor((prev) => (prev <= 0 ? items.length - 1 : prev - 1));
+      setCursor((prev) => {
+        const next = prev <= 0 ? items.length - 1 : prev - 1;
+        if (onHighlight && items[next]) onHighlight(items[next].value);
+        return next;
+      });
       return;
     }
 
     if (key.downArrow) {
-      setCursor((prev) => (prev >= items.length - 1 ? 0 : prev + 1));
+      setCursor((prev) => {
+        const next = prev >= items.length - 1 ? 0 : prev + 1;
+        if (onHighlight && items[next]) onHighlight(items[next].value);
+        return next;
+      });
       return;
     }
 
@@ -71,6 +82,7 @@ export function SelectMenu({ title, items, onSelect, onCancel }: SelectMenuProps
         );
       })}
       <Text color={colors.dimText}>{'\u2500'.repeat(30)}</Text>
+      {legend && <Text color={colors.dimText}>{legend}</Text>}
       <Text color={colors.dimText}>{'↑↓ navigate  Enter select  Esc cancel'}</Text>
     </Box>
   );

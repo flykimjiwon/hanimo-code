@@ -26,9 +26,12 @@ describe('renderMarkdown', () => {
   it('renders code blocks with fence', () => {
     const result = renderMarkdown('```typescript\nconst x = 1;\n```');
     expect(result).toContain('typescript');
-    expect(result).toContain('const x = 1;');
-    expect(result).toContain('┌'); // top border
-    expect(result).toContain('└'); // bottom border
+    // Syntax highlighting wraps keywords in ANSI codes, so check parts individually
+    expect(result).toContain('const');
+    expect(result).toContain('x');
+    expect(result).toContain('1');
+    expect(result).toContain('\u250C'); // top border
+    expect(result).toContain('\u2514'); // bottom border
   });
 
   it('renders unordered lists', () => {

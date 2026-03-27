@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { LanguageModelV1, ToolSet } from 'ai';
 import { runAgentLoop, estimateCost } from '../../core/agent-loop.js';
 import type { AgentEvent, Message } from '../../core/types.js';
@@ -23,10 +23,12 @@ export interface UseAgentReturn {
   isLoading: boolean;
   usage: UsageState;
   currentTool: string | null;
+  elapsedMs: number;
   sendMessage: (text: string) => void;
   cancelRun: () => void;
   addSystemMessage: (content: string) => void;
   clearMessages: () => void;
+  loadMessages: (msgs: DisplayMessage[]) => void;
   updateModel: (newModel: LanguageModelV1) => void;
 }
 
@@ -66,6 +68,25 @@ export function useAgent({ model, systemPrompt, tools }: UseAgentOptions): UseAg
     completionTokens: 0,
     totalCost: 0,
   });
+
+  // Elapsed time tracking
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    startTimeRef.current = Date.now();
+    const timer = setInterval(() => {
+      if (startTimeRef.current !== null) {
+        setElapsedMs(Date.now() - startTimeRef.current);
+      }
+    }, 100);
+    return () => {
+      clearInterval(timer);
+      startTimeRef.current = null;
+      setElapsedMs(0);
+    };
+  }, [isLoading]);
 
   const stream = useStream();
   const conversationRef = useRef<Message[]>([]);
@@ -237,16 +258,26 @@ export function useAgent({ model, systemPrompt, tools }: UseAgentOptions): UseAg
     modelRef.current = newModel;
   }, []);
 
+  const loadMessages = useCallback((msgs: DisplayMessage[]) => {
+    setDisplayMessages(msgs);
+    conversationRef.current = msgs
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role, content: m.content }) as Message);
+    streamRef.current.reset();
+  }, []);
+
   return {
     messages: displayMessages,
     streamingText: stream.text,
     isLoading,
     usage,
     currentTool,
+    elapsedMs,
     sendMessage,
     cancelRun,
     addSystemMessage,
     clearMessages,
+    loadMessages,
     updateModel,
   };
 }

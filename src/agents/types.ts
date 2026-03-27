@@ -1,33 +1,20 @@
-import type { AgentLoopResult, TokenUsage } from '../core/types.js';
-
-export type WorkerState = 'idle' | 'working' | 'blocked' | 'done' | 'error';
-
-export interface WorkerTask {
+export interface SubTask {
   id: string;
   description: string;
-  files: string[];
-  status: 'pending' | 'in-progress' | 'completed' | 'failed';
-  result?: AgentLoopResult;
+  type: 'analyze' | 'code' | 'review' | 'research' | 'general';
+}
+
+export interface SubAgentResult {
+  taskId: string;
+  status: 'fulfilled' | 'rejected';
+  result?: string;
   error?: string;
 }
 
-export interface WorkerInfo {
-  id: string;
-  state: WorkerState;
-  currentTask: WorkerTask | null;
-  assignedFiles: string[];
-  usage: TokenUsage;
-}
-
-export type CoordinatorEvent =
-  | { type: 'task-assigned'; workerId: string; task: WorkerTask }
-  | { type: 'task-completed'; workerId: string; task: WorkerTask }
-  | { type: 'task-failed'; workerId: string; task: WorkerTask; error: string }
-  | { type: 'conflict-detected'; file: string; workers: string[] }
-  | { type: 'all-done'; results: WorkerTask[] };
-
-export interface CoordinatorResult {
-  tasks: WorkerTask[];
-  totalUsage: TokenUsage;
-  conflicts: Array<{ file: string; workers: string[] }>;
-}
+export type OrchestratorEvent =
+  | { type: 'decompose-start' }
+  | { type: 'decompose-done'; tasks: SubTask[] }
+  | { type: 'sub-agent-start'; taskId: string; index: number; total: number }
+  | { type: 'sub-agent-done'; taskId: string; index: number; total: number; status: 'fulfilled' | 'rejected' }
+  | { type: 'synthesize-start'; results: SubAgentResult[] }
+  | { type: 'synthesize-done' };

@@ -19,6 +19,11 @@ interface StatusBarProps {
     completionTokens: number;
     totalCost: number;
   };
+  roleIcon?: string;
+  roleName?: string;
+  subAgentStatus?: string;
+  elapsedMs?: number;
+  verbose?: boolean;
 }
 
 function formatCost(cost: number): string {
@@ -34,20 +39,39 @@ function formatTokens(count: number): string {
   return String(n);
 }
 
+function formatElapsed(ms: number): string {
+  if (ms <= 0) return '';
+  if (ms < 1000) return `${ms}ms`;
+  const sec = ms / 1000;
+  if (sec < 60) return `${sec.toFixed(1)}s`;
+  const min = Math.floor(sec / 60);
+  const remainSec = Math.floor(sec % 60);
+  return `${min}m${remainSec}s`;
+}
+
 function StatusIndicator({
   status,
   currentTool,
+  elapsedMs,
 }: {
   status: StatusKind;
   currentTool?: string;
+  elapsedMs?: number;
 }): React.ReactElement {
+  const elapsed = elapsedMs && elapsedMs > 0 ? ` ${formatElapsed(elapsedMs)}` : '';
+
   switch (status) {
     case 'idle':
       return <Text color={colors.statusIdle}>{'\u25CF'} Ready</Text>;
     case 'thinking':
-      return <Spinner label="Thinking..." color={colors.statusThinking} />;
+      return <Spinner label={`Thinking...${elapsed}`} color={colors.statusThinking} />;
     case 'tool':
-      return <Spinner label={currentTool ? `${currentTool}` : 'tool...'} color={colors.statusTool} />;
+      return (
+        <Spinner
+          label={`${currentTool ? currentTool : 'tool...'}${elapsed}`}
+          color={colors.statusTool}
+        />
+      );
   }
 }
 
@@ -59,13 +83,21 @@ export const StatusBar = React.memo(function StatusBar({
   currentTool,
   toolsEnabled,
   usage,
+  roleIcon,
+  roleName,
+  subAgentStatus,
+  elapsedMs,
+  verbose,
 }: StatusBarProps): React.ReactElement {
   const totalTokens = usage.promptTokens + usage.completionTokens;
-  const toolsTag = toolsEnabled ? 'tools:ON' : 'tools:OFF';
-  const toolsColor = toolsEnabled ? colors.success : colors.dimText;
+  const isReadOnly = toolsEnabled && roleName?.toLowerCase() === 'plan';
+  const toolsTag = isReadOnly ? 'tools:READ' : toolsEnabled ? 'tools:ON' : 'tools:OFF';
+  const toolsColor = isReadOnly ? colors.warning : toolsEnabled ? colors.success : colors.dimText;
 
-  // Role badge colors: Agent=green, Assistant=yellow, Chat=gray
-  const roleBadge = ROLE_BADGES[modelRole];
+  // Role display: use role icon+name if available, otherwise model capability badge
+  const roleDisplay = roleIcon && roleName
+    ? `${roleIcon} ${roleName}`
+    : ROLE_BADGES[modelRole];
   const roleColor = modelRole === 'agent' ? colors.success
     : modelRole === 'assistant' ? colors.warning
     : colors.dimText;
@@ -86,13 +118,25 @@ export const StatusBar = React.memo(function StatusBar({
           <Text color={colors.dimText}>/</Text>
           <Text color={colors.model}>{model}</Text>
           <Text> </Text>
-          <Text color={roleColor} bold>{roleBadge}</Text>
+          <Text color={roleColor} bold>{roleDisplay}</Text>
           <Text color={colors.dimText}> {'\u2502'} </Text>
           <Text color={toolsColor}>{toolsTag}</Text>
+          {verbose && (
+            <>
+              <Text color={colors.dimText}> {'\u2502'} </Text>
+              <Text color={colors.warning}>verbose</Text>
+            </>
+          )}
+          {subAgentStatus ? (
+            <>
+              <Text color={colors.dimText}> {'\u2502'} </Text>
+              <Text color={colors.statusThinking}>{subAgentStatus}</Text>
+            </>
+          ) : null}
         </Box>
 
         <Box>
-          <StatusIndicator status={status} currentTool={currentTool} />
+          <StatusIndicator status={status} currentTool={currentTool} elapsedMs={elapsedMs} />
         </Box>
 
         <Box>

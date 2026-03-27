@@ -9,22 +9,34 @@ interface InputBarProps {
   isDisabled: boolean;
   /** List of completable tokens for Tab (slash commands, model names, etc.) */
   completions?: string[];
+  /** Called when Tab pressed with empty input — cycles roles */
+  onCycleRole?: () => void;
+  /** Current role icon (e.g. "🔧") */
+  roleIcon?: string;
+  /** Current role name (e.g. "Dev") */
+  roleName?: string;
 }
 
-export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): React.ReactElement {
+export function InputBar({
+  onSubmit,
+  isDisabled,
+  completions,
+  onCycleRole,
+  roleIcon,
+  roleName,
+}: InputBarProps): React.ReactElement {
   const [value, setValue] = useState('');
   const [cursorOffset, setCursorOffset] = useState(0);
 
   // Input history
   const historyRef = useRef<string[]>([]);
-  const historyIndexRef = useRef(-1); // -1 = not browsing history
-  const draftRef = useRef(''); // preserves current text when browsing
+  const historyIndexRef = useRef(-1);
+  const draftRef = useRef('');
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
     if (trimmed.length === 0) return;
 
-    // Push to history (avoid duplicate of last entry)
     const history = historyRef.current;
     if (history[0] !== trimmed) {
       history.unshift(trimmed);
@@ -42,7 +54,14 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
     (input, key) => {
       if (isDisabled) return;
 
+      // Enter: submit, or newline if value ends with backslash
       if (key.return) {
+        if (value.endsWith('\\')) {
+          // Remove trailing backslash, insert newline — multi-line mode
+          setValue((prev) => prev.slice(0, -1) + '\n');
+          setCursorOffset(0);
+          return;
+        }
         handleSubmit();
         return;
       }
@@ -50,7 +69,9 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
       if (key.backspace || key.delete) {
         if (cursorOffset < value.length) {
           const deletePos = value.length - cursorOffset - 1;
-          setValue((prev) => prev.slice(0, deletePos) + prev.slice(deletePos + 1));
+          setValue(
+            (prev) => prev.slice(0, deletePos) + prev.slice(deletePos + 1),
+          );
         }
         return;
       }
@@ -65,14 +86,17 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
         return;
       }
 
-      // History navigation
-      if (key.upArrow) {
+      // History navigation (ignore when shift/meta pressed — those are for scroll)
+      if (key.upArrow && !key.meta && !key.shift) {
         const history = historyRef.current;
         if (history.length === 0) return;
         if (historyIndexRef.current === -1) {
-          draftRef.current = value; // save current draft
+          draftRef.current = value;
         }
-        const nextIdx = Math.min(historyIndexRef.current + 1, history.length - 1);
+        const nextIdx = Math.min(
+          historyIndexRef.current + 1,
+          history.length - 1,
+        );
         historyIndexRef.current = nextIdx;
         const entry = history[nextIdx] ?? '';
         setValue(entry);
@@ -80,7 +104,7 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
         return;
       }
 
-      if (key.downArrow) {
+      if (key.downArrow && !key.meta && !key.shift) {
         if (historyIndexRef.current === -1) return;
         const nextIdx = historyIndexRef.current - 1;
         if (nextIdx < 0) {
@@ -96,11 +120,15 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
         return;
       }
 
-      // Tab autocomplete
+      // Tab: cycle role when empty, autocomplete when typing
       if (key.tab) {
-        if (!completions || completions.length === 0 || value.length === 0) return;
+        if (value.length === 0) {
+          if (onCycleRole) onCycleRole();
+          return;
+        }
+        if (!completions || completions.length === 0)
+          return;
 
-        // Find the last word to complete
         const parts = value.split(' ');
         const lastPart = parts[parts.length - 1] ?? '';
         if (lastPart.length === 0) return;
@@ -121,8 +149,9 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
       // Insert character at cursor position
       if (input) {
         const insertPos = value.length - cursorOffset;
-        setValue((prev) => prev.slice(0, insertPos) + input + prev.slice(insertPos));
-        // Reset history browsing on new input
+        setValue(
+          (prev) => prev.slice(0, insertPos) + input + prev.slice(insertPos),
+        );
         if (historyIndexRef.current !== -1) {
           historyIndexRef.current = -1;
           draftRef.current = '';
@@ -135,11 +164,56 @@ export function InputBar({ onSubmit, isDisabled, completions }: InputBarProps): 
   const prompt = isDisabled ? '\u23F3 ' : '\u276F ';
   const promptColor = isDisabled ? colors.promptDisabled : colors.prompt;
 
+  // Multi-line display
+  const lines = value.split('\n');
+  const lineCount = lines.length;
+  const displayLine = lines[lines.length - 1] ?? '';
+  const continuationHint = value.endsWith('\\');
+
+  // Role display
+  const modeLabel = roleIcon && roleName ? `${roleIcon} ${roleName}` : '\u2699 default';
+
   return (
-    <Box borderStyle="round" borderColor={isDisabled ? colors.border : colors.borderFocus} paddingX={1} width="100%">
-      <Text color={promptColor}>{prompt}</Text>
-      <Text color={colors.userText}>{value}</Text>
-      {!isDisabled && <Text color={colors.dimText}>{'\u2588'}</Text>}
+    <Box
+      borderStyle="round"
+      borderColor={isDisabled ? colors.border : colors.borderFocus}
+      paddingX={1}
+      width="100%"
+      flexDirection="column"
+    >
+      {/* Line 1: mode badge + Tab hint */}
+      <Box justifyContent="space-between" width="100%">
+        <Text color={colors.model} bold>{modeLabel}</Text>
+        <Text color={colors.dimText}>Tab {'\u21C4'} mode</Text>
+      </Box>
+
+      {/* Lines 2-4: multi-line content or spacer */}
+      {lineCount > 1 ? (
+        <Box flexDirection="column">
+          {lines.slice(Math.max(0, lineCount - 4), -1).map((l, i) => (
+            <Box key={i}>
+              <Text color={colors.dimText}>{`${i + 1}\u2502 `}</Text>
+              <Text color={colors.userText}>{l}</Text>
+            </Box>
+          ))}
+        </Box>
+      ) : (
+        <Box flexDirection="column">
+          <Box><Text> </Text></Box>
+          <Box><Text> </Text></Box>
+          <Box><Text> </Text></Box>
+        </Box>
+      )}
+
+      {/* Line 3: input prompt */}
+      <Box>
+        <Text color={promptColor}>{prompt}</Text>
+        <Text color={colors.userText}>{displayLine}</Text>
+        {!isDisabled && <Text color={colors.dimText}>{'\u2588'}</Text>}
+        {continuationHint && (
+          <Text color={colors.dimText}> {'\u21B5'}</Text>
+        )}
+      </Box>
     </Box>
   );
 }

@@ -13,4 +13,16 @@ export const DEFAULT_CONFIG: Config = {
   tui: {
     theme: 'dark',
   },
+  defaultRole: 'dev',
+  subAgents: {
+    enabled: false,
+    count: '3',
+    model: undefined,
+  },
+  mcp: {
+    servers: {},
+  },
+  network: {
+    mode: 'auto',
+  },
 };

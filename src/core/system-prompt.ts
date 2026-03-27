@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { RoleDefinition } from '../roles/types.js';
+import { loadGlobalInstructions } from './instructions.js';
 
 export interface ProjectContext {
   cwd: string;
@@ -20,7 +22,7 @@ function loadProjectInstructions(cwd: string): string {
   }
 }
 
-export function buildSystemPrompt(context: ProjectContext): string {
+export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition): string {
   const gitInfo = [
     context.gitBranch ? `- Git branch: ${context.gitBranch}` : null,
     context.gitRemote ? `- Git remote: ${context.gitRemote}` : null,
@@ -31,6 +33,15 @@ export function buildSystemPrompt(context: ProjectContext): string {
   const projectInstructions = loadProjectInstructions(context.cwd);
   const projectSection = projectInstructions
     ? `\n\n## Project Instructions (.devany.md)\n${projectInstructions}`
+    : '';
+
+  const roleSection = role
+    ? `\n\n## Active Role: ${role.icon} ${role.name}\n${role.systemPrompt}`
+    : '';
+
+  const globalInstructions = loadGlobalInstructions();
+  const globalSection = globalInstructions
+    ? `\n\n## User Instructions\n${globalInstructions}`
     : '';
 
   return `You are dev-anywhere, a terminal-based AI coding assistant.
@@ -54,5 +65,5 @@ export function buildSystemPrompt(context: ProjectContext): string {
 - Platform: ${context.platform}
 ${gitInfo}
 
-When referencing files, use paths relative to the working directory.${projectSection}`;
+When referencing files, use paths relative to the working directory.${globalSection}${projectSection}${roleSection}`;
 }

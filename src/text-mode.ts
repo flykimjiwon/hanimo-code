@@ -11,6 +11,9 @@ import type { ProviderName } from './providers/types.js';
 import type { Message, AgentEvent, TokenUsage } from './core/types.js';
 import { SessionStore } from './session/store.js';
 import { renderMarkdown } from './core/markdown.js';
+import { buildSystemPrompt } from './core/system-prompt.js';
+import type { RoleManager } from './roles/role-manager.js';
+import type { RoleDefinition } from './roles/types.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -141,6 +144,7 @@ function selectMenu(
 
 // Main menu items
 const MAIN_MENU = [
+  { label: '역할 변경',       value: 'role' },
   { label: '모델 변경',       value: 'model' },
   { label: '프로바이더 변경',  value: 'provider' },
   { label: '도구 토글',       value: 'tools' },
@@ -159,11 +163,15 @@ interface TextModeOptions {
   modelInstance: LanguageModelV1;
   systemPrompt: string;
   tools: ToolSet;
+  maxSteps?: number;
   initialPrompt?: string;
   resumeSession?: {
     sessionId: string;
     messages: Array<{ role: string; content: string }>;
   };
+  roleManager?: RoleManager;
+  activeRole?: RoleDefinition;
+  networkMode?: string;
 }
 
 // Quick connection + model verification + warmup
@@ -257,7 +265,10 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   let currentModel = options.model;
   let currentModelInstance = options.modelInstance;
   let baseSystemPrompt = options.systemPrompt;
-  const { tools, initialPrompt } = options;
+  let currentTools: ToolSet = options.tools;
+  const { initialPrompt } = options;
+  let currentRoleObj = options.activeRole;
+  const roleMgr = options.roleManager;
 
   let toolsEnabled = !LOCAL_PROVIDERS.has(currentProvider as ProviderName);
   let currentBaseURL = '';
@@ -324,7 +335,8 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
 
   function printBanner(): void {
     console.log();
-    console.log(`  ${bold('devany')} v0.1.0  ${dim('(')}${green(currentProvider)}${dim('/')}${cyan(currentModel)}${dim(')')}`);
+    const roleTag = currentRoleObj ? `${currentRoleObj.icon} ${currentRoleObj.name}` : '';
+    console.log(`  ${bold('devany')} v0.1.0  ${dim('(')}${green(currentProvider)}${dim('/')}${cyan(currentModel)}${dim(')')}${roleTag ? `  ${magenta(roleTag)}` : ''}`);
     const toolsTag = toolsEnabled ? green('tools:ON') : dim('tools:OFF');
     console.log(`  ${dim('Esc: 메뉴 | Tab: 자동완성 | Ctrl+C: 취소/종료 |')} ${toolsTag}`);
     console.log(dim('─'.repeat(50)));
@@ -464,10 +476,46 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
     }
   }
 
+  async function openRoleMenu(): Promise<void> {
+    if (!roleMgr) {
+      console.log(`  ${dim('역할 시스템 사용 불가')}`);
+      return;
+    }
+    const roles = roleMgr.getAllRoles();
+    const items = roles.map(r => ({
+      label: `${r.icon} ${r.name} — ${r.description}`,
+      value: r.id,
+      active: r.id === currentRoleObj?.id,
+    }));
+    const picked = await selectMenu('역할 선택', items);
+    if (picked) switchRole(picked);
+  }
+
+  function switchRole(id: string): void {
+    if (!roleMgr) {
+      console.log(`  ${red('✗')} 역할 시스템 사용 불가`);
+      return;
+    }
+    const role = roleMgr.getRole(id);
+    if (!role) {
+      const available = roleMgr.getAllRoles().map(r => r.id).join(', ');
+      console.log(`  ${red('✗')} 알 수 없는 역할: "${id}". 사용 가능: ${available}`);
+      return;
+    }
+    currentRoleObj = role;
+    const newTools = roleMgr.createToolSet(role);
+    if (newTools) {
+      currentTools = newTools as ToolSet;
+    }
+    baseSystemPrompt = buildSystemPrompt({ cwd: process.cwd(), platform: process.platform }, role);
+    console.log(`  ${green('✓')} 역할: ${role.icon} ${role.name}`);
+  }
+
   async function openMainMenu(): Promise<void> {
     const picked = await selectMenu('메뉴', MAIN_MENU);
     if (!picked) return;
     switch (picked) {
+      case 'role':     await openRoleMenu(); break;
       case 'model':    await openModelMenu(); break;
       case 'provider': await openProviderMenu(); break;
       case 'tools':
@@ -505,6 +553,10 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           console.log(`    ${cyan('/model')} [name]       ${dim('모델 선택/변경')}`);
           console.log(`    ${cyan('/provider')} [name]    ${dim('프로바이더 선택/변경')}`);
           console.log(`    ${cyan('/endpoint')} url [model] [key]  ${dim('커스텀 엔드포인트 연결')}`);
+          console.log();
+          console.log(`  ${magenta('역할')}`);
+          console.log(`    ${cyan('/role')} [id]          ${dim('역할 선택/변경')}`);
+          console.log(`    ${cyan('/roles')}              ${dim('역할 목록')}`);
           console.log();
           console.log(`  ${magenta('설정')}`);
           console.log(`    ${cyan('/tools')} [on|off]     ${dim('도구(파일/Git/셸) 토글')}`);
@@ -658,6 +710,30 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
           console.log(`  ${green('✓')} 대화 초기화됨.`);
           return true;
 
+        case 'role':
+          if (args.length > 0) {
+            switchRole(args.join(' '));
+          } else {
+            await openRoleMenu();
+          }
+          return true;
+
+        case 'roles':
+          if (!roleMgr) {
+            console.log(`  ${dim('역할 시스템 사용 불가')}`);
+          } else {
+            console.log();
+            console.log(`  ${bold('역할 목록')}`);
+            for (const r of roleMgr.getAllRoles()) {
+              const marker = r.id === currentRoleObj?.id ? green(' ●') : '  ';
+              console.log(`  ${marker} ${r.icon} ${cyan(r.id.padEnd(10))} ${r.name.padEnd(12)} ${dim(r.description)}`);
+            }
+            console.log();
+            console.log(`  ${dim('/role <id> 로 역할 변경')}`);
+            console.log();
+          }
+          return true;
+
         case 'menu':
           await openMainMenu();
           return true;
@@ -760,8 +836,8 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
         model: currentModelInstance,
         systemPrompt: getSystemPrompt(),
         messages,
-        tools: toolsEnabled ? tools : undefined,
-        maxSteps: toolsEnabled ? 25 : 1,
+        tools: toolsEnabled ? currentTools : undefined,
+        maxSteps: toolsEnabled ? (options.maxSteps ?? 25) : 1,
         onEvent,
         abortSignal: abortController.signal,
       });

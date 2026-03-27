@@ -7,6 +7,7 @@ import { createToolRegistry } from './tools/registry.js';
 import { startTextMode } from './text-mode.js';
 import { needsOnboarding, runOnboarding } from './onboarding.js';
 import type { ProviderName } from './providers/types.js';
+import { RoleManager } from './roles/role-manager.js';
 
 export async function main(): Promise<void> {
   const program = new Command();
@@ -23,6 +24,8 @@ export async function main(): Promise<void> {
     .option('-w, --workers <n>', 'Number of parallel workers', parseInt)
     .option('--resume [sessionId]', 'Resume a session')
     .option('--tui', 'Enable fullscreen TUI mode')
+    .option('--role <id>', 'Active role (chat, dev, plan, or custom)')
+    .option('--offline', 'Force offline mode (disable online-only MCP servers)')
     .option('--list-sessions', 'List saved sessions')
     .option('--setup', 'Re-run initial setup')
     .action(async (promptParts: string[], options: {
@@ -33,6 +36,8 @@ export async function main(): Promise<void> {
       workers?: number;
       resume?: string | boolean;
       tui?: boolean;
+      role?: string;
+      offline?: boolean;
       listSessions?: boolean;
       setup?: boolean;
     }) => {
@@ -140,6 +145,21 @@ export async function main(): Promise<void> {
         store.close();
       }
 
+      // Initialize role system
+      const roleManager = new RoleManager();
+      await roleManager.loadCustomRoles();
+
+      const roleId = options.role ?? config.defaultRole;
+      const activeRole = roleManager.getRole(roleId);
+      if (!activeRole) {
+        const available = roleManager.getAllRoles().map(r => r.id).join(', ');
+        console.error(`Unknown role: "${roleId}". Available: ${available}`);
+        process.exit(1);
+      }
+
+      // Apply role maxSteps if not overridden by config
+      const maxSteps = activeRole.maxSteps;
+
       // Prepare model + tools
       const providerConfig = config.providers?.[config.provider] ?? {};
       const modelInstance = getModel(
@@ -150,8 +170,10 @@ export async function main(): Promise<void> {
       const systemPrompt = buildSystemPrompt({
         cwd: process.cwd(),
         platform: process.platform,
-      });
-      const tools = createToolRegistry();
+      }, activeRole);
+      const tools = roleManager.createToolSet(activeRole) ?? createToolRegistry();
+
+      const networkMode = options.offline ? 'offline' as const : config.network.mode;
 
       if (options.tui) {
         // TUI mode: launch fullscreen Ink app
@@ -162,8 +184,12 @@ export async function main(): Promise<void> {
           modelInstance,
           systemPrompt,
           tools,
+          maxSteps,
           initialPrompt: prompt || undefined,
           providerConfig,
+          roleManager,
+          activeRole,
+          networkMode,
         });
         return;
       }
@@ -175,8 +201,12 @@ export async function main(): Promise<void> {
         modelInstance,
         systemPrompt,
         tools,
+        maxSteps,
         initialPrompt: prompt || undefined,
         resumeSession,
+        roleManager,
+        activeRole,
+        networkMode,
       });
     });
 
