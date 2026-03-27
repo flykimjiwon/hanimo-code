@@ -85,6 +85,7 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 ## Environment
 - Working directory: ${context.cwd}
 - Platform: ${context.platform}
+- Current time: ${new Date().toISOString()}
 ${gitInfo}
 
 When referencing files, use paths relative to the working directory.${globalSection}${projectSection}${roleSection}`;
