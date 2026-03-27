@@ -94,16 +94,19 @@ export const editFileTool = tool({
       }
 
       if (count === 0) {
+        // Show nearby content to help the LLM find the right string
+        const preview = content.length > 200 ? content.slice(0, 200) + '...' : content;
         return {
           success: false,
-          error: 'oldStr not found in file. Make sure it matches exactly (including whitespace).',
+          error: `oldStr not found in file. Make sure it matches exactly (including whitespace and indentation). Use read_file or hashline_read to see the current content first.`,
+          hint: `File starts with: ${preview.split('\n').slice(0, 5).join('\\n')}`,
         };
       }
 
       if (count > 1) {
         return {
           success: false,
-          error: `oldStr found ${count} times. It must appear exactly once. Provide more context to make the match unique.`,
+          error: `oldStr found ${count} times. It must appear exactly once. Add more surrounding lines to make the match unique, or use hashline_edit for line-range based editing.`,
         };
       }
 
