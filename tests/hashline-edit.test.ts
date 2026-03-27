@@ -127,5 +127,33 @@ describe('hashline-edit', () => {
       expect(editResult.success).toBe(false);
       expect(editResult.error).toContain('Invalid start anchor');
     });
+
+    it('should reject end anchor before start anchor', async () => {
+      const editResult = await hashlineEditTool.execute(
+        { path: testFile, startAnchor: '3#abcd', endAnchor: '1#abcd', newContent: 'nope' },
+        toolCtx,
+      ) as { success: boolean; error?: string };
+
+      expect(editResult.success).toBe(false);
+      expect(editResult.error).toContain('must be >= start');
+    });
+
+    it('should handle single-line edit (start == end)', async () => {
+      // Reset file
+      writeFileSync(testFile, 'alpha\nbeta\ngamma\n');
+      const readResult = await hashReadFileTool.execute({ path: testFile }, toolCtx) as {
+        success: boolean; content: string;
+      };
+      const lines = readResult.content.split('\n');
+      const anchor2 = lines[1]!.match(/^(\d+#[a-f0-9]{4})\|/)?.[1];
+
+      const editResult = await hashlineEditTool.execute(
+        { path: testFile, startAnchor: anchor2!, endAnchor: anchor2!, newContent: 'BETA_REPLACED' },
+        toolCtx,
+      ) as { success: boolean; replacedLines: { count: number } };
+
+      expect(editResult.success).toBe(true);
+      expect(editResult.replacedLines.count).toBe(1);
+    });
   });
 });
