@@ -36,4 +36,21 @@ describe('checkPathSandbox', () => {
     const result = checkPathSandbox('/home/user/other-project/secret.ts', cwd);
     expect(result).toBeTruthy();
   });
+
+  it('blocks dot-dot traversal (../)', () => {
+    expect(checkPathSandbox('/home/user/project/../../../etc/passwd', cwd)).toBeTruthy();
+    expect(checkPathSandbox('/home/user/project/src/../../other/file', cwd)).toBeTruthy();
+  });
+
+  it('blocks key/pem/credential files inside cwd', () => {
+    expect(checkPathSandbox('/home/user/project/server.key', cwd)).toBeTruthy();
+    expect(checkPathSandbox('/home/user/project/cert.pem', cwd)).toBeTruthy();
+    expect(checkPathSandbox('/home/user/project/credentials.json', cwd)).toBeTruthy();
+  });
+
+  it('allows normal source files with tricky names', () => {
+    expect(checkPathSandbox('/home/user/project/src/envLoader.ts', cwd)).toBeNull();
+    expect(checkPathSandbox('/home/user/project/src/aws-client.ts', cwd)).toBeNull();
+    expect(checkPathSandbox('/home/user/project/ssh-config.ts', cwd)).toBeNull();
+  });
 });
