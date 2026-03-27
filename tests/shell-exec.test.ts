@@ -61,4 +61,28 @@ describe('isDangerous', () => {
     expect(isDangerous('rm temp.txt')).toBeNull();
     expect(isDangerous('rm -f temp.txt')).toBeNull();
   });
+
+  it('blocks fork bomb variants', () => {
+    expect(isDangerous(':() { :|:& };:')).toBeTruthy();
+  });
+
+  it('blocks dd if= disk writes', () => {
+    expect(isDangerous('dd if=/dev/zero of=/dev/sda bs=1M')).toBeTruthy();
+  });
+
+  it('blocks mkfs', () => {
+    expect(isDangerous('mkfs.ext4 /dev/sda1')).toBeTruthy();
+  });
+
+  it('blocks writes to /etc/', () => {
+    expect(isDangerous('echo "hack" > /etc/shadow')).toBeTruthy();
+  });
+
+  it('allows safe git and npm commands', () => {
+    expect(isDangerous('git log --oneline -10')).toBeNull();
+    expect(isDangerous('npm run build')).toBeNull();
+    expect(isDangerous('npx vitest run')).toBeNull();
+    expect(isDangerous('grep -r "pattern" src/')).toBeNull();
+    expect(isDangerous('find . -name "*.ts"')).toBeNull();
+  });
 });
