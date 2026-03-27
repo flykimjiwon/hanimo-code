@@ -2,6 +2,11 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { execaCommand } from 'execa';
 
+const DEFAULT_TIMEOUT_MS = 30000;
+const MAX_TIMEOUT_MS = 120000;
+const MIN_TIMEOUT_MS = 1000;
+const MAX_OUTPUT_CHARS = 50000;
+
 const DANGEROUS_PATTERNS: RegExp[] = [
   // rm variants (handles -r -f, --recursive, --force, etc.)
   /\brm\b.*-[^\s]*r[^\s]*f.*\//,
@@ -49,10 +54,10 @@ export const shellExecTool = tool({
     cwd: z.string().optional().describe('Working directory (defaults to process.cwd())'),
     timeout: z
       .number()
-      .min(1000)
-      .max(120000)
+      .min(MIN_TIMEOUT_MS)
+      .max(MAX_TIMEOUT_MS)
       .optional()
-      .default(30000)
+      .default(DEFAULT_TIMEOUT_MS)
       .describe('Timeout in milliseconds (1s-120s, default 30s)'),
   }),
   execute: async ({ command, cwd, timeout }) => {
@@ -80,7 +85,7 @@ export const shellExecTool = tool({
       const stderr = typeof result.stderr === 'string' ? result.stderr : '';
 
       // Truncate very long output
-      const MAX_LEN = 50000;
+      const MAX_LEN = MAX_OUTPUT_CHARS;
       const truncatedStdout =
         stdout.length > MAX_LEN
           ? stdout.slice(0, MAX_LEN) + `\n... (truncated, ${stdout.length} total chars)`
