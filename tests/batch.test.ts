@@ -65,9 +65,11 @@ describe('batch tool', () => {
 
     expect(result.success).toBe(true);
     expect(result.results.globs).toHaveLength(2);
-    expect(result.results.globs[0]!.files).toContain('a.txt');
-    expect(result.results.globs[0]!.files).toContain('b.txt');
-    expect(result.results.globs[1]!.files).toContain('c.json');
+    const txtGlob = result.results.globs.find(g => g.pattern === '*.txt')!;
+    const jsonGlob = result.results.globs.find(g => g.pattern === '*.json')!;
+    expect(txtGlob.files).toContain('a.txt');
+    expect(txtGlob.files).toContain('b.txt');
+    expect(jsonGlob.files).toContain('c.json');
   });
 
   it('should handle empty input gracefully', async () => {
