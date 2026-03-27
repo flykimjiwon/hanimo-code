@@ -90,4 +90,45 @@ describe('SessionStore', () => {
     // Should not throw
     store.saveMessage('non-existent', 'user', 'hello');
   });
+
+  it('handles empty session (no messages)', () => {
+    const id = store.createSession('test', 'model');
+    const session = store.getSession(id);
+    expect(session).toBeDefined();
+    expect(session!.messageCount).toBe(0);
+    const msgs = store.getMessages(id);
+    expect(msgs).toEqual([]);
+  });
+
+  it('handles corrupted JSON gracefully', () => {
+    // Write invalid JSON to a session file
+    const { writeFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    writeFileSync(join(tmpDir, 'corrupted.json'), '{invalid json!!!}');
+
+    // Should return undefined, not throw
+    expect(store.getSession('corrupted')).toBeUndefined();
+    expect(store.getMessages('corrupted')).toEqual([]);
+  });
+
+  it('handles large message content', () => {
+    const id = store.createSession('test', 'model');
+    const bigContent = 'x'.repeat(100000);
+    store.saveMessage(id, 'user', bigContent);
+    const msgs = store.getMessages(id);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.content.length).toBe(100000);
+  });
+
+  it('searchSessions returns empty for empty store', () => {
+    // Create a fresh store with empty dir
+    const { mkdtempSync } = require('node:fs');
+    const { tmpdir } = require('node:os');
+    const { join } = require('node:path');
+    const emptyDir = mkdtempSync(join(tmpdir(), 'modol-empty-'));
+    const emptyStore = new SessionStore(emptyDir);
+    const results = emptyStore.searchSessions('anything');
+    expect(results).toEqual([]);
+    require('node:fs').rmSync(emptyDir, { recursive: true, force: true });
+  });
 });
