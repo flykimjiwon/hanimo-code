@@ -17,7 +17,7 @@ export const todoTool = tool({
     'Manage a task list to track your work on complex multi-step tasks. ' +
     'Actions: add (create task), update (change status), list (show all), remove (delete task).',
   parameters: z.object({
-    action: z.enum(['add', 'update', 'list', 'remove']).describe('Action to perform'),
+    action: z.enum(['add', 'update', 'list', 'remove', 'clear']).describe('Action to perform'),
     task: z.string().optional().describe('Task description (for "add")'),
     id: z.number().optional().describe('Task ID (for "update" or "remove")'),
     status: z
@@ -64,6 +64,12 @@ export const todoTool = tool({
         if (idx === -1) return { success: false, error: `Task #${id} not found` };
         const removed = todos.splice(idx, 1)[0];
         return { success: true, action: 'removed', item: removed };
+      }
+
+      case 'clear': {
+        const count = todos.length;
+        todos.length = 0;
+        return { success: true, action: 'cleared', removedCount: count };
       }
 
       default:

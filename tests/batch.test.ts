@@ -31,8 +31,10 @@ describe('batch tool', () => {
 
     expect(result.success).toBe(true);
     expect(result.results.reads).toHaveLength(2);
-    expect(result.results.reads[0]!.content).toContain('hello from a');
-    expect(result.results.reads[1]!.content).toContain('hello from b');
+    const readA = result.results.reads.find(r => r.path.endsWith('a.txt'))!;
+    const readB = result.results.reads.find(r => r.path.endsWith('b.txt'))!;
+    expect(readA.content).toContain('hello from a');
+    expect(readB.content).toContain('hello from b');
   });
 
   it('should handle missing files gracefully', async () => {
@@ -48,8 +50,10 @@ describe('batch tool', () => {
 
     expect(result.success).toBe(true);
     expect(result.results.reads).toHaveLength(2);
-    expect(result.results.reads[0]!.error).toBeDefined();
-    expect(result.results.reads[1]!.content).toContain('hello from a');
+    const missing = result.results.reads.find(r => r.path.endsWith('nonexistent.txt'))!;
+    const found = result.results.reads.find(r => r.path.endsWith('a.txt'))!;
+    expect(missing.error).toBeDefined();
+    expect(found.content).toContain('hello from a');
   });
 
   it('should run glob patterns in parallel', async () => {
