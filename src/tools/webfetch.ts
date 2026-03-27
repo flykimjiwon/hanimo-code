@@ -8,7 +8,7 @@ const TIMEOUT_MS = 15000;
  * Strip HTML tags and convert to readable plain text.
  * Lightweight — no external dependency needed.
  */
-function htmlToText(html: string): string {
+export function htmlToText(html: string): string {
   return html
     // Remove script/style blocks
     .replace(/<script[\s\S]*?<\/script>/gi, '')
