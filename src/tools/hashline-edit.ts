@@ -40,8 +40,9 @@ function parseAnchor(anchor: string): { line: number; hash: string } | null {
  */
 export const hashReadFileTool = tool({
   description:
-    'Read a file with hash-tagged lines. Each line is shown as "lineNum#HASH| content". ' +
-    'Use the HASH anchors with hashline_edit to make verified edits.',
+    'Read a file with hash-tagged lines for safe editing. Each line is shown as "lineNum#HASH| content". ' +
+    'ALWAYS use this instead of read_file when you plan to edit — the HASH anchors prevent stale-line errors. ' +
+    'Then use hashline_edit with the anchors to make verified edits.',
   parameters: z.object({
     path: z.string().describe('Absolute or relative file path'),
     startLine: z.number().optional().describe('Start line (1-based)'),

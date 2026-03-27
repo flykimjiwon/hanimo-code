@@ -12,8 +12,9 @@ import { globby } from 'globby';
 export const batchTool = tool({
   description:
     'Run multiple independent read-only operations in parallel for speed. ' +
-    'Supports batch file reads and batch globs. ' +
-    'Much faster than calling tools one by one when operations are independent.',
+    'Use this when you need to read 3+ files or run 2+ glob searches at once. ' +
+    'Supports batch file reads and batch globs via Promise.all. ' +
+    '2-5x faster than calling read_file/glob_search one by one.',
   parameters: z.object({
     reads: z
       .array(z.object({ path: z.string() }))
