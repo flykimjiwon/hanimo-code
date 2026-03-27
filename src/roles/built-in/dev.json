@@ -8,13 +8,19 @@
     "read_file",
     "write_file",
     "edit_file",
+    "hashline_read",
+    "hashline_edit",
     "git_status",
     "git_diff",
     "git_commit",
     "git_log",
     "shell_exec",
     "glob_search",
-    "grep_search"
+    "grep_search",
+    "webfetch",
+    "todo",
+    "batch",
+    "diagnostics"
   ],
   "maxSteps": 25
 }

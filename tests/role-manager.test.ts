@@ -26,14 +26,14 @@ describe('RoleManager', () => {
     expect(dev).toBeDefined();
     expect(dev!.name).toBe('Dev');
     expect(dev!.icon).toBe('🔧');
-    expect(dev!.tools.length).toBe(10);
+    expect(dev!.tools.length).toBe(16);
     expect(dev!.maxSteps).toBe(25);
 
     const plan = mgr.getRole('plan');
     expect(plan).toBeDefined();
     expect(plan!.name).toBe('Plan');
     expect(plan!.icon).toBe('📋');
-    expect(plan!.tools.length).toBe(6);
+    expect(plan!.tools.length).toBe(10);
     expect(plan!.maxSteps).toBe(15);
   });
 
@@ -58,7 +58,13 @@ describe('RoleManager', () => {
     expect(keys).toContain('read_file');
     expect(keys).toContain('write_file');
     expect(keys).toContain('shell_exec');
-    expect(keys.length).toBe(10);
+    expect(keys).toContain('hashline_read');
+    expect(keys).toContain('hashline_edit');
+    expect(keys).toContain('webfetch');
+    expect(keys).toContain('todo');
+    expect(keys).toContain('batch');
+    expect(keys).toContain('diagnostics');
+    expect(keys.length).toBe(16);
   });
 
   it('createToolSet returns read-only tools for plan role', () => {
@@ -68,12 +74,16 @@ describe('RoleManager', () => {
     expect(toolSet).toBeDefined();
     const keys = Object.keys(toolSet!);
     expect(keys).toContain('read_file');
+    expect(keys).toContain('hashline_read');
     expect(keys).toContain('glob_search');
     expect(keys).toContain('grep_search');
+    expect(keys).toContain('webfetch');
+    expect(keys).toContain('batch');
+    expect(keys).toContain('diagnostics');
     expect(keys).not.toContain('write_file');
     expect(keys).not.toContain('edit_file');
     expect(keys).not.toContain('shell_exec');
-    expect(keys.length).toBe(6);
+    expect(keys.length).toBe(10);
   });
 
   it('buildRolePrompt appends role section', () => {
@@ -103,13 +113,15 @@ describe('RoleManager', () => {
     expect(result).toBe(base);
   });
 
-  it('dev role tools list matches the 10 known tools', () => {
+  it('dev role tools list matches all 16 registered tools', () => {
     const mgr = new RoleManager();
     const dev = mgr.getRole('dev')!;
     const expected = [
       'read_file', 'write_file', 'edit_file',
+      'hashline_read', 'hashline_edit',
       'git_status', 'git_diff', 'git_commit', 'git_log',
       'shell_exec', 'glob_search', 'grep_search',
+      'webfetch', 'todo', 'batch', 'diagnostics',
     ];
     expect(dev.tools.sort()).toEqual(expected.sort());
   });

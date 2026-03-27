@@ -3,11 +3,13 @@ import { loadConfig } from './config/loader.js';
 import { SessionStore } from './session/store.js';
 import { getModel } from './providers/registry.js';
 import { buildSystemPrompt } from './core/system-prompt.js';
-import { createToolRegistry } from './tools/registry.js';
+import { createToolRegistry, mergeToolSets } from './tools/registry.js';
 import { startTextMode } from './text-mode.js';
 import { needsOnboarding, runOnboarding } from './onboarding.js';
 import type { ProviderName } from './providers/types.js';
 import { RoleManager } from './roles/role-manager.js';
+import { McpBridge } from './mcp/bridge.js';
+import { detectNetworkMode } from './mcp/network.js';
 
 export async function main(): Promise<void> {
   const program = new Command();
@@ -174,6 +176,31 @@ export async function main(): Promise<void> {
       const tools = roleManager.createToolSet(activeRole) ?? createToolRegistry();
 
       const networkMode = options.offline ? 'offline' as const : config.network.mode;
+
+      // MCP: connect configured servers and merge their tools
+      const mcpBridge = new McpBridge();
+      const mcpServers = config.mcp?.servers ?? {};
+      if (Object.keys(mcpServers).length > 0) {
+        try {
+          const resolvedNetwork = await detectNetworkMode(networkMode as 'auto' | 'online' | 'offline');
+          await mcpBridge.loadFromConfig(mcpServers);
+          const mcpTools = mcpBridge.getAvailableTools(resolvedNetwork);
+          if (mcpTools) {
+            const merged = mergeToolSets(tools, mcpTools);
+            if (merged) Object.assign(tools, merged);
+          }
+          const count = mcpBridge.getConnectedCount();
+          if (count > 0) {
+            console.log(`[MCP] ${count} server(s) connected`);
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`[MCP] Failed to initialize: ${msg}`);
+        }
+      }
+
+      // Cleanup MCP on exit
+      process.on('exit', () => { mcpBridge.disconnectAll().catch(() => {}); });
 
       if (options.tui) {
         // TUI mode: launch fullscreen Ink app

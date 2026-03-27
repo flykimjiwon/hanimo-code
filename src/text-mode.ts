@@ -7,6 +7,7 @@ import { runAgentLoop } from './core/agent-loop.js';
 import { getModel, clearProviderCache } from './providers/registry.js';
 import { loadConfig } from './config/loader.js';
 import { PROVIDER_NAMES, LOCAL_PROVIDERS, KNOWN_MODELS } from './providers/types.js';
+import { wrapToolsWithPermission } from './core/permission-gate.js';
 import type { ProviderName } from './providers/types.js';
 import type { Message, AgentEvent, TokenUsage } from './core/types.js';
 import { SessionStore } from './session/store.js';
@@ -265,10 +266,29 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   let currentModel = options.model;
   let currentModelInstance = options.modelInstance;
   let baseSystemPrompt = options.systemPrompt;
-  let currentTools: ToolSet = options.tools;
   const { initialPrompt } = options;
   let currentRoleObj = options.activeRole;
   const roleMgr = options.roleManager;
+
+  // Permission gate: wrap destructive tools with readline approval prompt
+  const permissionHandler = {
+    async requestApproval(description: string): Promise<boolean> {
+      const wasRaw = stdin.isRaw;
+      if (wasRaw) stdin.setRawMode(false);
+      const tempRl = createInterface({ input: stdin, output: stdout });
+      const answer: string = await tempRl.question(`  ${yellow('⚠')} ${description} ${dim('[Y/n]')} `);
+      tempRl.close();
+      if (wasRaw) stdin.setRawMode(true);
+      const a = answer.trim().toLowerCase();
+      return a === '' || a === 'y' || a === 'yes';
+    },
+  };
+
+  let currentTools: ToolSet = wrapToolsWithPermission(
+    options.tools,
+    true, // requireApproval for destructive tools
+    permissionHandler,
+  );
 
   let toolsEnabled = !LOCAL_PROVIDERS.has(currentProvider as ProviderName);
   let currentBaseURL = '';

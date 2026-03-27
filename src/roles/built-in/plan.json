@@ -6,11 +6,15 @@
   "systemPrompt": "You are an analysis and planning assistant. You can read files and search the codebase, but you CANNOT modify any files or run destructive commands. Focus on understanding the codebase, identifying issues, and proposing actionable plans.",
   "tools": [
     "read_file",
+    "hashline_read",
     "glob_search",
     "grep_search",
     "git_status",
     "git_diff",
-    "git_log"
+    "git_log",
+    "webfetch",
+    "batch",
+    "diagnostics"
   ],
   "maxSteps": 15
 }

@@ -115,9 +115,7 @@ export async function runAgentLoop(
       abortSignal,
       onStepFinish(event) {
         if (event.usage) {
-          totalUsage.promptTokens += event.usage.promptTokens || 0;
-          totalUsage.completionTokens += event.usage.completionTokens || 0;
-          totalUsage.totalTokens += event.usage.totalTokens || 0;
+          // Step-level usage tracked for debugging; final totals come from finalUsage
         }
 
         if (event.toolCalls && event.toolCalls.length > 0) {
