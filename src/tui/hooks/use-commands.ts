@@ -397,6 +397,23 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
       return;
     }
 
+    // If user typed a URL directly: /endpoint https://...
+    if (sub.startsWith('http://') || sub.startsWith('https://')) {
+      ctx.addSystemMessage(
+        [
+          `URL detected: ${sub}`,
+          '',
+          'To register this endpoint, use:',
+          `  /endpoint add <name> <provider> ${sub} [apiKey]`,
+          '',
+          'Example:',
+          `  /endpoint add myserver ollama ${sub}`,
+          `  /endpoint add myserver custom ${sub} YOUR_API_KEY`,
+        ].join('\n'),
+      );
+      return;
+    }
+
     ctx.addSystemMessage(`Unknown subcommand: "${sub}". Use /endpoint help for usage.`);
   },
 
