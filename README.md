@@ -284,6 +284,93 @@ GROQ_API_KEY=gsk_...           # Groq
 
 ---
 
+## Multi-Endpoint System
+
+modol can connect to **multiple LLM servers simultaneously** and automatically discover available models from each.
+
+### Setting up endpoints
+
+#### Method 1: TUI commands (inside modol)
+
+```bash
+# Add endpoints
+/endpoint add local ollama http://localhost:11434
+/endpoint add dgx custom https://spark3-share.tech-2030.net/api/v1 YOUR_API_KEY
+/endpoint add remote ollama http://192.168.1.100:11434
+
+# List registered endpoints
+/endpoint list
+
+# Remove an endpoint
+/endpoint remove dgx
+```
+
+#### Method 2: Edit config file directly
+
+Edit `~/.modol/config.json`:
+
+```json
+{
+  "provider": "ollama",
+  "model": "qwen3:8b",
+  "endpoints": [
+    {
+      "name": "local",
+      "provider": "ollama",
+      "baseURL": "http://localhost:11434",
+      "enabled": true,
+      "priority": 10
+    },
+    {
+      "name": "dgx-spark",
+      "provider": "custom",
+      "baseURL": "https://spark3-share.tech-2030.net/api/v1",
+      "apiKey": "your-api-key-here",
+      "enabled": true,
+      "priority": 5
+    },
+    {
+      "name": "remote-ollama",
+      "provider": "ollama",
+      "baseURL": "http://192.168.1.100:11434",
+      "enabled": true,
+      "priority": 3
+    }
+  ]
+}
+```
+
+### Endpoint fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Display name shown in menus |
+| `provider` | Yes | `ollama`, `custom`, `openai`, `anthropic`, etc. |
+| `baseURL` | Yes | Server URL |
+| `apiKey` | No | API key (not needed for local Ollama) |
+| `priority` | No | Higher = preferred when same model on multiple endpoints (default: 0) |
+| `enabled` | No | Set `false` to temporarily disable (default: true) |
+
+### How it works
+
+- **Auto-discovery**: modol queries each endpoint for available models (Ollama: `/api/tags`, others: `/v1/models`)
+- **Single endpoint**: Model uses that endpoint directly
+- **Same model on multiple endpoints**: Round-robin load balancing, sorted by priority
+- **Endpoint offline**: Silently skipped, other endpoints continue working
+
+### Sharing endpoints with your team
+
+```bash
+# Export config (API keys masked for cloud, kept for local)
+modol --share-config
+
+# Team member imports
+modol --import-config modol-shared.json
+# Then add their own API keys for cloud providers
+```
+
+---
+
 ## Keyboard Shortcuts
 
 ### TUI Mode

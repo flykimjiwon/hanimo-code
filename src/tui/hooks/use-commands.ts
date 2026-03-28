@@ -292,27 +292,112 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
   },
 
   endpoint: (args, ctx) => {
-    const url = args.trim();
-    if (!url) {
+    const parts = args.trim().split(/\s+/);
+    const sub = parts[0] ?? '';
+
+    if (!sub || sub === 'help') {
       ctx.addSystemMessage(
         [
-          'Endpoint configuration:',
-          '  /endpoint <url>     Set base URL for current provider',
-          '  /endpoint clear     Reset to default',
+          'Endpoint management:',
+          '  /endpoint list                          Show registered endpoints',
+          '  /endpoint add <name> <provider> <url> [apiKey]   Add endpoint',
+          '  /endpoint remove <name>                 Remove endpoint',
           '',
           'Examples:',
-          '  /endpoint https://spark3-share.tech-2030.net/api/v1',
-          '  /endpoint http://192.168.1.100:11434',
-          '  /endpoint http://localhost:8000/v1',
+          '  /endpoint add local ollama http://localhost:11434',
+          '  /endpoint add dgx custom https://spark3-share.tech-2030.net/api/v1 f0a26c07...',
+          '  /endpoint add remote ollama http://192.168.1.100:11434',
+          '  /endpoint remove dgx',
+          '  /endpoint list',
+          '',
+          'Config file: ~/.modol/config.json (endpoints array)',
         ].join('\n'),
       );
       return;
     }
-    if (url === 'clear') {
-      ctx.addSystemMessage('Endpoint reset to default. Restart modol to apply.');
+
+    if (sub === 'list') {
+      try {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const os = require('node:os');
+        const configPath = path.join(os.homedir(), '.modol', 'config.json');
+        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const eps = cfg.endpoints ?? [];
+        if (eps.length === 0) {
+          ctx.addSystemMessage('No endpoints registered.\nUse /endpoint add <name> <provider> <url> to add one.');
+          return;
+        }
+        const lines = eps.map((e: { name: string; provider: string; baseURL: string; apiKey?: string; enabled?: boolean; priority?: number }, i: number) => {
+          const key = e.apiKey ? '🔑' : '  ';
+          const status = e.enabled === false ? '⏸' : '✅';
+          return `  ${i + 1}. ${status} ${key} ${e.name.padEnd(16)} ${e.provider.padEnd(8)} ${e.baseURL}${e.priority ? ` (priority:${e.priority})` : ''}`;
+        });
+        ctx.addSystemMessage(['Registered endpoints:', '', ...lines].join('\n'));
+      } catch {
+        ctx.addSystemMessage('No config found. Use /endpoint add to register endpoints.');
+      }
       return;
     }
-    ctx.addSystemMessage(`Endpoint set: ${url}\nRestart modol with: modol --base-url ${url}`);
+
+    if (sub === 'add') {
+      const [, name, provider, url, apiKey] = parts;
+      if (!name || !provider || !url) {
+        ctx.addSystemMessage('Usage: /endpoint add <name> <provider> <url> [apiKey]\nExample: /endpoint add local ollama http://localhost:11434');
+        return;
+      }
+      try {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const os = require('node:os');
+        const configDir = path.join(os.homedir(), '.modol');
+        fs.mkdirSync(configDir, { recursive: true });
+        const configPath = path.join(configDir, 'config.json');
+        let cfg: Record<string, unknown> = {};
+        try { cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
+        const eps = (cfg.endpoints ?? []) as Array<Record<string, unknown>>;
+        // Remove existing with same name
+        const filtered = eps.filter((e: Record<string, unknown>) => e.name !== name);
+        const newEp: Record<string, unknown> = { name, provider, baseURL: url, enabled: true, priority: 0 };
+        if (apiKey) newEp.apiKey = apiKey;
+        filtered.push(newEp);
+        cfg.endpoints = filtered;
+        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
+        ctx.addSystemMessage(`✅ Endpoint "${name}" added (${provider} @ ${url})${apiKey ? ' with API key' : ''}\nRestart modol to use new endpoint.`);
+      } catch (err: unknown) {
+        ctx.addSystemMessage(`❌ Failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      return;
+    }
+
+    if (sub === 'remove') {
+      const name = parts[1];
+      if (!name) {
+        ctx.addSystemMessage('Usage: /endpoint remove <name>');
+        return;
+      }
+      try {
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const os = require('node:os');
+        const configPath = path.join(os.homedir(), '.modol', 'config.json');
+        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const eps = (cfg.endpoints ?? []) as Array<Record<string, unknown>>;
+        const before = eps.length;
+        cfg.endpoints = eps.filter((e: Record<string, unknown>) => e.name !== name);
+        if (cfg.endpoints.length === before) {
+          ctx.addSystemMessage(`Endpoint "${name}" not found.`);
+          return;
+        }
+        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
+        ctx.addSystemMessage(`✅ Endpoint "${name}" removed.\nRestart modol to apply.`);
+      } catch (err: unknown) {
+        ctx.addSystemMessage(`❌ Failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      return;
+    }
+
+    ctx.addSystemMessage(`Unknown subcommand: "${sub}". Use /endpoint help for usage.`);
   },
 
   auto: (args, ctx) => {

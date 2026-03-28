@@ -284,6 +284,93 @@ GROQ_API_KEY=gsk_...           # Groq
 
 ---
 
+## 멀티 엔드포인트 시스템
+
+modol은 **여러 LLM 서버에 동시 연결**해서 각 서버의 모델을 자동으로 가져옵니다.
+
+### 엔드포인트 등록 방법
+
+#### 방법 1: TUI 커맨드 (modol 안에서)
+
+```bash
+# 엔드포인트 추가
+/endpoint add local ollama http://localhost:11434
+/endpoint add dgx custom https://spark3-share.tech-2030.net/api/v1 API키값
+/endpoint add remote ollama http://192.168.1.100:11434
+
+# 등록된 엔드포인트 목록
+/endpoint list
+
+# 엔드포인트 삭제
+/endpoint remove dgx
+```
+
+#### 방법 2: 설정 파일 직접 편집
+
+`~/.modol/config.json` 편집:
+
+```json
+{
+  "provider": "ollama",
+  "model": "qwen3:8b",
+  "endpoints": [
+    {
+      "name": "local",
+      "provider": "ollama",
+      "baseURL": "http://localhost:11434",
+      "enabled": true,
+      "priority": 10
+    },
+    {
+      "name": "dgx-spark",
+      "provider": "custom",
+      "baseURL": "https://spark3-share.tech-2030.net/api/v1",
+      "apiKey": "여기에-API-키",
+      "enabled": true,
+      "priority": 5
+    },
+    {
+      "name": "remote-ollama",
+      "provider": "ollama",
+      "baseURL": "http://192.168.1.100:11434",
+      "enabled": true,
+      "priority": 3
+    }
+  ]
+}
+```
+
+### 필드 설명
+
+| 필드 | 필수 | 설명 |
+|------|------|------|
+| `name` | O | 메뉴에 표시되는 이름 |
+| `provider` | O | `ollama`, `custom`, `openai`, `anthropic` 등 |
+| `baseURL` | O | 서버 URL |
+| `apiKey` | 선택 | API 키 (로컬 Ollama는 불필요) |
+| `priority` | 선택 | 높을수록 우선순위 (같은 모델이 여러 곳에 있을 때) |
+| `enabled` | 선택 | `false`면 비활성 (기본: true) |
+
+### 동작 원리
+
+- **자동 조회**: 각 엔드포인트에서 모델 목록을 자동으로 가져옴 (Ollama: `/api/tags`, 기타: `/v1/models`)
+- **단일 엔드포인트**: 해당 엔드포인트 바로 사용
+- **같은 모델이 여러 곳에**: priority 기반 + 라운드로빈 로드밸런싱
+- **엔드포인트 오프라인**: 건너뛰고 다음 엔드포인트 시도
+
+### 팀 공유
+
+```bash
+# 설정 내보내기 (클라우드 API 키는 마스킹, 로컬은 유지)
+modol --share-config
+
+# 팀원이 가져오기
+modol --import-config modol-shared.json
+# 클라우드 프로바이더 API 키만 직접 입력
+```
+
+---
+
 ## 키보드 단축키
 
 ### TUI 모드
