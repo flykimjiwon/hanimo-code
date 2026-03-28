@@ -25,7 +25,7 @@ export async function main(): Promise<void> {
     .option('-u, --base-url <url>', 'Base URL (OpenAI-compatible endpoint)')
     .option('-w, --workers <n>', 'Number of parallel workers', parseInt)
     .option('--resume [sessionId]', 'Resume a session')
-    .option('--tui', 'Enable fullscreen TUI mode')
+    .option('--text', 'Use lightweight text mode (default is TUI)')
     .option('--role <id>', 'Active role (chat, dev, plan, or custom)')
     .option('--offline', 'Force offline mode (disable online-only MCP servers)')
     .option('--list-sessions', 'List saved sessions')
@@ -37,7 +37,7 @@ export async function main(): Promise<void> {
       baseUrl?: string;
       workers?: number;
       resume?: string | boolean;
-      tui?: boolean;
+      text?: boolean;
       role?: string;
       offline?: boolean;
       listSessions?: boolean;
@@ -202,10 +202,9 @@ export async function main(): Promise<void> {
       // Cleanup MCP on exit
       process.on('exit', () => { mcpBridge.disconnectAll().catch(() => {}); });
 
-      if (options.tui) {
-        // TUI mode: launch fullscreen Ink app
-        const { startApp } = await import('./tui/app.js');
-        startApp({
+      if (options.text) {
+        // Text mode: lightweight readline-based interactive loop
+        await startTextMode({
           provider: config.provider,
           model: config.model,
           modelInstance,
@@ -213,7 +212,7 @@ export async function main(): Promise<void> {
           tools,
           maxSteps,
           initialPrompt: prompt || undefined,
-          providerConfig,
+          resumeSession,
           roleManager,
           activeRole,
           networkMode,
@@ -221,8 +220,9 @@ export async function main(): Promise<void> {
         return;
       }
 
-      // Default: text mode (readline-based interactive loop)
-      await startTextMode({
+      // Default: TUI mode (fullscreen Ink app)
+      const { startApp } = await import('./tui/app.js');
+      startApp({
         provider: config.provider,
         model: config.model,
         modelInstance,
@@ -230,7 +230,7 @@ export async function main(): Promise<void> {
         tools,
         maxSteps,
         initialPrompt: prompt || undefined,
-        resumeSession,
+        providerConfig,
         roleManager,
         activeRole,
         networkMode,
