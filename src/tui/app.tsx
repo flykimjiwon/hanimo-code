@@ -263,7 +263,7 @@ function App({
       setToolsEnabled(autoTools);
       const badge = ROLE_BADGES[cap.role];
       const toolsNote = cap.role === 'chat' ? ' (tools disabled)' : cap.role === 'assistant' ? ' (read-only tools)' : '';
-      agent.addSystemMessage(`Model switched to ${name} ${badge}${toolsNote}`);
+      agent.addSystemMessage(`── Model switched to ${name} ${badge}${toolsNote} ──`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       agent.addSystemMessage(`Failed to switch model: ${msg}`);
@@ -294,7 +294,7 @@ function App({
       const autoTools = cap.role !== 'chat';
       setToolsEnabled(autoTools);
       const badge = ROLE_BADGES[cap.role];
-      agent.addSystemMessage(`Provider switched to ${name}/${defaultModel} ${badge}`);
+      agent.addSystemMessage(`── Provider switched to ${name}/${defaultModel} ${badge} ──`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       agent.addSystemMessage(`Failed to switch provider: ${msg}`);

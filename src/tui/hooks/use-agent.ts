@@ -141,11 +141,19 @@ export function useAgent({ model, systemPrompt, tools }: UseAgentOptions): UseAg
 
         case 'done':
           // Finalize: flush streaming text as assistant message
+          // Deduplicate: skip if response matches the last assistant message (prevents visual duplication on model switch)
           if (event.response) {
-            setDisplayMessages((prev) => [
-              ...prev,
-              { id: msgId(), role: 'assistant' as const, content: event.response },
-            ]);
+            setDisplayMessages((prev) => {
+              const lastAssistant = [...prev].reverse().find(m => m.role === 'assistant');
+              if (lastAssistant && lastAssistant.content === event.response) {
+                // Already shown — skip duplicate
+                return prev;
+              }
+              return [
+                ...prev,
+                { id: msgId(), role: 'assistant' as const, content: event.response },
+              ];
+            });
           }
           streamRef.current.reset();
           setCurrentTool(null);
