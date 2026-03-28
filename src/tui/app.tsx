@@ -724,7 +724,9 @@ function App({
           items={modelMenuItems}
           onSelect={handleModelMenuSelect}
           onCancel={handleMenuCancel}
-          legend="[A] Agent (full tools)  [R] Read-only  [C] Chat (no tools)"
+          legend={ko
+            ? '[A] 에이전트 (파일 편집, 셸, Git 전부 가능)  [R] 읽기 전용 (분석만)  [C] 대화만 (도구 없음)'
+            : '[A] Agent (edit, shell, git — full tools)  [R] Read-only (analysis)  [C] Chat only (no tools)'}
         />
       )}
       {menuState === 'provider' && (
