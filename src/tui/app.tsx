@@ -33,6 +33,7 @@ const ROLE_DESC_KO: Record<string, string> = {
   chat: '일반 대화 — 도구 없음, 빠른 응답',
   dev: '코딩 에이전트 — 파일 읽기/쓰기, 셸, git',
   plan: '분석/계획 — 읽기 전용, 수정 불가',
+  super: '만능 모드 — 코딩, 대화, 시스템 관리, 뭐든 가능 🐶',
 };
 
 interface AppProps {

@@ -3,13 +3,13 @@ import { RoleManager } from '../src/roles/role-manager.js';
 import type { RoleDefinition } from '../src/roles/types.js';
 
 describe('RoleManager', () => {
-  it('loads 3 built-in roles on construction', () => {
+  it('loads 4 built-in roles on construction', () => {
     const mgr = new RoleManager();
     const roles = mgr.getAllRoles();
-    expect(roles.length).toBe(3);
+    expect(roles.length).toBe(4);
 
     const ids = roles.map((r) => r.id).sort();
-    expect(ids).toEqual(['chat', 'dev', 'plan']);
+    expect(ids).toEqual(['chat', 'dev', 'plan', 'super']);
   });
 
   it('getRole returns correct role by id', () => {

@@ -15,7 +15,7 @@ export class RoleManager {
   }
 
   loadBuiltInRoles(): void {
-    const builtInFiles = ['chat.json', 'dev.json', 'plan.json'];
+    const builtInFiles = ['chat.json', 'dev.json', 'plan.json', 'super.json'];
     for (const file of builtInFiles) {
       try {
         const filePath = new URL(file, BUILT_IN_DIR).pathname;
