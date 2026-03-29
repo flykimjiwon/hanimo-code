@@ -8,6 +8,7 @@ import type {
 } from './types.js';
 
 import { compactMessages } from './compaction.js';
+import { getModelPricing } from '../providers/model-registry.js';
 
 // Max messages before triggering compaction
 const MAX_CONTEXT_MESSAGES = 40;
@@ -54,11 +55,22 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'mistral-small-latest': { input: 0.1, output: 0.3 },
 };
 
+// Module-level cache for pricing fetched from the OpenRouter registry
+const registryPricingCache = new Map<string, { input: number; output: number }>();
+
+async function warmPricingCache(modelId: string): Promise<void> {
+  if (!modelId || MODEL_PRICING[modelId] || registryPricingCache.has(modelId)) return;
+  const pricing = await getModelPricing(modelId);
+  if (pricing) {
+    registryPricingCache.set(modelId, pricing);
+  }
+}
+
 function estimateCost(
   modelId: string,
   usage: TokenUsage,
 ): { inputCost: number; outputCost: number; totalCost: number } {
-  const pricing = MODEL_PRICING[modelId];
+  const pricing = MODEL_PRICING[modelId] ?? registryPricingCache.get(modelId);
   if (!pricing) {
     return { inputCost: 0, outputCost: 0, totalCost: 0 };
   }
@@ -79,6 +91,10 @@ export async function runAgentLoop(
     onEvent,
     abortSignal,
   } = options;
+
+  // Warm pricing cache for this model
+  const modelId = (model as unknown as { modelId?: string }).modelId ?? '';
+  warmPricingCache(modelId).catch(() => {});
 
   const emit = (event: AgentEvent): void => {
     onEvent?.(event);

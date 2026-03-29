@@ -22,6 +22,7 @@ import type { RoleManager } from '../roles/role-manager.js';
 import type { RoleDefinition } from '../roles/types.js';
 
 import { buildSystemPrompt } from '../core/system-prompt.js';
+import { runAutoLoop } from '../core/auto-loop.js';
 import { SessionStore } from '../session/store.js';
 import { useLeaderKey } from './hooks/use-leader-key.js';
 import { CommandPalette } from './components/command-palette.js';
@@ -242,6 +243,14 @@ function App({
   currentModelRef.current = currentModel;
   toolsEnabledRef.current = toolsEnabled;
 
+  // Track current model instance for auto loop
+  const currentModelInstanceRef = useRef<LanguageModelV1>(modelInstance);
+  const currentSystemPromptRef = useRef(currentSystemPrompt);
+  const currentToolsRef = useRef(effectiveTools);
+  currentModelInstanceRef.current = modelInstance;
+  currentSystemPromptRef.current = currentSystemPrompt;
+  currentToolsRef.current = effectiveTools;
+
   const switchModel = useCallback((name: string) => {
     // Cancel any in-flight request before switching
     if (agent.isLoading) {
@@ -333,6 +342,26 @@ function App({
     saveSession,
     openSessionsMenu: () => setMenuState('sessions'),
     listRecentSessions,
+    sendAutoMessage: (msg: string) => {
+      const model = currentModelInstanceRef.current;
+      const sysPrompt = currentSystemPromptRef.current;
+      const agentTools = currentToolsRef.current ?? {};
+      agentRef.current.addSystemMessage('🔄 Auto mode started...');
+      runAutoLoop({
+        model,
+        systemPrompt: sysPrompt,
+        tools: agentTools,
+        initialMessage: msg,
+        onIteration: (iteration, response) => {
+          agentRef.current.addSystemMessage(`[Auto ${iteration}] ${response.slice(0, 200)}${response.length > 200 ? '...' : ''}`);
+        },
+      }).then((result) => {
+        agentRef.current.addSystemMessage(`✅ Auto mode complete: ${result.iterations} iterations`);
+      }).catch((err: unknown) => {
+        const msg2 = err instanceof Error ? err.message : String(err);
+        agentRef.current.addSystemMessage(`❌ Auto mode error: ${msg2}`);
+      });
+    },
   };
 
   // Input handler: routes to commands or sends as message

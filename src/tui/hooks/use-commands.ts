@@ -33,6 +33,7 @@ export const COMMAND_LIST: CommandInfo[] = [
   { name: 'auto', description: 'Autonomous mode (work until done)', descriptionKo: '자율 모드 (완료까지 자동 실행)' },
   { name: 'search', description: 'Search sessions by keyword', descriptionKo: '세션 키워드 검색' },
   { name: 'diagnostics', description: 'Run tsc/eslint checks', descriptionKo: 'TypeScript/ESLint 진단 실행' },
+  { name: 'skill', description: 'Manage skills', descriptionKo: '스킬 관리' },
 ];
 
 export interface CommandContext {
@@ -55,6 +56,7 @@ export interface CommandContext {
   saveSession?: () => void;
   openSessionsMenu?: () => void;
   listRecentSessions?: () => string;
+  sendAutoMessage?: (msg: string) => void;
 }
 
 export interface CommandResult {
@@ -88,6 +90,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         '  /auto [msg]       Autonomous mode — work until done',
         '  /search [keyword] Search sessions by keyword',
         '  /diagnostics [f]  Run tsc/eslint diagnostics',
+        '  /skill [list|add]  Manage knowledge skills',
         '',
         'Shortcuts:',
         '  Esc               Open menu',
@@ -561,6 +564,28 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         '',
         'Roles: [A] Agent (full tools)  [R] Read-only (assist)  [C] Chat (no tools)',
       ].join('\n'),
+    );
+  },
+
+  skill: (args, ctx) => {
+    const sub = args.trim().toLowerCase();
+    const { loadSkills: _load, getSkillsDir } = require('../../core/skills.js') as typeof import('../../core/skills.js');
+    if (!sub || sub === 'list') {
+      const skills = _load();
+      if (skills.length === 0) {
+        ctx.addSystemMessage(
+          `No skills loaded.\nSkills directory: ${getSkillsDir()}\n\nAdd .md files to that directory to load skills into the system prompt.`,
+        );
+        return;
+      }
+      const lines = skills.map(s => `  ${s.name.padEnd(20)} ${s.path}`);
+      ctx.addSystemMessage(
+        [`Loaded skills (${skills.length}):`, '', ...lines, '', `Skills directory: ${getSkillsDir()}`].join('\n'),
+      );
+      return;
+    }
+    ctx.addSystemMessage(
+      [`Skills management:`, `  /skill        Show loaded skills`, `  /skill list   List skills with paths`, ``, `Skills directory: ${getSkillsDir()}`].join('\n'),
     );
   },
 };

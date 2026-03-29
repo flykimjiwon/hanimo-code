@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { RoleDefinition } from '../roles/types.js';
 import { loadGlobalInstructions } from './instructions.js';
+import { loadSkills, buildSkillsPrompt } from './skills.js';
 
 export interface ProjectContext {
   cwd: string;
@@ -61,6 +62,9 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
     ? `\n\n## User Instructions\n${globalInstructions}`
     : '';
 
+  const skills = loadSkills();
+  const skillsSection = buildSkillsPrompt(skills);
+
   return `You are modol, a terminal-based AI coding assistant.
 
 ## Capabilities
@@ -88,5 +92,5 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 - Current time: ${new Date().toISOString()}
 ${gitInfo}
 
-When referencing files, use paths relative to the working directory.${globalSection}${projectSection}${roleSection}`;
+When referencing files, use paths relative to the working directory.${globalSection}${projectSection}${roleSection}${skillsSection}`;
 }
