@@ -26,6 +26,7 @@ export async function main(): Promise<void> {
     .option('-w, --workers <n>', 'Number of parallel workers', parseInt)
     .option('--resume [sessionId]', 'Resume a session')
     .option('--text', 'Use lightweight text mode (default is TUI)')
+    .option('--tui', 'Use fullscreen TUI mode (default)')
     .option('--role <id>', 'Active role (chat, dev, plan, or custom)')
     .option('--offline', 'Force offline mode (disable online-only MCP servers)')
     .option('--list-sessions', 'List saved sessions')
