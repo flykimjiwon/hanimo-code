@@ -76,12 +76,16 @@ export async function needsOnboarding(): Promise<boolean> {
 export async function runOnboarding(): Promise<void> {
   const rl = createInterface({ input: stdin, output: stdout });
 
-  // Ctrl+C during onboarding → clean exit
-  process.on('SIGINT', () => {
+  // Ctrl+C / Ctrl+Break during onboarding → clean exit
+  const exitHandler = (): void => {
     console.log('\n  Bye!');
     rl.close();
     process.exit(0);
-  });
+  };
+  process.on('SIGINT', exitHandler);
+  if (process.platform === 'win32') {
+    process.on('SIGBREAK', exitHandler);
+  }
 
   console.log();
   console.log('  ╔══════════════════════════════════════╗');

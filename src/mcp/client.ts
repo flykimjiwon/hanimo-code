@@ -18,8 +18,17 @@ export class McpClient {
 
   async connect(config: McpServerConfig): Promise<void> {
     if (config.command) {
+      const cmd = config.command;
+      // On Windows, bare command names (npx, uvx) need .cmd extension
+      // StdioClientTransport uses child_process.spawn which doesn't resolve .cmd
+      const command = process.platform === 'win32'
+        && !cmd.includes('\\')
+        && !cmd.includes('/')
+        && !['.cmd', '.exe', '.bat'].some(e => cmd.endsWith(e))
+        ? `${cmd}.cmd`
+        : cmd;
       this.transport = new StdioClientTransport({
-        command: config.command,
+        command,
         args: config.args,
         env: config.env,
       });

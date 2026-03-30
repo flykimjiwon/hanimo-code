@@ -9,18 +9,21 @@ const READ_ONLY_TOOLS = new Set(['read_file', 'glob_search', 'grep_search', 'git
 
 // Paths that must never be read or written by the LLM
 const SENSITIVE_PATHS = [
-  /\.ssh\//,
-  /\.gnupg\//,
-  /\.aws\//,
+  /\.ssh[/\\]/,
+  /\.gnupg[/\\]/,
+  /\.aws[/\\]/,
   /\.env($|\.)/,
   /credentials/i,
-  /\.kube\/config/,
+  /\.kube[/\\]config/,
   /\.npmrc$/,
   /\.netrc$/,
   /id_rsa/,
   /id_ed25519/,
   /\.pem$/,
   /\.key$/,
+  // Windows-specific credential locations
+  /AppData[/\\]Roaming[/\\]\.aws/i,
+  /AppData[/\\]Roaming[/\\]npm[/\\]\.npmrc/i,
 ];
 
 /**

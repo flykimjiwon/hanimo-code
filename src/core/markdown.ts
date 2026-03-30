@@ -37,6 +37,8 @@ const BASH_KEYWORDS = new Set([
   'case', 'esac', 'function', 'return', 'exit', 'export', 'source',
   'local', 'readonly', 'declare', 'set', 'unset', 'echo', 'cd', 'ls',
   'grep', 'sed', 'awk', 'cat', 'mkdir', 'rm', 'cp', 'mv', 'chmod',
+  // PowerShell / Windows equivalents
+  'dir', 'type', 'findstr', 'icacls', 'copy', 'del', 'move', 'md',
 ]);
 
 const BUILTIN_VALUES = new Set([
@@ -48,7 +50,7 @@ function getKeywords(lang: string): Set<string> | null {
   const l = lang.toLowerCase();
   if (['javascript', 'js', 'typescript', 'ts', 'jsx', 'tsx'].includes(l)) return JS_KEYWORDS;
   if (['python', 'py'].includes(l)) return PYTHON_KEYWORDS;
-  if (['bash', 'sh', 'zsh', 'shell'].includes(l)) return BASH_KEYWORDS;
+  if (['bash', 'sh', 'zsh', 'shell', 'powershell', 'ps1', 'cmd', 'bat'].includes(l)) return BASH_KEYWORDS;
   return null;
 }
 

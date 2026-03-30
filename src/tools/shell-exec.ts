@@ -46,6 +46,11 @@ const DANGEROUS_PATTERNS: RegExp[] = [
   /\bpowershell\b.*-enc/i,
   /Invoke-Expression/i,
   /\bSet-ExecutionPolicy\b.*Unrestricted/i,
+  // Additional Windows patterns
+  /\brd\b.*\/s.*\/q/i,
+  /\btakeown\b.*\/f/i,
+  /\bbcdedit\b/i,
+  /\bRemove-Item\b.*-Recurse.*-Force/i,
 ];
 
 export function isDangerous(command: string): string | null {
