@@ -30,6 +30,14 @@ export const McpServerConfigSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
 });
 
+export const CustomProviderSchema = z.object({
+  name: z.string().describe('Display name (e.g. "my-server")'),
+  baseURL: z.string().describe('API endpoint URL'),
+  apiKey: z.string().optional().describe('API key (optional for local servers)'),
+  models: z.array(z.string()).default([]).describe('Available model names'),
+  protocol: z.enum(['openai', 'anthropic']).default('openai').describe('API protocol'),
+});
+
 export const ConfigSchema = z.object({
   provider: z
     .enum(['openai', 'anthropic', 'google', 'deepseek', 'groq', 'together', 'openrouter', 'fireworks', 'mistral', 'glm', 'ollama', 'vllm', 'lmstudio', 'custom'])
@@ -68,9 +76,11 @@ export const ConfigSchema = z.object({
     })
     .default({}),
   endpoints: z.array(EndpointSchema).default([]),
+  customProviders: z.array(CustomProviderSchema).default([]),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
 export type ProviderConfigEntry = z.infer<typeof ProviderConfigSchema>;
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
 export type Endpoint = z.infer<typeof EndpointSchema>;
+export type CustomProvider = z.infer<typeof CustomProviderSchema>;

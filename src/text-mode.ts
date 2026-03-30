@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { LanguageModelV1, ToolSet } from 'ai';
 import { runAgentLoop } from './core/agent-loop.js';
-import { getModel, clearProviderCache } from './providers/registry.js';
+import { getModel, clearProviderCache, getCustomProviderNames, getModelForCustomProvider } from './providers/registry.js';
 import { loadConfig } from './config/loader.js';
 import { PROVIDER_NAMES, LOCAL_PROVIDERS, KNOWN_MODELS } from './providers/types.js';
 import { wrapToolsWithPermission } from './core/permission-gate.js';
@@ -97,12 +97,16 @@ function selectMenu(
     draw(false);
 
     const wasRaw = stdin.isRaw;
-    stdin.setRawMode(true);
+    if (typeof stdin.setRawMode === 'function') {
+      stdin.setRawMode(true);
+    }
     stdin.resume();
 
     function cleanup(): void {
       stdin.removeListener('data', onKey);
-      stdin.setRawMode(wasRaw ?? false);
+      if (typeof stdin.setRawMode === 'function') {
+        stdin.setRawMode(wasRaw ?? false);
+      }
       if (drawnLines > 0) {
         process.stdout.write(`\x1b[${drawnLines}A\x1b[J`);
       }
@@ -422,16 +426,24 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   }
 
   async function switchProvider(newProvider: string, newModel?: string): Promise<void> {
-    if (!PROVIDER_NAMES.includes(newProvider as ProviderName)) {
+    const customNames = getCustomProviderNames();
+    if (!PROVIDER_NAMES.includes(newProvider as ProviderName) && !customNames.includes(newProvider)) {
       console.log(`  ${red('✗')} 알 수 없는 프로바이더: ${newProvider}`);
       return;
     }
     try {
       const config = await loadConfig();
-      const providerConfig = config.providers?.[newProvider] ?? {};
       const modelId = newModel ?? config.model;
       clearProviderCache();
-      currentModelInstance = getModel(newProvider as ProviderName, modelId, providerConfig);
+
+      // Check custom providers first
+      const customModel = getModelForCustomProvider(newProvider, modelId);
+      if (customModel) {
+        currentModelInstance = customModel;
+      } else {
+        const providerConfig = config.providers?.[newProvider] ?? {};
+        currentModelInstance = getModel(newProvider as ProviderName, modelId, providerConfig);
+      }
       currentProvider = newProvider;
       currentModel = modelId;
       toolsEnabled = !LOCAL_PROVIDERS.has(newProvider as ProviderName);
@@ -470,11 +482,19 @@ export async function startTextMode(options: TextModeOptions): Promise<void> {
   }
 
   async function openProviderMenu(): Promise<void> {
-    const items = PROVIDER_NAMES.map(p => ({
-      label: `${p}${LOCAL_PROVIDERS.has(p) ? dim(' (로컬)') : ''}`,
-      value: p,
-      active: p === currentProvider,
-    }));
+    const customNames = getCustomProviderNames();
+    const items = [
+      ...PROVIDER_NAMES.map(p => ({
+        label: `${p}${LOCAL_PROVIDERS.has(p) ? dim(' (로컬)') : ''}`,
+        value: p,
+        active: p === currentProvider,
+      })),
+      ...customNames.map(n => ({
+        label: `${n} ${dim('(custom)')}`,
+        value: n,
+        active: n === currentProvider,
+      })),
+    ];
     const picked = await selectMenu('프로바이더 선택', items);
     if (picked) await switchProvider(picked);
   }

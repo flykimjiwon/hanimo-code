@@ -26,4 +26,5 @@ export const DEFAULT_CONFIG: Config = {
     mode: 'auto',
   },
   endpoints: [],
+  customProviders: [],
 };

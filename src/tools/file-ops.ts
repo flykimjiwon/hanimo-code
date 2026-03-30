@@ -18,7 +18,7 @@ export const readFileTool = tool({
       if (blocked) return { success: false, error: blocked };
 
       const raw = await readFile(path, 'utf-8');
-      const allLines = raw.split('\n');
+      const allLines = raw.split(/\r?\n/);
 
       const start = startLine ? Math.max(1, startLine) : 1;
       const end = endLine ? Math.min(allLines.length, endLine) : allLines.length;
@@ -54,7 +54,7 @@ export const writeFileTool = tool({
 
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, content, 'utf-8');
-      const lineCount = content.split('\n').length;
+      const lineCount = content.split(/\r?\n/).length;
       return {
         success: true,
         path,

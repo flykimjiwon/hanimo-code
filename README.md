@@ -25,13 +25,28 @@ modol is a lightweight, terminal-based AI coding agent. Think Claude Code or Cur
 
 ## Quick Start
 
-### Prerequisites
+### Option A: Download Binary (no Node.js required)
+
+Download the latest release for your OS from [GitHub Releases](https://github.com/flykimjiwon/dev_anywhere/releases):
+
+| OS | File | Install |
+|----|------|---------|
+| **macOS (Apple Silicon)** | `modol-macos-arm64` | `chmod +x modol-macos-arm64 && mv modol-macos-arm64 /usr/local/bin/modol` |
+| **Linux (x64)** | `modol-linux-x64` | `chmod +x modol-linux-x64 && sudo mv modol-linux-x64 /usr/local/bin/modol` |
+| **Windows (x64)** | `modol-windows-x64.exe` | Add to PATH or run directly |
+
+Then just run:
+```bash
+modol
+```
+
+### Option B: Install from source (Node.js required)
+
+#### Prerequisites
 
 - **Node.js** >= 20.0.0
 - **npm** (comes with Node.js)
 - (Optional) **Ollama** for local models — [ollama.com](https://ollama.com)
-
-### Install
 
 ```bash
 # Clone
@@ -40,23 +55,12 @@ cd dev_anywhere
 
 # Install dependencies
 npm install
-```
 
-### Run
-
-```bash
-# Development mode (recommended for first run)
+# Run in dev mode
 npm run dev
 
-# Or directly
-npx tsx src/cli.ts
-```
-
-### Global CLI install
-
-```bash
+# Or install globally
 npm link
-# Now you can run from anywhere:
 modol
 ```
 
@@ -65,13 +69,14 @@ modol
 ```bash
 # 1. Install Ollama
 brew install ollama   # macOS
-# or visit https://ollama.com
+curl -fsSL https://ollama.com/install.sh | sh   # Linux
+# Windows: download from https://ollama.com
 
 # 2. Pull a model
 ollama pull qwen3:8b
 
 # 3. Start modol
-npm run dev -- --provider ollama --model qwen3:8b
+modol --provider ollama --model qwen3:8b
 ```
 
 ### First run with OpenAI
@@ -81,7 +86,7 @@ npm run dev -- --provider ollama --model qwen3:8b
 export OPENAI_API_KEY="sk-..."
 
 # Start modol
-npm run dev -- --provider openai --model gpt-4o-mini
+modol --provider openai --model gpt-4o-mini
 ```
 
 ---
@@ -236,6 +241,11 @@ Supports both **stdio** and **SSE** transports. Servers tagged `onlineOnly` are 
 
 ### Config file: `~/.modol/config.json`
 
+Copy the example config to get started:
+```bash
+cp config.example.jsonc ~/.modol/config.json
+```
+
 ```json
 {
   "provider": "ollama",
@@ -256,6 +266,30 @@ Supports both **stdio** and **SSE** transports. Servers tagged `onlineOnly` are 
   }
 }
 ```
+
+### Custom Providers
+
+Connect any OpenAI-compatible API server by adding to `customProviders` in your config:
+
+```json
+{
+  "customProviders": [
+    {
+      "name": "my-gpu-server",
+      "baseURL": "http://192.168.1.100:8000/v1",
+      "models": ["llama-3.1-70b", "qwen2.5-coder-32b"]
+    },
+    {
+      "name": "my-cloud-api",
+      "baseURL": "https://api.example.com/v1",
+      "apiKey": "your-key",
+      "models": ["model-a", "model-b"]
+    }
+  ]
+}
+```
+
+Custom providers appear in the `/provider` menu and support model discovery. See `config.example.jsonc` for more examples.
 
 ### Project instructions: `.modol.md`
 

@@ -23,8 +23,8 @@ async function runTsc(cwd: string, file?: string): Promise<string> {
   }
 
   const args = file
-    ? `${tscBin} --noEmit --pretty false "${file}" 2>&1 || true`
-    : `${tscBin} --noEmit --pretty false 2>&1 || true`;
+    ? `${tscBin} --noEmit --pretty false "${file}"`
+    : `${tscBin} --noEmit --pretty false`;
 
   try {
     const result = await execaCommand(args, {
@@ -55,7 +55,7 @@ async function runEslint(cwd: string, file?: string): Promise<string> {
   }
 
   const target = file ? `"${file}"` : '.';
-  const args = `${eslintBin} ${target} --format compact --no-error-on-unmatched-pattern 2>&1 || true`;
+  const args = `${eslintBin} ${target} --format compact --no-error-on-unmatched-pattern`;
 
   try {
     const result = await execaCommand(args, {

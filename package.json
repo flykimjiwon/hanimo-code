@@ -4,7 +4,7 @@
   "description": "modol — cute terminal-based AI coding assistant",
   "type": "module",
   "bin": {
-    "modol": "./bin/modol"
+    "modol": "./bin/modol.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +17,9 @@
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
-    "start": "node dist/cli.js"
+    "start": "node dist/cli.js",
+    "bundle": "node scripts/build-binary.mjs",
+    "build:binary": "npm run bundle && bash scripts/build-sea.sh"
   },
   "keywords": [
     "ai",
@@ -53,6 +55,8 @@
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.57.2",
+    "esbuild": "^0.24.0",
+    "postject": "^1.0.0-alpha.6",
     "vitest": "^2.0.0"
   }
 }

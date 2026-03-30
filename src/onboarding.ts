@@ -111,6 +111,9 @@ export async function runOnboarding(): Promise<void> {
   console.log('   13) LM Studio    (데스크톱 LLM)');
   console.log('   14) Custom       (OpenAI 호환 엔드포인트)');
   console.log();
+  console.log('  ── Custom Provider (config.json에서 추가) ──');
+  console.log('   *) config.example.jsonc 참고 — customProviders 배열에 직접 추가');
+  console.log();
 
   const choice = await rl.question('  프로바이더 선택 [1-14] (기본: 1): ');
   const providerChoice = choice.trim() || '1';

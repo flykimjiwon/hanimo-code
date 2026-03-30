@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { loadConfig } from './config/loader.js';
 import { SessionStore } from './session/store.js';
-import { getModel } from './providers/registry.js';
+import { getModel, registerCustomProviders, getModelForCustomProvider, getCustomProviderNames } from './providers/registry.js';
 import { buildSystemPrompt } from './core/system-prompt.js';
 import { createToolRegistry, mergeToolSets } from './tools/registry.js';
 import { startTextMode } from './text-mode.js';
@@ -104,6 +104,11 @@ export async function main(): Promise<void> {
       }
 
       const config = await loadConfig();
+
+      // Register custom providers from config
+      if (config.customProviders.length > 0) {
+        registerCustomProviders(config.customProviders);
+      }
 
       // Apply CLI overrides (highest priority)
       if (options.provider) {
@@ -219,11 +224,10 @@ export async function main(): Promise<void> {
 
       // Prepare model + tools
       const providerConfig = config.providers?.[config.provider] ?? {};
-      const modelInstance = getModel(
-        config.provider as ProviderName,
-        config.model,
-        providerConfig,
-      );
+      const customProviderNames = getCustomProviderNames();
+      const modelInstance = customProviderNames.includes(config.provider)
+        ? getModelForCustomProvider(config.provider, config.model)!
+        : getModel(config.provider as ProviderName, config.model, providerConfig);
       const systemPrompt = buildSystemPrompt({
         cwd: process.cwd(),
         platform: process.platform,

@@ -3,7 +3,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { ProviderName, ProviderConfig } from './types.js';
-import { PROVIDER_BASE_URLS, LOCAL_PROVIDERS } from './types.js';
+import { PROVIDER_BASE_URLS, LOCAL_PROVIDERS, KNOWN_MODELS } from './types.js';
+import type { CustomProvider } from '../config/schema.js';
 
 interface ProviderInstance {
   getModel(modelId: string): LanguageModelV1;
@@ -113,4 +114,56 @@ export function getModel(
 
 export function clearProviderCache(): void {
   providerCache.clear();
+}
+
+// Custom provider registry — loaded from config.customProviders
+const customProviderRegistry = new Map<string, CustomProvider>();
+
+export function registerCustomProviders(providers: CustomProvider[]): void {
+  customProviderRegistry.clear();
+  for (const cp of providers) {
+    customProviderRegistry.set(cp.name, cp);
+    // Merge models into KNOWN_MODELS for discovery
+    if (cp.models.length > 0) {
+      const existing = KNOWN_MODELS[cp.name] ?? [];
+      KNOWN_MODELS[cp.name] = [...new Set([...existing, ...cp.models])];
+    }
+  }
+}
+
+export function getCustomProvider(name: string): CustomProvider | undefined {
+  return customProviderRegistry.get(name);
+}
+
+export function getCustomProviderNames(): string[] {
+  return Array.from(customProviderRegistry.keys());
+}
+
+export function getModelForCustomProvider(
+  providerName: string,
+  modelId: string,
+): LanguageModelV1 | null {
+  const cp = customProviderRegistry.get(providerName);
+  if (!cp) return null;
+
+  const config: ProviderConfig = {
+    baseURL: cp.baseURL,
+    apiKey: cp.apiKey,
+  };
+
+  if (cp.protocol === 'anthropic') {
+    const instance = createAnthropic({
+      apiKey: config.apiKey ?? 'not-needed',
+      baseURL: config.baseURL,
+    });
+    return instance(modelId);
+  }
+
+  // Default: OpenAI-compatible
+  const instance = createOpenAI({
+    apiKey: config.apiKey ?? 'not-needed',
+    baseURL: config.baseURL,
+    compatibility: 'compatible',
+  });
+  return instance(modelId);
 }

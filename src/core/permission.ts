@@ -29,10 +29,11 @@ const SENSITIVE_PATHS = [
  */
 export function checkPathSandbox(filePath: string, cwd: string): string | null {
   const resolved = resolve(cwd, filePath);
+  const normalized = resolved.replace(/\\/g, '/'); // Windows backslash → forward slash
 
   // Block sensitive file patterns
   for (const pattern of SENSITIVE_PATHS) {
-    if (pattern.test(resolved)) {
+    if (pattern.test(normalized)) {
       return `Access denied: "${filePath}" matches a sensitive file pattern`;
     }
   }

@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import type { RoleDefinition } from './types.js';
 import { createToolSetFromList } from '../tools/registry.js';
@@ -18,7 +19,7 @@ export class RoleManager {
     const builtInFiles = ['chat.json', 'dev.json', 'plan.json', 'super.json'];
     for (const file of builtInFiles) {
       try {
-        const filePath = new URL(file, BUILT_IN_DIR).pathname;
+        const filePath = fileURLToPath(new URL(file, BUILT_IN_DIR));
         const content = readFileSync(filePath, 'utf-8');
         const role = JSON.parse(content) as RoleDefinition;
         this.roles.set(role.id, role);

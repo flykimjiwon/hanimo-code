@@ -25,13 +25,28 @@ modol은 가벼운 터미널 기반 AI 코딩 에이전트입니다. Claude Code
 
 ## 빠른 시작
 
-### 사전 요구사항
+### 방법 A: 바이너리 다운로드 (Node.js 불필요)
+
+[GitHub Releases](https://github.com/flykimjiwon/dev_anywhere/releases)에서 OS에 맞는 파일을 다운로드:
+
+| OS | 파일 | 설치 |
+|----|------|------|
+| **macOS (Apple Silicon)** | `modol-macos-arm64` | `chmod +x modol-macos-arm64 && mv modol-macos-arm64 /usr/local/bin/modol` |
+| **Linux (x64)** | `modol-linux-x64` | `chmod +x modol-linux-x64 && sudo mv modol-linux-x64 /usr/local/bin/modol` |
+| **Windows (x64)** | `modol-windows-x64.exe` | PATH에 추가하거나 직접 실행 |
+
+설치 후:
+```bash
+modol
+```
+
+### 방법 B: 소스에서 설치 (Node.js 필요)
+
+#### 사전 요구사항
 
 - **Node.js** >= 20.0.0
 - **npm** (Node.js에 포함)
 - (선택) **Ollama** 로컬 모델용 — [ollama.com](https://ollama.com)
-
-### 설치
 
 ```bash
 # 클론
@@ -40,23 +55,12 @@ cd dev_anywhere
 
 # 의존성 설치
 npm install
-```
 
-### 실행
-
-```bash
-# 개발 모드 (첫 실행 시 추천)
+# 개발 모드 실행
 npm run dev
 
-# 또는 직접 실행
-npx tsx src/cli.ts
-```
-
-### 글로벌 CLI 설치
-
-```bash
+# 또는 글로벌 설치
 npm link
-# 이제 어디서든 실행 가능:
 modol
 ```
 
@@ -65,13 +69,14 @@ modol
 ```bash
 # 1. Ollama 설치
 brew install ollama   # macOS
-# 또는 https://ollama.com 방문
+curl -fsSL https://ollama.com/install.sh | sh   # Linux
+# Windows: https://ollama.com 에서 다운로드
 
 # 2. 모델 다운로드
 ollama pull qwen3:8b
 
 # 3. modol 시작
-npm run dev -- --provider ollama --model qwen3:8b
+modol --provider ollama --model qwen3:8b
 ```
 
 ### OpenAI로 첫 실행
@@ -81,7 +86,7 @@ npm run dev -- --provider ollama --model qwen3:8b
 export OPENAI_API_KEY="sk-..."
 
 # modol 시작
-npm run dev -- --provider openai --model gpt-4o-mini
+modol --provider openai --model gpt-4o-mini
 ```
 
 ---
@@ -236,6 +241,11 @@ modol은 Model Context Protocol (MCP)로 도구를 확장할 수 있습니다:
 
 ### 설정 파일: `~/.modol/config.json`
 
+예시 설정 파일을 복사해서 시작:
+```bash
+cp config.example.jsonc ~/.modol/config.json
+```
+
 ```json
 {
   "provider": "ollama",
@@ -256,6 +266,30 @@ modol은 Model Context Protocol (MCP)로 도구를 확장할 수 있습니다:
   }
 }
 ```
+
+### Custom Provider (직접 추가)
+
+OpenAI 호환 API 서버라면 어디든 연결 가능합니다. 설정 파일의 `customProviders`에 추가:
+
+```json
+{
+  "customProviders": [
+    {
+      "name": "my-gpu-server",
+      "baseURL": "http://192.168.1.100:8000/v1",
+      "models": ["llama-3.1-70b", "qwen2.5-coder-32b"]
+    },
+    {
+      "name": "my-cloud-api",
+      "baseURL": "https://api.example.com/v1",
+      "apiKey": "your-key",
+      "models": ["model-a", "model-b"]
+    }
+  ]
+}
+```
+
+Custom provider는 `/provider` 메뉴에 자동으로 나타납니다. 더 많은 예시는 `config.example.jsonc`를 참고하세요.
 
 ### 프로젝트 지시사항: `.modol.md`
 

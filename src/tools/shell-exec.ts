@@ -37,6 +37,15 @@ const DANGEROUS_PATTERNS: RegExp[] = [
   />\s*\/etc\//,
   // History/credential exfiltration
   /\bcat\b.*\.(bash_history|ssh|aws|env)/,
+  // Windows-specific dangerous patterns
+  /\bdel\b.*\/s.*\/q/i,
+  /\brmdir\b.*\/s/i,
+  /\bformat\b\s+[a-z]:/i,
+  /\bnet\b\s+user/i,
+  /\breg\b\s+(delete|add)/i,
+  /\bpowershell\b.*-enc/i,
+  /Invoke-Expression/i,
+  /\bSet-ExecutionPolicy\b.*Unrestricted/i,
 ];
 
 export function isDangerous(command: string): string | null {
