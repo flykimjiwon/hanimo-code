@@ -672,10 +672,11 @@ function App({
         try {
           const configPath = joinPath(homedir(), '.hanimo', 'config.json');
           try { unlinkSync(configPath); } catch { /* already gone */ }
-          agent.addSystemMessage(ko
-            ? '✅ 설정이 초기화되었습니다. hanimo를 재시작하세요.'
-            : '✅ All settings reset to defaults. Restart hanimo to apply.',
+          console.log(ko
+            ? '\n  ✅ 설정이 초기화되었습니다. hanimo를 재시작하면 온보딩이 시작됩니다.'
+            : '\n  ✅ Config reset. Restart hanimo to run onboarding.',
           );
+          process.exit(0);
         } catch (err: unknown) {
           agent.addSystemMessage(`❌ ${err instanceof Error ? err.message : String(err)}`);
         }
