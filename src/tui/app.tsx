@@ -21,6 +21,9 @@ import { createReadOnlyTools } from '../tools/registry.js';
 import type { RoleManager } from '../roles/role-manager.js';
 import type { RoleDefinition } from '../roles/types.js';
 
+import { writeFileSync } from 'node:fs';
+import { join as joinPath } from 'node:path';
+import { homedir } from 'node:os';
 import { buildSystemPrompt } from '../core/system-prompt.js';
 import { runAutoLoop } from '../core/auto-loop.js';
 import { SessionStore } from '../session/store.js';
@@ -668,11 +671,8 @@ function App({
         break;
       case 'reset-config': {
         try {
-          const fs = require('node:fs');
-          const path = require('node:path');
-          const os = require('node:os');
-          const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
-          fs.writeFileSync(configPath, JSON.stringify({ provider: 'ollama', model: 'qwen3:8b' }, null, 2) + '\n', { mode: 0o600 });
+          const configPath = joinPath(homedir(), '.hanimo', 'config.json');
+          writeFileSync(configPath, JSON.stringify({ provider: 'ollama', model: 'qwen3:8b' }, null, 2) + '\n', { mode: 0o600 });
           agent.addSystemMessage(ko
             ? '✅ 설정이 초기화되었습니다. hanimo를 재시작하세요.'
             : '✅ All settings reset to defaults. Restart hanimo to apply.',

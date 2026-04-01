@@ -1,4 +1,7 @@
 import { useCallback, useRef } from 'react';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 import {
   loadGlobalInstructions,
   saveGlobalInstructions,
@@ -6,6 +9,7 @@ import {
   clearGlobalInstructions,
   getInstructionsPath,
 } from '../../core/instructions.js';
+import { loadSkills, getSkillsDir } from '../../core/skills.js';
 import { KNOWN_MODELS, PROVIDER_NAMES } from '../../providers/types.js';
 import { THEME_PRESETS, getThemeById } from '../themes.js';
 import { setTheme } from '../theme.js';
@@ -317,11 +321,8 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
 
     if (modeId === 'show') {
       try {
-        const fs = require('node:fs');
-        const path = require('node:path');
-        const os = require('node:os');
-        const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
-        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const configPath = join(homedir(), '.hanimo', 'config.json');
+        const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
         const currentMode = cfg.modePreset ?? 'auto';
         const assignments = cfg.modeAssignments ?? {};
         const lines = [
@@ -347,16 +348,13 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
 
     // Save mode selection to config and trigger model reassignment
     try {
-      const fs = require('node:fs');
-      const path = require('node:path');
-      const os = require('node:os');
-      const configDir = path.join(os.homedir(), '.hanimo');
-      fs.mkdirSync(configDir, { recursive: true });
-      const configPath = path.join(configDir, 'config.json');
+      const configDir = join(homedir(), '.hanimo');
+      mkdirSync(configDir, { recursive: true });
+      const configPath = join(configDir, 'config.json');
       let cfg: Record<string, unknown> = {};
-      try { cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
+      try { cfg = JSON.parse(readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
       cfg.modePreset = modeId;
-      fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
+      writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
 
       const icons: Record<string, string> = { auto: '🐶', turbo: '🚀', balanced: '⚖️', eco: '🌱' };
       const names: Record<string, string> = { auto: '자동', turbo: '터보', balanced: '균형', eco: '효율' };
@@ -395,11 +393,8 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
 
     if (sub === 'list') {
       try {
-        const fs = require('node:fs');
-        const path = require('node:path');
-        const os = require('node:os');
-        const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
-        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const configPath = join(homedir(), '.hanimo', 'config.json');
+        const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
         const eps = cfg.endpoints ?? [];
         if (eps.length === 0) {
           ctx.addSystemMessage('No endpoints registered.\nUse /endpoint add <name> <provider> <url> to add one.');
@@ -424,14 +419,11 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         return;
       }
       try {
-        const fs = require('node:fs');
-        const path = require('node:path');
-        const os = require('node:os');
-        const configDir = path.join(os.homedir(), '.hanimo');
-        fs.mkdirSync(configDir, { recursive: true });
-        const configPath = path.join(configDir, 'config.json');
+        const configDir = join(homedir(), '.hanimo');
+        mkdirSync(configDir, { recursive: true });
+        const configPath = join(configDir, 'config.json');
         let cfg: Record<string, unknown> = {};
-        try { cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
+        try { cfg = JSON.parse(readFileSync(configPath, 'utf-8')); } catch { /* empty */ }
         const eps = (cfg.endpoints ?? []) as Array<Record<string, unknown>>;
         // Remove existing with same name
         const filtered = eps.filter((e: Record<string, unknown>) => e.name !== name);
@@ -439,7 +431,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         if (apiKey) newEp.apiKey = apiKey;
         filtered.push(newEp);
         cfg.endpoints = filtered;
-        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
+        writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
         ctx.addSystemMessage(`✅ Endpoint "${name}" added (${provider} @ ${url})${apiKey ? ' with API key' : ''}\nRestart hanimo to use new endpoint.`);
       } catch (err: unknown) {
         ctx.addSystemMessage(`❌ Failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -454,11 +446,8 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         return;
       }
       try {
-        const fs = require('node:fs');
-        const path = require('node:path');
-        const os = require('node:os');
-        const configPath = path.join(os.homedir(), '.hanimo', 'config.json');
-        const cfg = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const configPath = join(homedir(), '.hanimo', 'config.json');
+        const cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
         const eps = (cfg.endpoints ?? []) as Array<Record<string, unknown>>;
         const before = eps.length;
         cfg.endpoints = eps.filter((e: Record<string, unknown>) => e.name !== name);
@@ -466,7 +455,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
           ctx.addSystemMessage(`Endpoint "${name}" not found.`);
           return;
         }
-        fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
+        writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
         ctx.addSystemMessage(`✅ Endpoint "${name}" removed.\nRestart hanimo to apply.`);
       } catch (err: unknown) {
         ctx.addSystemMessage(`❌ Failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -569,9 +558,8 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
 
   skill: (args, ctx) => {
     const sub = args.trim().toLowerCase();
-    const { loadSkills: _load, getSkillsDir } = require('../../core/skills.js') as typeof import('../../core/skills.js');
     if (!sub || sub === 'list') {
-      const skills = _load();
+      const skills = loadSkills();
       if (skills.length === 0) {
         ctx.addSystemMessage(
           `No skills loaded.\nSkills directory: ${getSkillsDir()}\n\nAdd .md files to that directory to load skills into the system prompt.`,
