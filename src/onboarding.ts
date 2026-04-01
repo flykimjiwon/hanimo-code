@@ -19,12 +19,11 @@ interface EndpointProbeResult {
   reachable: boolean;
   type: EndpointType;
   models?: string[];
-  suggestion?: string;
   normalizedURL?: string;
 }
 
 /**
- * Normalize a base URL: strip trailing slashes and detect common issues.
+ * Normalize a base URL: strip trailing slashes, deduplicate paths, strip overly specific paths.
  */
 function normalizeBaseURL(url: string): { url: string; warnings: string[] } {
   const warnings: string[] = [];
@@ -36,103 +35,217 @@ function normalizeBaseURL(url: string): { url: string; warnings: string[] } {
     warnings.push('중복된 /v1 경로 제거됨');
   }
 
-  // Warn if user included /chat/completions (should just be base URL)
+  // Strip /chat/completions (user should provide base URL only)
   if (/\/chat\/completions/.test(normalized)) {
     normalized = normalized.replace(/\/chat\/completions.*$/, '');
     warnings.push('/chat/completions 경로 제거됨 (base URL만 필요)');
+  }
+
+  // Strip /api/generate, /api/chat (Ollama-specific paths)
+  if (/\/api\/(generate|chat|tags|show)/.test(normalized)) {
+    normalized = normalized.replace(/\/api\/(generate|chat|tags|show).*$/, '');
+    warnings.push('Ollama API 경로 제거됨 (base URL만 필요)');
+  }
+
+  // Strip /completions, /embeddings etc.
+  if (/\/(completions|embeddings)$/.test(normalized)) {
+    normalized = normalized.replace(/\/(completions|embeddings)$/, '');
+    warnings.push('API 엔드포인트 경로 제거됨 (base URL만 필요)');
   }
 
   return { url: normalized, warnings };
 }
 
 /**
- * Probe an endpoint to determine what type of server is running.
- * Tries both Ollama native API and OpenAI-compatible API.
+ * Generate URL variants to try when the given URL doesn't work.
+ * Returns unique candidate URLs ordered by likelihood.
  */
-async function probeEndpoint(baseURL: string, timeoutMs = 5000): Promise<EndpointProbeResult> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+function generateURLVariants(baseURL: string): string[] {
+  const variants: string[] = [];
+  const seen = new Set<string>();
 
-  const fetchOpts: RequestInit = {
-    signal: controller.signal,
-    headers: { 'Content-Type': 'application/json' },
+  const add = (url: string): void => {
+    const clean = url.replace(/\/+$/, '');
+    if (!seen.has(clean)) {
+      seen.add(clean);
+      variants.push(clean);
+    }
   };
 
+  // Original
+  add(baseURL);
+
   try {
-    // Extract origin (scheme + host + port) for Ollama native check
     const urlObj = new URL(baseURL);
     const origin = urlObj.origin;
+    const path = urlObj.pathname.replace(/\/+$/, '');
 
-    // 1) Try Ollama native API: GET /api/tags
+    // Try with /v1 appended
+    if (!path.endsWith('/v1')) {
+      add(`${origin}${path}/v1`);
+    }
+
+    // Try without /v1 suffix
+    if (path.endsWith('/v1')) {
+      add(`${origin}${path.slice(0, -3)}`);
+    }
+
+    // Try origin only (no path)
+    if (path && path !== '/') {
+      add(origin);
+      add(`${origin}/v1`);
+    }
+
+    // Try http ↔ https swap
+    if (urlObj.protocol === 'https:') {
+      const httpURL = baseURL.replace('https://', 'http://');
+      add(httpURL);
+      if (!path.endsWith('/v1')) add(`${httpURL}/v1`);
+    } else {
+      const httpsURL = baseURL.replace('http://', 'https://');
+      add(httpsURL);
+      if (!path.endsWith('/v1')) add(`${httpsURL}/v1`);
+    }
+
+    // For common local ports, try alternate ports
+    const localPorts: Record<string, string[]> = {
+      '11434': ['8000', '1234', '8080'],  // Ollama → vLLM, LM Studio, generic
+      '8000': ['11434', '1234', '8080'],   // vLLM → Ollama, LM Studio, generic
+      '1234': ['11434', '8000', '8080'],   // LM Studio → Ollama, vLLM, generic
+    };
+    const altPorts = localPorts[urlObj.port];
+    if (altPorts && (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1')) {
+      for (const port of altPorts) {
+        const alt = `${urlObj.protocol}//${urlObj.hostname}:${port}`;
+        add(alt);
+        add(`${alt}/v1`);
+      }
+    }
+  } catch {
+    // Invalid URL — just return original
+  }
+
+  return variants;
+}
+
+/**
+ * Quick probe: try a single fetch with short timeout.
+ * Returns the endpoint type if reachable, null otherwise.
+ */
+async function quickProbe(
+  url: string,
+  timeoutMs = 3000,
+): Promise<EndpointProbeResult | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const opts: RequestInit = { signal: controller.signal };
+
+  try {
+    const origin = new URL(url).origin;
+
+    // Try Ollama native: GET /api/tags
     try {
-      const ollamaResp = await fetch(`${origin}/api/tags`, fetchOpts);
-      if (ollamaResp.ok) {
-        const data = await ollamaResp.json() as { models?: Array<{ name: string }> };
-        const models = data.models?.map(m => m.name) ?? [];
+      const resp = await fetch(`${origin}/api/tags`, opts);
+      if (resp.ok) {
+        const data = await resp.json() as { models?: Array<{ name: string }> };
         clearTimeout(timer);
         return {
           reachable: true,
           type: 'ollama',
-          models,
+          models: data.models?.map(m => m.name) ?? [],
           normalizedURL: `${origin}/v1`,
         };
       }
-    } catch {
-      // Not Ollama native — continue
+    } catch { /* continue */ }
+
+    // Try OpenAI-compatible: GET /models (from various base paths)
+    const modelsURLs = [
+      url.endsWith('/v1') ? `${url}/models` : null,
+      `${url}/v1/models`,
+      `${url}/models`,
+    ].filter(Boolean) as string[];
+
+    for (const modelsURL of modelsURLs) {
+      try {
+        const resp = await fetch(modelsURL, opts);
+        if (resp.ok) {
+          const data = await resp.json() as { data?: Array<{ id: string }> };
+          clearTimeout(timer);
+          // Derive the correct base URL from the successful models URL
+          const normalizedURL = modelsURL.replace(/\/models$/, '');
+          return {
+            reachable: true,
+            type: 'openai-compatible',
+            models: data.data?.map(m => m.id) ?? [],
+            normalizedURL: normalizedURL.endsWith('/v1') ? normalizedURL : `${normalizedURL}/v1`,
+          };
+        }
+      } catch { /* continue */ }
     }
 
-    // 2) Try OpenAI-compatible: GET {baseURL}/models
-    const modelsURL = baseURL.endsWith('/v1')
-      ? `${baseURL}/models`
-      : `${baseURL}/v1/models`;
-
+    // Server reachable but API unknown
     try {
-      const oaiResp = await fetch(modelsURL, fetchOpts);
-      if (oaiResp.ok) {
-        const data = await oaiResp.json() as { data?: Array<{ id: string }> };
-        const models = data.data?.map(m => m.id) ?? [];
-        const normalizedURL = baseURL.endsWith('/v1') ? baseURL : `${baseURL}/v1`;
+      const resp = await fetch(origin, { ...opts, method: 'HEAD' });
+      if (resp.ok || resp.status < 500) {
         clearTimeout(timer);
-        return {
-          reachable: true,
-          type: 'openai-compatible',
-          models,
-          normalizedURL,
-        };
+        return { reachable: true, type: 'unknown' };
       }
-    } catch {
-      // Not OpenAI-compatible either
-    }
-
-    // 3) Server responds but neither API matched — try a simple HEAD on origin
-    try {
-      const headResp = await fetch(origin, { ...fetchOpts, method: 'HEAD' });
-      clearTimeout(timer);
-      return {
-        reachable: headResp.ok || headResp.status < 500,
-        type: 'unknown',
-      };
-    } catch {
-      // Fall through
-    }
+    } catch { /* continue */ }
 
     clearTimeout(timer);
-    return { reachable: false, type: 'unknown' };
+    return null;
   } catch {
     clearTimeout(timer);
-    return { reachable: false, type: 'unknown' };
+    return null;
   }
 }
 
 /**
+ * Try multiple URL variants in sequence, printing progress.
+ * Returns the first successful probe result with its URL.
+ */
+async function probeWithVariants(
+  baseURL: string,
+  timeoutPerAttempt = 3000,
+): Promise<{ result: EndpointProbeResult; url: string } | null> {
+  // First, try the given URL directly
+  const direct = await quickProbe(baseURL, timeoutPerAttempt);
+  if (direct?.reachable) {
+    return { result: direct, url: baseURL };
+  }
+
+  // Generate and try variants
+  const variants = generateURLVariants(baseURL);
+  // Skip first (already tried as direct)
+  const remaining = variants.slice(1);
+
+  if (remaining.length === 0) return null;
+
+  console.log(`  ⚠ "${baseURL}" 응답 없음 — ${remaining.length}개 URL 변형 시도 중...`);
+
+  for (const variant of remaining) {
+    process.stdout.write(`    → ${variant} ... `);
+    const result = await quickProbe(variant, timeoutPerAttempt);
+    if (result?.reachable) {
+      console.log(`✓ (${result.type})`);
+      return { result, url: variant };
+    }
+    console.log('✗');
+  }
+
+  return null;
+}
+
+/**
  * Validate and potentially fix provider/URL mismatch.
- * Returns corrected provider and baseURL, plus user-facing messages.
+ * Tries multiple URL variants if the original doesn't respond.
+ * Returns corrected provider and baseURL.
  */
 async function validateEndpoint(
   provider: string,
   baseURL: string,
   rl: ReturnType<typeof createInterface>,
-): Promise<{ provider: string; baseURL: string }> {
+): Promise<{ provider: string; baseURL: string; detectedModels?: string[] }> {
   const { url: normalized, warnings } = normalizeBaseURL(baseURL);
 
   for (const w of warnings) {
@@ -142,13 +255,18 @@ async function validateEndpoint(
   console.log();
   console.log('  엔드포인트 검증 중...');
 
-  const probe = await probeEndpoint(normalized);
+  const probeResult = await probeWithVariants(normalized);
 
-  if (!probe.reachable) {
-    console.log('  ⚠ 서버에 연결할 수 없습니다.');
-    console.log(`    URL: ${normalized}`);
-    console.log('    서버가 실행 중인지 확인하세요.');
-    const proceed = await rl.question('  그래도 이 설정으로 진행할까요? [y/N]: ');
+  if (!probeResult) {
+    console.log();
+    console.log('  ✗ 모든 URL 변형에서 서버 응답을 받지 못했습니다.');
+    console.log(`    입력한 URL: ${baseURL}`);
+    console.log('    확인할 사항:');
+    console.log('      1. 서버가 실행 중인지');
+    console.log('      2. 방화벽/네트워크 설정');
+    console.log('      3. URL의 프로토콜(http/https)과 포트 번호');
+    console.log();
+    const proceed = await rl.question('  그래도 원래 URL로 진행할까요? [y/N]: ');
     if (proceed.trim().toLowerCase() !== 'y') {
       console.log('  설정을 취소합니다. 다시 시도하세요.');
       process.exit(0);
@@ -156,7 +274,16 @@ async function validateEndpoint(
     return { provider, baseURL: normalized };
   }
 
-  console.log(`  ✓ 서버 응답 확인 (${probe.type})`);
+  const { result: probe, url: workingURL } = probeResult;
+  const finalURL = probe.normalizedURL ?? workingURL;
+
+  // Show what we found
+  if (workingURL !== normalized) {
+    console.log();
+    console.log(`  ✓ 자동 보정: "${normalized}" → "${finalURL}"`);
+  } else {
+    console.log(`  ✓ 서버 응답 확인 (${probe.type})`);
+  }
 
   if (probe.models && probe.models.length > 0) {
     const preview = probe.models.slice(0, 5).join(', ');
@@ -165,32 +292,36 @@ async function validateEndpoint(
   }
 
   // Check for provider/endpoint mismatch
+  let correctedProvider = provider;
+
   if (provider === 'ollama' && probe.type === 'openai-compatible') {
     console.log();
     console.log('  ⚠ Ollama로 선택했지만, 이 서버는 OpenAI 호환 API로 감지됩니다.');
     console.log('    Ollama는 /api/chat, OpenAI 호환은 /v1/chat/completions 를 사용합니다.');
     const fix = await rl.question('  자동으로 "custom" 프로바이더로 전환할까요? [Y/n]: ');
     if (fix.trim().toLowerCase() !== 'n') {
+      correctedProvider = 'custom';
       console.log('  → 프로바이더를 "custom"으로 전환합니다.');
-      return { provider: 'custom', baseURL: probe.normalizedURL ?? normalized };
     }
   } else if (provider === 'custom' && probe.type === 'ollama') {
     console.log();
     console.log('  ⚠ Custom으로 선택했지만, 이 서버는 Ollama로 감지됩니다.');
     const fix = await rl.question('  자동으로 "ollama" 프로바이더로 전환할까요? [Y/n]: ');
     if (fix.trim().toLowerCase() !== 'n') {
+      correctedProvider = 'ollama';
       console.log('  → 프로바이더를 "ollama"로 전환합니다.');
-      return { provider: 'ollama', baseURL: probe.normalizedURL ?? normalized };
+    }
+  } else if ((provider === 'vllm' || provider === 'lmstudio') && probe.type === 'ollama') {
+    console.log();
+    console.log(`  ⚠ ${provider}로 선택했지만, 이 서버는 Ollama로 감지됩니다.`);
+    const fix = await rl.question('  자동으로 "ollama" 프로바이더로 전환할까요? [Y/n]: ');
+    if (fix.trim().toLowerCase() !== 'n') {
+      correctedProvider = 'ollama';
+      console.log('  → 프로바이더를 "ollama"로 전환합니다.');
     }
   }
 
-  // Normalize URL if probe found a better one
-  if (probe.normalizedURL && probe.normalizedURL !== normalized) {
-    console.log(`  → URL 정규화: ${probe.normalizedURL}`);
-    return { provider, baseURL: probe.normalizedURL };
-  }
-
-  return { provider, baseURL: normalized };
+  return { provider: correctedProvider, baseURL: finalURL, detectedModels: probe.models };
 }
 
 interface SavedConfig {
@@ -353,10 +484,12 @@ export async function runOnboarding(): Promise<void> {
     baseURL = urlInput.trim() || (local.defaultURL || undefined);
 
     // Validate endpoint and auto-correct provider/URL mismatch
+    let detectedModels: string[] | undefined;
     if (baseURL) {
       const validated = await validateEndpoint(provider, baseURL, rl);
       provider = validated.provider;
       baseURL = validated.baseURL;
+      detectedModels = validated.detectedModels;
     }
 
     if (provider === 'ollama') {
@@ -380,11 +513,45 @@ export async function runOnboarding(): Promise<void> {
         } else if (modelChoice.trim()) {
           model = modelChoice.trim();
         }
+      } else if (detectedModels && detectedModels.length > 0) {
+        // Fallback: use models discovered during endpoint probe
+        console.log('  (ollama list 실행 불가 — 서버에서 감지된 모델 사용)');
+        console.log();
+        for (const [i, m] of detectedModels.entries()) {
+          console.log(`    ${i + 1}) ${m}`);
+        }
+        console.log();
+        const modelChoice = await rl.question(`  모델 선택 [1-${detectedModels.length}] 또는 직접 입력: `);
+        const idx = parseInt(modelChoice.trim(), 10);
+        const picked = detectedModels[idx - 1];
+        if (picked) {
+          model = picked;
+        } else if (modelChoice.trim()) {
+          model = modelChoice.trim();
+        }
       } else {
         console.log('  ⚠ ollama list 실행 실패 — Ollama가 설치/실행 중인지 확인하세요.');
         console.log();
         const ollamaModel = await rl.question(`  모델명 직접 입력 (기본: ${model}): `);
         if (ollamaModel.trim()) model = ollamaModel.trim();
+      }
+    } else if (detectedModels && detectedModels.length > 0) {
+      // Non-ollama local provider: offer models from endpoint probe
+      console.log();
+      console.log('  서버에서 감지된 모델:');
+      for (const [i, m] of detectedModels.entries()) {
+        console.log(`    ${i + 1}) ${m}`);
+      }
+      console.log();
+      const modelChoice = await rl.question(`  모델 선택 [1-${detectedModels.length}] 또는 직접 입력 (기본: ${detectedModels[0]}): `);
+      const idx = parseInt(modelChoice.trim(), 10);
+      const picked = detectedModels[idx - 1];
+      if (picked) {
+        model = picked;
+      } else if (modelChoice.trim()) {
+        model = modelChoice.trim();
+      } else {
+        model = detectedModels[0]!;
       }
     } else {
       console.log();
