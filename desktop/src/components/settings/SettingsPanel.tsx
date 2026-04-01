@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useThemeStore } from "../../stores/theme-store";
 import { useOnboardingStore, PROVIDERS } from "../../stores/onboarding-store";
+import { discoverModels, DiscoveredModel } from "../../lib/model-discovery";
 
 export function SettingsPanel() {
   const { theme } = useThemeStore();
@@ -13,19 +14,34 @@ export function SettingsPanel() {
   const [localModel, setLocalModel] = useState(model);
   const [localBaseUrl, setLocalBaseUrl] = useState(baseUrl);
 
+  const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
   const selectedProvider = PROVIDERS.find((p) => p.id === localProvider);
   const needsApiKey = selectedProvider?.needsApiKey ?? true;
   const needsBaseUrl = (selectedProvider as { needsBaseUrl?: boolean } | undefined)?.needsBaseUrl ?? false;
   const availableModels = selectedProvider?.models ?? [];
+  const isLocalProvider = selectedProvider && !selectedProvider.needsApiKey;
 
   function handleProviderChange(newProvider: string) {
     setLocalProvider(newProvider);
+    setDiscoveredModels([]);
     const p = PROVIDERS.find((x) => x.id === newProvider);
     if (p && p.models.length > 0) {
       setLocalModel(p.models[0]);
     } else {
       setLocalModel("");
     }
+  }
+
+  async function handleRefreshModels() {
+    setRefreshing(true);
+    const models = await discoverModels(localProvider, localBaseUrl || undefined);
+    setDiscoveredModels(models);
+    if (models.length > 0 && !localModel) {
+      setLocalModel(models[0].id);
+    }
+    setRefreshing(false);
   }
 
   function handleSave() {
@@ -55,6 +71,9 @@ export function SettingsPanel() {
     marginBottom: 4,
     display: "block",
   };
+
+  const showDiscoveredSelect = isLocalProvider && discoveredModels.length > 0;
+  const showStaticSelect = !isLocalProvider && availableModels.length > 0;
 
   return (
     <div
@@ -95,8 +114,40 @@ export function SettingsPanel() {
         )}
 
         <div>
-          <label style={labelStyle}>Model</label>
-          {availableModels.length > 0 ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Model</label>
+            {isLocalProvider && (
+              <button
+                onClick={handleRefreshModels}
+                disabled={refreshing}
+                style={{
+                  background: "transparent",
+                  color: c.textSecondary,
+                  border: `1px solid ${c.border}`,
+                  borderRadius: 4,
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  cursor: refreshing ? "not-allowed" : "pointer",
+                  opacity: refreshing ? 0.6 : 1,
+                }}
+              >
+                {refreshing ? "Loading..." : "Refresh Models"}
+              </button>
+            )}
+          </div>
+          {showDiscoveredSelect ? (
+            <select
+              value={localModel}
+              onChange={(e) => setLocalModel(e.target.value)}
+              style={inputStyle}
+            >
+              {discoveredModels.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          ) : showStaticSelect ? (
             <select
               value={localModel}
               onChange={(e) => setLocalModel(e.target.value)}

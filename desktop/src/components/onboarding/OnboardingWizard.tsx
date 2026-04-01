@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { useOnboardingStore, PROVIDERS } from "../../stores/onboarding-store";
 import { useThemeStore } from "../../stores/theme-store";
+import { discoverModels, DiscoveredModel } from "../../lib/model-discovery";
 
 export function OnboardingWizard() {
   const { theme } = useThemeStore();
@@ -23,6 +25,34 @@ export function OnboardingWizard() {
   const isLocal = selectedProvider && !selectedProvider.needsApiKey;
   const needsBaseUrl = selectedProvider && (selectedProvider as { needsBaseUrl?: boolean }).needsBaseUrl;
   const hasModels = selectedProvider && selectedProvider.models.length > 0;
+
+  const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([]);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveryError, setDiscoveryError] = useState(false);
+
+  useEffect(() => {
+    if (step === 2 && selectedProvider && !selectedProvider.needsApiKey) {
+      setDiscovering(true);
+      setDiscoveryError(false);
+      setDiscoveredModels([]);
+      discoverModels(provider, baseUrl || undefined).then((models) => {
+        setDiscoveredModels(models);
+        setDiscovering(false);
+        if (models.length === 0) setDiscoveryError(true);
+      });
+    }
+  }, [step, provider, baseUrl]);
+
+  const handleRetryDiscovery = () => {
+    setDiscovering(true);
+    setDiscoveryError(false);
+    setDiscoveredModels([]);
+    discoverModels(provider, baseUrl || undefined).then((models) => {
+      setDiscoveredModels(models);
+      setDiscovering(false);
+      if (models.length === 0) setDiscoveryError(true);
+    });
+  };
 
   const subtitles = [
     "Choose your AI provider",
@@ -147,7 +177,57 @@ export function OnboardingWizard() {
         {step === 2 && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              {hasModels ? (
+              {isLocal ? (
+                discovering ? (
+                  <p className="text-sm text-center py-4" style={{ color: c.textSecondary }}>
+                    Searching for models...
+                  </p>
+                ) : discoveredModels.length > 0 ? (
+                  discoveredModels.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setModel(m.id)}
+                      className="w-full rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors"
+                      style={{
+                        background: model === m.id ? c.accent : c.bgTertiary,
+                        color: model === m.id ? "#ffffff" : c.text,
+                        border: `1px solid ${model === m.id ? c.accent : c.border}`,
+                      }}
+                    >
+                      {m.name}
+                    </button>
+                  ))
+                ) : discoveryError ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-center py-2" style={{ color: c.textSecondary }}>
+                      Could not connect to {selectedProvider?.name}. Is it running?
+                    </p>
+                    <button
+                      onClick={handleRetryDiscovery}
+                      className="w-full rounded-lg px-4 py-2 text-sm font-medium"
+                      style={{
+                        background: c.bgTertiary,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                      }}
+                    >
+                      Retry
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="Or enter model name manually"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full rounded-lg px-4 py-3 text-sm outline-none"
+                      style={{
+                        background: c.inputBg,
+                        border: `1px solid ${c.inputBorder}`,
+                        color: c.text,
+                      }}
+                    />
+                  </div>
+                ) : null
+              ) : hasModels ? (
                 selectedProvider.models.map((m) => (
                   <button
                     key={m}
