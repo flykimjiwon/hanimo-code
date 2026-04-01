@@ -380,6 +380,84 @@ async function validateEndpoint(
   return { provider: correctedProvider, baseURL: finalURL, detectedModels: probe.models };
 }
 
+/**
+ * Interactive model selector with pagination and search.
+ * Shows PAGE_SIZE models at a time. User can:
+ * - Enter a number to select
+ * - Enter 'n' for next page, 'p' for previous page
+ * - Type text to search/filter models
+ * - Enter nothing to use default
+ */
+async function selectModel(
+  models: string[],
+  defaultModel: string,
+  rl: ReturnType<typeof createInterface>,
+): Promise<string> {
+  const PAGE_SIZE = 15;
+  let page = 0;
+  let filtered = models;
+  let searchTerm = '';
+
+  const totalPages = () => Math.ceil(filtered.length / PAGE_SIZE);
+
+  function printPage(): void {
+    const start = page * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, filtered.length);
+    console.log();
+    if (searchTerm) {
+      console.log(`  검색: "${searchTerm}" (${filtered.length}개 결과)`);
+    }
+    console.log(`  모델 목록 (${start + 1}-${end} / ${filtered.length}개):`);
+    for (let i = start; i < end; i++) {
+      console.log(`    ${i + 1}) ${filtered[i]}`);
+    }
+    console.log();
+    const nav: string[] = [];
+    if (page > 0) nav.push('p=이전');
+    if (page < totalPages() - 1) nav.push('n=다음');
+    nav.push('텍스트=검색');
+    console.log(`  ${nav.join(' | ')}`);
+  }
+
+  while (true) {
+    printPage();
+    const input = await rl.question(`  모델 선택 [번호/검색어] (기본: ${defaultModel}): `);
+    const trimmed = input.trim();
+
+    // Empty → use default
+    if (!trimmed) return defaultModel;
+
+    // Pagination
+    if (trimmed === 'n' && page < totalPages() - 1) { page++; continue; }
+    if (trimmed === 'p' && page > 0) { page--; continue; }
+
+    // Number selection
+    const num = parseInt(trimmed, 10);
+    if (!isNaN(num) && num >= 1 && num <= filtered.length) {
+      return filtered[num - 1]!;
+    }
+
+    // Search/filter
+    searchTerm = trimmed.toLowerCase();
+    filtered = models.filter(m => m.toLowerCase().includes(searchTerm));
+    page = 0;
+
+    if (filtered.length === 0) {
+      console.log(`  ⚠ "${trimmed}" 검색 결과 없음`);
+      // Check if user meant to type a model name directly
+      const confirm = await rl.question(`  "${trimmed}"을(를) 모델명으로 직접 사용할까요? [y/N]: `);
+      if (confirm.trim().toLowerCase() === 'y') return trimmed;
+      // Reset search
+      filtered = models;
+      searchTerm = '';
+    } else if (filtered.length === 1) {
+      // Auto-select if only one result
+      console.log(`  → ${filtered[0]}`);
+      return filtered[0]!;
+    }
+  }
+}
+
 interface SavedConfig {
   provider: string;
   model: string;
@@ -564,36 +642,13 @@ export async function runOnboarding(): Promise<void> {
       const ollamaModels = await listOllamaModels();
 
       if (ollamaModels.length > 0) {
-        console.log();
-        console.log('  설치된 모델:');
-        for (const [i, m] of ollamaModels.entries()) {
-          console.log(`    ${i + 1}) ${m.name}  (${m.size})`);
-        }
-        console.log();
-        const modelChoice = await rl.question(`  모델 선택 [1-${ollamaModels.length}] 또는 직접 입력: `);
-        const idx = parseInt(modelChoice.trim(), 10);
-        const picked = ollamaModels[idx - 1];
-        if (picked) {
-          model = picked.name;
-        } else if (modelChoice.trim()) {
-          model = modelChoice.trim();
-        }
+        const ollamaNames = ollamaModels.map(m => `${m.name}  (${m.size})`);
+        const selected = await selectModel(ollamaNames, model, rl);
+        // Strip size info if present
+        model = selected.replace(/\s+\(.*\)$/, '');
       } else if (detectedModels && detectedModels.length > 0) {
-        // Fallback: use models discovered during endpoint probe
         console.log('  (ollama list 실행 불가 — 서버에서 감지된 모델 사용)');
-        console.log();
-        for (const [i, m] of detectedModels.entries()) {
-          console.log(`    ${i + 1}) ${m}`);
-        }
-        console.log();
-        const modelChoice = await rl.question(`  모델 선택 [1-${detectedModels.length}] 또는 직접 입력: `);
-        const idx = parseInt(modelChoice.trim(), 10);
-        const picked = detectedModels[idx - 1];
-        if (picked) {
-          model = picked;
-        } else if (modelChoice.trim()) {
-          model = modelChoice.trim();
-        }
+        model = await selectModel(detectedModels, model, rl);
       } else {
         console.log('  ⚠ ollama list 실행 실패 — Ollama가 설치/실행 중인지 확인하세요.');
         console.log();
@@ -604,20 +659,7 @@ export async function runOnboarding(): Promise<void> {
       // Non-ollama local provider: offer models from endpoint probe
       console.log();
       console.log('  서버에서 감지된 모델:');
-      for (const [i, m] of detectedModels.entries()) {
-        console.log(`    ${i + 1}) ${m}`);
-      }
-      console.log();
-      const modelChoice = await rl.question(`  모델 선택 [1-${detectedModels.length}] 또는 직접 입력 (기본: ${detectedModels[0]}): `);
-      const idx = parseInt(modelChoice.trim(), 10);
-      const picked = detectedModels[idx - 1];
-      if (picked) {
-        model = picked;
-      } else if (modelChoice.trim()) {
-        model = modelChoice.trim();
-      } else {
-        model = detectedModels[0]!;
-      }
+      model = await selectModel(detectedModels, detectedModels[0] ?? model, rl);
     } else {
       console.log();
       const modelInput = await rl.question(`  모델명 직접 입력 (기본: ${model}): `);
