@@ -539,6 +539,15 @@ export async function runOnboarding(): Promise<void> {
     const urlInput = await rl.question(`  서버 URL (기본: ${local.defaultURL || '없음 — 필수 입력'}): `);
     baseURL = urlInput.trim() || (local.defaultURL || undefined);
 
+    // Ask for API key (optional for local, common for remote custom servers)
+    if (providerChoice === '14' || providerChoice === '12') {
+      console.log();
+      const keyInput = await rl.question('  API 키 (없으면 Enter): ');
+      if (keyInput.trim()) {
+        apiKey = keyInput.trim();
+      }
+    }
+
     // Validate endpoint and auto-correct provider/URL mismatch
     let detectedModels: string[] | undefined;
     if (baseURL) {
