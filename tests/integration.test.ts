@@ -48,26 +48,20 @@ describe('Integration: Tool Registry', () => {
 });
 
 describe('Integration: Role System', () => {
-  it('should load 4 built-in roles', () => {
+  it('should load 3 built-in roles', () => {
     const mgr = new RoleManager();
     const roles = mgr.getAllRoles();
-    expect(roles.length).toBe(4);
-    expect(roles.map(r => r.id).sort()).toEqual(['chat', 'dev', 'plan', 'super']);
+    expect(roles.length).toBe(3);
+    expect(roles.map(r => r.id).sort()).toEqual(['dev', 'hanimo', 'plan']);
   });
 
-  it('super role should have all 16 tools + maxSteps 50', () => {
+  it('hanimo role should have all 16 tools + maxSteps 50', () => {
     const mgr = new RoleManager();
-    const superRole = mgr.getRole('super');
-    expect(superRole).toBeDefined();
-    expect(superRole!.tools.length).toBe(16);
-    expect(superRole!.maxSteps).toBe(50);
-    expect(superRole!.icon).toBe('🐶');
-  });
-
-  it('chat role should have 0 tools', () => {
-    const mgr = new RoleManager();
-    const chat = mgr.getRole('chat');
-    expect(chat!.tools.length).toBe(0);
+    const hanimoRole = mgr.getRole('hanimo');
+    expect(hanimoRole).toBeDefined();
+    expect(hanimoRole!.tools.length).toBe(16);
+    expect(hanimoRole!.maxSteps).toBe(50);
+    expect(hanimoRole!.icon).toBe('🐶');
   });
 });
 

@@ -3,24 +3,24 @@ import { RoleManager } from '../src/roles/role-manager.js';
 import type { RoleDefinition } from '../src/roles/types.js';
 
 describe('RoleManager', () => {
-  it('loads 4 built-in roles on construction', () => {
+  it('loads 3 built-in roles on construction', () => {
     const mgr = new RoleManager();
     const roles = mgr.getAllRoles();
-    expect(roles.length).toBe(4);
+    expect(roles.length).toBe(3);
 
     const ids = roles.map((r) => r.id).sort();
-    expect(ids).toEqual(['chat', 'dev', 'plan', 'super']);
+    expect(ids).toEqual(['dev', 'hanimo', 'plan']);
   });
 
   it('getRole returns correct role by id', () => {
     const mgr = new RoleManager();
 
-    const chat = mgr.getRole('chat');
-    expect(chat).toBeDefined();
-    expect(chat!.name).toBe('Chat');
-    expect(chat!.icon).toBe('💬');
-    expect(chat!.tools).toEqual([]);
-    expect(chat!.maxSteps).toBe(1);
+    const hanimo = mgr.getRole('hanimo');
+    expect(hanimo).toBeDefined();
+    expect(hanimo!.name).toBe('Hanimo');
+    expect(hanimo!.icon).toBe('🐶');
+    expect(hanimo!.tools.length).toBe(16);
+    expect(hanimo!.maxSteps).toBe(50);
 
     const dev = mgr.getRole('dev');
     expect(dev).toBeDefined();
@@ -42,11 +42,12 @@ describe('RoleManager', () => {
     expect(mgr.getRole('nonexistent')).toBeUndefined();
   });
 
-  it('createToolSet returns undefined for chat (no tools)', () => {
+  it('createToolSet returns tools for hanimo role', () => {
     const mgr = new RoleManager();
-    const chat = mgr.getRole('chat')!;
-    const toolSet = mgr.createToolSet(chat);
-    expect(toolSet).toBeUndefined();
+    const hanimo = mgr.getRole('hanimo')!;
+    const toolSet = mgr.createToolSet(hanimo);
+    expect(toolSet).toBeDefined();
+    expect(Object.keys(toolSet!).length).toBe(16);
   });
 
   it('createToolSet returns tools for dev role', () => {

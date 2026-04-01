@@ -21,7 +21,7 @@ import { createReadOnlyTools } from '../tools/registry.js';
 import type { RoleManager } from '../roles/role-manager.js';
 import type { RoleDefinition } from '../roles/types.js';
 
-import { writeFileSync } from 'node:fs';
+import { unlinkSync } from 'node:fs';
 import { join as joinPath } from 'node:path';
 import { homedir } from 'node:os';
 import { buildSystemPrompt } from '../core/system-prompt.js';
@@ -34,10 +34,9 @@ import type { PaletteItem } from './components/command-palette.js';
 type MenuState = 'none' | 'main' | 'model' | 'provider' | 'lang' | 'role' | 'palette' | 'sessions' | 'theme';
 
 const ROLE_DESC_KO: Record<string, string> = {
-  chat: '일반 대화 — 도구 없음, 빠른 응답',
+  hanimo: '만능 모드 — 의도 자동 감지, 코딩/대화/분석/시스템 관리 🐶',
   dev: '코딩 에이전트 — 파일 읽기/쓰기, 셸, git',
   plan: '분석/계획 — 읽기 전용, 수정 불가',
-  super: '만능 모드 — 코딩, 대화, 시스템 관리, 뭐든 가능 🐶',
 };
 
 interface AppProps {
@@ -672,7 +671,7 @@ function App({
       case 'reset-config': {
         try {
           const configPath = joinPath(homedir(), '.hanimo', 'config.json');
-          writeFileSync(configPath, JSON.stringify({ provider: 'ollama', model: 'qwen3:8b' }, null, 2) + '\n', { mode: 0o600 });
+          try { unlinkSync(configPath); } catch { /* already gone */ }
           agent.addSystemMessage(ko
             ? '✅ 설정이 초기화되었습니다. hanimo를 재시작하세요.'
             : '✅ All settings reset to defaults. Restart hanimo to apply.',

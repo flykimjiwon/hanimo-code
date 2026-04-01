@@ -13,7 +13,7 @@ export const DEFAULT_CONFIG: Config = {
   tui: {
     theme: 'dark',
   },
-  defaultRole: 'dev',
+  defaultRole: 'hanimo',
   subAgents: {
     enabled: false,
     count: '3',

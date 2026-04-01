@@ -77,7 +77,7 @@ export const ConfigSchema = z.object({
       theme: z.enum(['dark', 'light']).default('dark'),
     })
     .default({}),
-  defaultRole: z.string().default('dev'),
+  defaultRole: z.string().default('hanimo'),
   subAgents: z
     .object({
       enabled: z.boolean().default(false),

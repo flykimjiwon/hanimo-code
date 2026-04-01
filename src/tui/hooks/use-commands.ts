@@ -328,10 +328,9 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         const lines = [
           `Current mode: ${currentMode}`,
           '',
-          `  Super:  ${assignments.super ?? '(not set)'}`,
+          `  Hanimo: ${assignments.hanimo ?? '(not set)'}`,
           `  Dev:    ${assignments.dev ?? '(not set)'}`,
           `  Plan:   ${assignments.plan ?? '(not set)'}`,
-          `  Chat:   ${assignments.chat ?? '(not set)'}`,
         ];
         ctx.addSystemMessage(lines.join('\n'));
       } catch {
