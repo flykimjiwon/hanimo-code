@@ -9,6 +9,7 @@ interface UseAgentOptions {
   model: LanguageModelV1;
   systemPrompt: string;
   tools?: ToolSet;
+  streaming?: boolean;
 }
 
 export interface UsageState {
@@ -59,7 +60,7 @@ function diagnoseError(error: Error): string {
   return msg;
 }
 
-export function useAgent({ model, systemPrompt, tools }: UseAgentOptions): UseAgentReturn {
+export function useAgent({ model, systemPrompt, tools, streaming }: UseAgentOptions): UseAgentReturn {
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTool, setCurrentTool] = useState<string | null>(null);
@@ -221,6 +222,7 @@ export function useAgent({ model, systemPrompt, tools }: UseAgentOptions): UseAg
         tools: toolsRef.current,
         onEvent: handleEvent,
         abortSignal: controller.signal,
+        streaming: streaming ?? true,
       })
         .then((result) => {
           // Update conversation with full messages (includes tool calls/results)

@@ -49,6 +49,7 @@ interface AppProps {
   providerConfig?: { apiKey?: string; baseURL?: string };
   roleManager?: import('../roles/role-manager.js').RoleManager;
   activeRole?: import('../roles/types.js').RoleDefinition;
+  streaming?: boolean;
 }
 
 function KeyHints({ isLoading, menuOpen, leaderActive, lang }: { isLoading: boolean; menuOpen: boolean; leaderActive: boolean; lang: string }): React.ReactElement {
@@ -110,6 +111,7 @@ function App({
   providerConfig,
   roleManager,
   activeRole: initialRole,
+  streaming,
 }: AppProps): React.ReactElement {
   const app = useApp();
   const { stdout } = useStdout();
@@ -158,6 +160,7 @@ function App({
     model: modelInstance,
     systemPrompt: currentSystemPrompt,
     tools: effectiveTools,
+    streaming,
   });
 
   // Session save (uses refs — stable callback)
@@ -924,6 +927,7 @@ export function startApp(options: StartAppOptions): void {
         providerConfig={options.providerConfig}
         roleManager={options.roleManager}
         activeRole={options.activeRole}
+        streaming={options.streaming}
       />
     </ErrorBoundary>,
     { exitOnCtrlC: false, patchConsole: true },
