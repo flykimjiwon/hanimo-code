@@ -23,8 +23,8 @@ export function ChatPanel() {
     setStreaming,
     appendStreamingContent,
     clearStreamingContent,
+    finishStreaming,
     isStreaming,
-    streamingContent,
   } = useChatStore();
 
   const handleEvent = useCallback(
@@ -51,15 +51,9 @@ export function ChatPanel() {
           });
           break;
         }
-        case "done": {
-          const content = streamingContent;
-          clearStreamingContent();
-          if (content) {
-            addMessage({ role: "assistant", content });
-          }
-          setStreaming(false);
+        case "done":
+          finishStreaming();
           break;
-        }
         case "error": {
           clearStreamingContent();
           addMessage({
@@ -72,8 +66,7 @@ export function ChatPanel() {
         }
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [addMessage, appendStreamingContent, clearStreamingContent, finishStreaming, setStreaming]
   );
 
   const { send, retry } = useSidecar({ onEvent: handleEvent, role });

@@ -19,6 +19,7 @@ interface ChatState {
   setStreaming: (streaming: boolean) => void;
   appendStreamingContent: (content: string) => void;
   clearStreamingContent: () => void;
+  finishStreaming: () => void;
   clear: () => void;
   setConnectionStatus: (status: "disconnected" | "connecting" | "connected" | "error") => void;
   setConnectionError: (error: string | null) => void;
@@ -43,6 +44,19 @@ export const useChatStore = create<ChatState>((set) => ({
   appendStreamingContent: (content) =>
     set((state) => ({ streamingContent: state.streamingContent + content })),
   clearStreamingContent: () => set({ streamingContent: "" }),
+  finishStreaming: () =>
+    set((state) => {
+      const content = state.streamingContent;
+      if (!content) return { isStreaming: false, streamingContent: "" };
+      return {
+        messages: [
+          ...state.messages,
+          { id: String(++idCounter), role: "assistant" as const, content, timestamp: Date.now() },
+        ],
+        isStreaming: false,
+        streamingContent: "",
+      };
+    }),
   clear: () => set({ messages: [], isStreaming: false, streamingContent: "" }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setConnectionError: (error) => set({ connectionError: error }),

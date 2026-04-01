@@ -1,10 +1,11 @@
 use std::io::Write;
-use std::process::{Child, ChildStdout, Command, Stdio};
+use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
 use std::sync::Mutex;
 
 pub struct Sidecar {
     process: Mutex<Option<Child>>,
     stdout: Mutex<Option<ChildStdout>>,
+    stderr: Mutex<Option<ChildStderr>>,
 }
 
 impl Sidecar {
@@ -12,18 +13,22 @@ impl Sidecar {
         Sidecar {
             process: Mutex::new(None),
             stdout: Mutex::new(None),
+            stderr: Mutex::new(None),
         }
     }
 
-    pub fn start(&self, node_path: &str, script_path: &str, args: &[String], env_vars: &[(&str, &str)]) -> Result<(), String> {
+    pub fn start(&self, node_path: &str, script_path: &str, args: &[String], env_vars: &[(&str, &str)], cwd: Option<&str>) -> Result<(), String> {
         let mut cmd = Command::new(node_path);
         cmd.arg(script_path)
             .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null());
+            .stderr(Stdio::piped());
         for (key, val) in env_vars {
             cmd.env(key, val);
+        }
+        if let Some(dir) = cwd {
+            cmd.current_dir(dir);
         }
         let mut child = cmd
             .spawn()
@@ -34,8 +39,14 @@ impl Sidecar {
             .take()
             .ok_or_else(|| "Failed to capture stdout".to_string())?;
 
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| "Failed to capture stderr".to_string())?;
+
         *self.process.lock().unwrap() = Some(child);
         *self.stdout.lock().unwrap() = Some(stdout);
+        *self.stderr.lock().unwrap() = Some(stderr);
 
         Ok(())
     }
@@ -57,6 +68,10 @@ impl Sidecar {
 
     pub fn take_stdout(&self) -> Option<ChildStdout> {
         self.stdout.lock().unwrap().take()
+    }
+
+    pub fn take_stderr(&self) -> Option<ChildStderr> {
+        self.stderr.lock().unwrap().take()
     }
 
     pub fn stop(&self) -> Result<(), String> {

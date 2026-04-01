@@ -13,6 +13,7 @@ export interface SidecarConfig {
   apiKey: string;
   role?: string;
   baseUrl?: string;
+  projectDir?: string;
 }
 
 export async function startSidecar(config: SidecarConfig): Promise<string> {
@@ -22,6 +23,15 @@ export async function startSidecar(config: SidecarConfig): Promise<string> {
     apiKey: config.apiKey,
     role: config.role,
     baseUrl: config.baseUrl,
+    projectDir: config.projectDir,
+  });
+}
+
+export async function onSidecarStderr(
+  callback: (message: string) => void
+): Promise<UnlistenFn> {
+  return listen<string>("sidecar-stderr", (e) => {
+    callback(e.payload);
   });
 }
 
