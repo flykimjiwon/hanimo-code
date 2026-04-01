@@ -28,6 +28,13 @@
     "multi-agent",
     "cli"
   ],
+  "files": [
+    "bin/",
+    "dist/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0"

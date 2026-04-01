@@ -1,8 +1,31 @@
 node_modules/
 dist/
 *.tsbuildinfo
+.hanimo/
 .modol/
 test-debug.ts
 test-ollama.ts
+test-ollama2.ts
 test-textmode.ts
 .omc/
+
+# Secrets & credentials
+.env
+.env.*
+*.key
+*.pem
+*.p12
+credentials.*
+**/secrets/
+
+# Source maps (Claude Code leak 방지)
+*.map
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
