@@ -16,6 +16,7 @@ export function SettingsPanel() {
 
   const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const selectedProvider = PROVIDERS.find((p) => p.id === localProvider);
   const needsApiKey = selectedProvider?.needsApiKey ?? true;
@@ -49,6 +50,8 @@ export function SettingsPanel() {
     setApiKey(localApiKey);
     setModel(localModel);
     setBaseUrl(localBaseUrl);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
 
   const inputStyle = {
@@ -197,7 +200,7 @@ export function SettingsPanel() {
             width: "100%",
           }}
         >
-          Save & Reconnect
+          {saved ? "Saved! Reconnecting..." : "Save & Reconnect"}
         </button>
 
         <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 16 }}>

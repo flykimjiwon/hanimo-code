@@ -66,5 +66,12 @@ export function useSidecar({
     setRetryCount((n) => n + 1);
   }, []);
 
-  return { send, retry };
+  const stop = useCallback(async () => {
+    await stopSidecar();
+    useChatStore.getState().clearStreamingContent();
+    useChatStore.getState().setStreaming(false);
+    setRetryCount((c) => c + 1);
+  }, []);
+
+  return { send, retry, stop };
 }

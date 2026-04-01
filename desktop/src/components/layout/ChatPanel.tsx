@@ -25,6 +25,7 @@ export function ChatPanel() {
     clearStreamingContent,
     finishStreaming,
     isStreaming,
+    updateUsage,
   } = useChatStore();
 
   const handleEvent = useCallback(
@@ -51,9 +52,14 @@ export function ChatPanel() {
           });
           break;
         }
-        case "done":
+        case "done": {
           finishStreaming();
+          const doneData = event.data as { usage?: { promptTokens: number; completionTokens: number; totalTokens: number } } | null;
+          if (doneData?.usage) {
+            updateUsage(doneData.usage);
+          }
           break;
+        }
         case "error": {
           clearStreamingContent();
           addMessage({
@@ -66,10 +72,10 @@ export function ChatPanel() {
         }
       }
     },
-    [addMessage, appendStreamingContent, clearStreamingContent, finishStreaming, setStreaming]
+    [addMessage, appendStreamingContent, clearStreamingContent, finishStreaming, setStreaming, updateUsage]
   );
 
-  const { send, retry } = useSidecar({ onEvent: handleEvent, role });
+  const { send, retry, stop } = useSidecar({ onEvent: handleEvent, role });
 
   const handleSend = async (content: string) => {
     addMessage({ role: "user", content });
@@ -119,7 +125,7 @@ export function ChatPanel() {
       <MessageList onRetry={retry} />
 
       {/* Input */}
-      <ChatInput onSend={handleSend} disabled={isStreaming} />
+      <ChatInput onSend={handleSend} onStop={stop} disabled={isStreaming} />
     </div>
   );
 }
