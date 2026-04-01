@@ -30,6 +30,7 @@ import { SessionStore } from '../session/store.js';
 import { useLeaderKey } from './hooks/use-leader-key.js';
 import { CommandPalette } from './components/command-palette.js';
 import type { PaletteItem } from './components/command-palette.js';
+import { WelcomeScreen } from './components/welcome-screen.js';
 
 type MenuState = 'none' | 'main' | 'model' | 'provider' | 'lang' | 'role' | 'palette' | 'sessions' | 'theme';
 
@@ -129,6 +130,9 @@ function App({
 
   // Verbose mode (Ctrl+O toggle — expand/collapse tool results)
   const [verbose, setVerbose] = useState(false);
+
+  // Welcome screen: show until first message is sent
+  const [showWelcome, setShowWelcome] = useState(true);
 
   // Session store
   const sessionStoreRef = useRef(new SessionStore());
@@ -384,6 +388,7 @@ function App({
   // Input handler: routes to commands or sends as message
   const handleInput = useCallback((text: string) => {
     if (!commandCtxRef.current) return;
+    setShowWelcome(false);
     const result = handleCommand(text, commandCtxRef.current);
     if (!result.handled) {
       agent.sendMessage(text);
@@ -800,13 +805,24 @@ function App({
         verbose={verbose}
       />
 
-      <ChatView
-        messages={agent.messages}
-        streamingText={agent.streamingText}
-        isLoading={agent.isLoading}
-        height={chatHeight}
-        verbose={verbose}
-      />
+      {showWelcome && agent.messages.length === 0 ? (
+        <WelcomeScreen
+          provider={currentProvider}
+          model={currentModel}
+          roleIcon={currentRole?.icon}
+          roleName={currentRole?.name}
+          cols={stdout?.columns ?? 80}
+          rows={termRows}
+        />
+      ) : (
+        <ChatView
+          messages={agent.messages}
+          streamingText={agent.streamingText}
+          isLoading={agent.isLoading}
+          height={chatHeight}
+          verbose={verbose}
+        />
+      )}
 
       {/* Menus */}
       {menuState === 'main' && (
