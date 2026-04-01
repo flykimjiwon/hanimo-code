@@ -171,13 +171,16 @@ const DEFAULT_CAPABILITY: ModelCapability = {
  * 4. Fallback → chat (safe default)
  */
 export function getModelCapability(modelName: string, provider?: string): ModelCapability {
-  // 1. Exact match
-  const exact = MODEL_CAPABILITIES[modelName];
+  // Strip namespace prefix (e.g., "qwen/qwen3-32b-fp8" → "qwen3-32b-fp8", "openai/gpt-oss-20b" → "gpt-oss-20b")
+  const baseName = modelName.includes('/') ? modelName.split('/').pop()! : modelName;
+
+  // 1. Exact match (try both full name and base name)
+  const exact = MODEL_CAPABILITIES[modelName] ?? MODEL_CAPABILITIES[baseName];
   if (exact) return exact;
 
-  // 2. Prefix match
+  // 2. Prefix match (against base name to handle namespaced models)
   for (const entry of PREFIX_CAPABILITIES) {
-    if (modelName.startsWith(entry.prefix)) {
+    if (baseName.startsWith(entry.prefix) || modelName.startsWith(entry.prefix)) {
       return entry.capability;
     }
   }

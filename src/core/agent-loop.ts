@@ -244,9 +244,49 @@ export async function runAgentLoop(
       },
     });
 
+    // Stream tokens, filtering out <think>...</think> blocks
+    let inThink = false;
+    let thinkBuffer = '';
     for await (const chunk of result.textStream) {
-      emit({ type: 'token', content: chunk });
+      let remaining = chunk;
+      while (remaining.length > 0) {
+        if (inThink) {
+          const endIdx = remaining.indexOf('</think>');
+          if (endIdx >= 0) {
+            inThink = false;
+            remaining = remaining.slice(endIdx + 8); // skip </think>
+            // Skip any trailing newline after </think>
+            if (remaining.startsWith('\n')) remaining = remaining.slice(1);
+          } else {
+            remaining = ''; // still inside <think>, consume all
+          }
+        } else {
+          const startIdx = remaining.indexOf('<think>');
+          if (startIdx >= 0) {
+            // Emit content before <think>
+            if (startIdx > 0) emit({ type: 'token', content: remaining.slice(0, startIdx) });
+            inThink = true;
+            remaining = remaining.slice(startIdx + 7); // skip <think>
+          } else {
+            // Check for partial <think at end of chunk
+            const partialIdx = remaining.lastIndexOf('<');
+            if (partialIdx >= 0 && '<think>'.startsWith(remaining.slice(partialIdx))) {
+              emit({ type: 'token', content: remaining.slice(0, partialIdx) });
+              thinkBuffer = remaining.slice(partialIdx);
+              remaining = '';
+            } else {
+              if (thinkBuffer) {
+                emit({ type: 'token', content: thinkBuffer });
+                thinkBuffer = '';
+              }
+              emit({ type: 'token', content: remaining });
+              remaining = '';
+            }
+          }
+        }
+      }
     }
+    if (thinkBuffer && !inThink) emit({ type: 'token', content: thinkBuffer });
 
     const finalResult = await result;
     const finalUsage = await finalResult.usage;
