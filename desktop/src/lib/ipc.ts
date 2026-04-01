@@ -7,8 +7,22 @@ export interface SidecarEvent {
   timestamp: string;
 }
 
-export async function startSidecar(): Promise<string> {
-  return invoke<string>("start_sidecar");
+export interface SidecarConfig {
+  provider: string;
+  model: string;
+  apiKey: string;
+  role?: string;
+  baseUrl?: string;
+}
+
+export async function startSidecar(config: SidecarConfig): Promise<string> {
+  return invoke<string>("start_sidecar", {
+    provider: config.provider,
+    model: config.model,
+    apiKey: config.apiKey,
+    role: config.role,
+    baseUrl: config.baseUrl,
+  });
 }
 
 export async function sendPrompt(content: string): Promise<void> {

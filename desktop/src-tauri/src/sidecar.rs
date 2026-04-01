@@ -15,13 +15,17 @@ impl Sidecar {
         }
     }
 
-    pub fn start(&self, node_path: &str, script_path: &str, args: &[&str]) -> Result<(), String> {
-        let mut child = Command::new(node_path)
-            .arg(script_path)
+    pub fn start(&self, node_path: &str, script_path: &str, args: &[String], env_vars: &[(&str, &str)]) -> Result<(), String> {
+        let mut cmd = Command::new(node_path);
+        cmd.arg(script_path)
             .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::null());
+        for (key, val) in env_vars {
+            cmd.env(key, val);
+        }
+        let mut child = cmd
             .spawn()
             .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
 

@@ -63,7 +63,8 @@ export function ChatPanel() {
         }
       }
     },
-    [addMessage, setStreaming, appendStreamingContent, clearStreamingContent, streamingContent]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   const { send } = useSidecar({ onEvent: handleEvent });
