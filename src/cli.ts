@@ -292,7 +292,13 @@ export async function main(): Promise<void> {
         }
         modelInstance = customModel;
       } else {
-        modelInstance = getModel(config.provider as ProviderName, config.model, providerConfig);
+        try {
+          modelInstance = getModel(config.provider as ProviderName, config.model, providerConfig);
+        } catch (err) {
+          console.error(`❌ 프로바이더 "${config.provider}" 초기화 실패: ${err instanceof Error ? err.message : String(err)}`);
+          console.error('   hanimo --setup 으로 재설정하세요.');
+          process.exit(1);
+        }
       }
       const systemPrompt = buildSystemPrompt({
         cwd: process.cwd(),
