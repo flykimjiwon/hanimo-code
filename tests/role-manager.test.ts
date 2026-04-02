@@ -18,7 +18,7 @@ describe('RoleManager', () => {
     const hanimo = mgr.getRole('hanimo');
     expect(hanimo).toBeDefined();
     expect(hanimo!.name).toBe('Hanimo');
-    expect(hanimo!.icon).toBe('🐶');
+    expect(hanimo!.icon).toBe('⚡');
     expect(hanimo!.tools.length).toBe(16);
     expect(hanimo!.maxSteps).toBe(50);
 

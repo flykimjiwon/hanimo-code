@@ -54,10 +54,16 @@ export const InputBar = React.memo(function InputBar({
     (input, key) => {
       if (isDisabled) return;
 
-      // Enter: submit, or newline if value ends with backslash
+      // Shift+Enter: insert newline (multi-line input)
+      // Fallback: trailing backslash + Enter also inserts newline
       if (key.return) {
+        if (key.shift) {
+          const insertPos = value.length - cursorOffset;
+          setValue((prev) => prev.slice(0, insertPos) + '\n' + prev.slice(insertPos));
+          setCursorOffset(0);
+          return;
+        }
         if (value.endsWith('\\')) {
-          // Remove trailing backslash, insert newline — multi-line mode
           setValue((prev) => prev.slice(0, -1) + '\n');
           setCursorOffset(0);
           return;
@@ -186,10 +192,10 @@ export const InputBar = React.memo(function InputBar({
       {/* Line 1: mode badge + Tab hint */}
       <Box justifyContent="space-between" width="100%">
         <Text color={colors.model} bold>{modeLabel}</Text>
-        <Text color={colors.dimText}>Tab {'\u21C4'} mode</Text>
+        <Text color={colors.dimText}>Shift+Enter {'\u21B5'}  Tab {'\u21C4'} mode</Text>
       </Box>
 
-      {/* Lines 2-4: multi-line content or spacer */}
+      {/* Multi-line content or 1-line spacer (2-line input default) */}
       {lineCount > 1 ? (
         <Box flexDirection="column">
           {lines.slice(Math.max(0, lineCount - 4), -1).map((l, i) => (
@@ -200,11 +206,7 @@ export const InputBar = React.memo(function InputBar({
           ))}
         </Box>
       ) : (
-        <Box flexDirection="column">
-          <Box><Text> </Text></Box>
-          <Box><Text> </Text></Box>
-          <Box><Text> </Text></Box>
-        </Box>
+        <Box><Text> </Text></Box>
       )}
 
       {/* Line 3: input prompt */}

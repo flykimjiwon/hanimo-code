@@ -2,21 +2,19 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { colors } from '../theme.js';
 
-// Mascot: 하니(honey bee) + 모돌(bichon puppy) fusion
-// Bichon silhouette with bee antennae and wings
+// Mascot: 하니(honey bee) + 모돌(bichon puppy) fusion — pixel art style
 const MASCOT_LINES = [
-  '    \\  /        ',
-  '     ()         ',
-  '  (\\_◕ᴥ◕_/)    ',
-  ' ≋/|      |\\≋  ',
-  '   |  ♡♡  |     ',
-  '    \\_||_/      ',
+  '  ▄▀▀▀▀▄ ',
+  '  █◕ᴥ◕ █ ',
+  '  ▀▄▄▄▄▀ ',
+  '  ≋█  █≋ ',
+  '    ▀▀   ',
 ];
 
 // Compact mascot for narrow terminals
 const MASCOT_COMPACT = [
-  ' (◕ᴥ◕)≋',
-  '  /|\\   ',
+  '▄▀▀▀▀▄',
+  '█◕ᴥ◕ █',
 ];
 
 // ASCII art — fits within 52 columns

@@ -63,7 +63,7 @@ describe('Integration: Role System', () => {
     expect(hanimoRole).toBeDefined();
     expect(hanimoRole!.tools.length).toBe(16);
     expect(hanimoRole!.maxSteps).toBe(50);
-    expect(hanimoRole!.icon).toBe('🐶');
+    expect(hanimoRole!.icon).toBe('⚡');
   });
 });
 

@@ -9,7 +9,7 @@ import type { SidecarEvent } from "../../lib/ipc";
 type Role = "hanimo" | "dev" | "plan";
 
 const ROLES: { id: Role; icon: string; label: string }[] = [
-  { id: "hanimo", icon: "🐶", label: "hanimo" },
+  { id: "hanimo", icon: "⚡", label: "hanimo" },
   { id: "dev", icon: "🔧", label: "dev" },
   { id: "plan", icon: "📋", label: "plan" },
 ];

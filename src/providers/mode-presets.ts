@@ -216,7 +216,7 @@ export function generatePresets(
     nameKo: '자동',
     description: 'Automatically optimized — best model for each role',
     descriptionKo: '자동 최적화 — 역할별 최적 모델 자동 배정',
-    icon: '🐶',
+    icon: '⚡',
     roles: {
       hanimo: toAssignment(pickForRole(analyzed, 'general', 'largest'), 'best overall'),
       dev: toAssignment(pickForRole(analyzed, 'coding', 'largest'), 'best coding'),
@@ -235,7 +235,7 @@ function getDefaultPreset(): ModePreset {
     nameKo: '자동',
     description: 'Default preset (no models discovered)',
     descriptionKo: '기본 프리셋 (모델 미발견)',
-    icon: '🐶',
+    icon: '⚡',
     roles: { hanimo: fallback, dev: fallback, plan: fallback },
   };
 }

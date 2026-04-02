@@ -42,7 +42,7 @@ const sessionStartTime = Date.now();
 const sessionId = crypto.randomUUID();
 
 const ROLE_DESC_KO: Record<string, string> = {
-  hanimo: '만능 모드 — 의도 자동 감지, 코딩/대화/분석/시스템 관리 🐶',
+  hanimo: '만능 모드 — 의도 자동 감지, 코딩/대화/분석/시스템 관리 ⚡',
   dev: '코딩 에이전트 — 파일 읽기/쓰기, 셸, git',
   plan: '분석/계획 — 읽기 전용, 수정 불가',
 };

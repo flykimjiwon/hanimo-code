@@ -307,7 +307,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
         [
           'Mode presets — 역할별 최적 모델 자동 배정:',
           '',
-          '  /mode auto       🐶 자동 — 역할별 최적 모델 자동 배정',
+          '  /mode auto       ⚡ 자동 — 역할별 최적 모델 자동 배정',
           '  /mode turbo      🚀 터보 — 최고 성능 (가장 큰 모델)',
           '  /mode balanced   ⚖️  균형 — 성능과 속도 균형',
           '  /mode eco        🌱 효율 — 최고 속도 (가장 작은 모델)',
@@ -355,7 +355,7 @@ const COMMAND_MAP: Record<string, CommandHandler> = {
       cfg.modePreset = modeId;
       writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 });
 
-      const icons: Record<string, string> = { auto: '🐶', turbo: '🚀', balanced: '⚖️', eco: '🌱' };
+      const icons: Record<string, string> = { auto: '⚡', turbo: '🚀', balanced: '⚖️', eco: '🌱' };
       const names: Record<string, string> = { auto: '자동', turbo: '터보', balanced: '균형', eco: '효율' };
       ctx.addSystemMessage(
         `${icons[modeId]} Mode: ${names[modeId]} (${modeId})\nRestart hanimo to apply model assignments.\nOr use /mode show to see assignments.`,
