@@ -421,7 +421,7 @@ async function selectModel(
 
   while (true) {
     printPage();
-    const input = await rl.question(`  모델 선택 [번호/검색어] (기본: ${defaultModel}): `);
+    const input = await rl.question(`  모델 선택 [번호/검색어] (Enter=${defaultModel}): `);
     const trimmed = input.trim();
 
     // Empty → use default
@@ -567,6 +567,8 @@ export async function runOnboarding(): Promise<void> {
   console.log('   *) config.example.jsonc 참고 — customProviders 배열에 직접 추가');
   console.log();
 
+  console.log('  번호를 입력하고 Enter를 누르세요.');
+  console.log();
   const choice = await rl.question('  프로바이더 선택 [1-14] (기본: 1): ');
   const providerChoice = choice.trim() || '1';
 
