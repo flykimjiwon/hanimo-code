@@ -236,7 +236,7 @@ function App({
 
   // Command matches
   const commandMatches = inputValue.startsWith('/')
-    ? COMMAND_LIST.filter(c => c.name.startsWith(inputValue.slice(1).toLowerCase())).slice(0, 6)
+    ? COMMAND_LIST.filter(c => c.name.startsWith(inputValue.slice(1).toLowerCase()))
     : [];
 
   const totalTokens = usage.promptTokens + usage.completionTokens;
@@ -352,11 +352,7 @@ function App({
       {commandMatches.length > 0 && (
         <box flexDirection="column" paddingX={2}>
           {commandMatches.map((cmd) => (
-            <box key={cmd.name}>
-              <text attributes={TextAttributes.DIM} content="  /" />
-              <text attributes={TextAttributes.BOLD} content={cmd.name.padEnd(16)} />
-              <text attributes={TextAttributes.DIM} content={cmd.descriptionKo} />
-            </box>
+            <text key={cmd.name} content={`  /${cmd.name.padEnd(16)} ${cmd.descriptionKo}`} attributes={TextAttributes.DIM} />
           ))}
         </box>
       )}
