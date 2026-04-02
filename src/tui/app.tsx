@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import { render, Box, Text, useApp, useInput, useStdout } from 'ink';
 import type { LanguageModelV1, ToolSet } from 'ai';
-import { StatusBar } from './components/status-bar.js';
+// StatusBar removed — info shown in bottom hints instead
 import { ChatView } from './components/chat-view.js';
 import { InputBar } from './components/input-bar.js';
 import { SelectMenu } from './components/select-menu.js';
@@ -60,21 +60,25 @@ interface AppProps {
   streaming?: boolean;
 }
 
-function KeyHints({ isLoading, menuOpen, leaderActive, lang }: { isLoading: boolean; menuOpen: boolean; leaderActive: boolean; lang: string }): React.ReactElement {
+function KeyHints({ isLoading, menuOpen, leaderActive, lang, statusInfo }: {
+  isLoading: boolean; menuOpen: boolean; leaderActive: boolean; lang: string;
+  statusInfo?: string;
+}): React.ReactElement {
   const ko = lang === 'ko';
   if (leaderActive) return <Box width="100%" paddingX={1} justifyContent="center"><Text color={colors.warning}>{'LEADER: K=\uD314\uB808\uD2B8  S=\uC800\uC7A5  L=\uBD88\uB7EC\uC624\uAE30  V=verbose  C=\uCD08\uAE30\uD654  H=\uB3C4\uC6C0\uB9D0'}</Text></Box>;
   if (menuOpen) return <Box width="100%" paddingX={1} justifyContent="center"><Text color={colors.hint}>{ko ? 'Esc \uBA54\uB274 \uB2EB\uAE30' : 'Esc close menu'}</Text></Box>;
   return (
-    <Box width="100%" paddingX={1} justifyContent="center">
+    <Box width="100%" paddingX={1} justifyContent="space-between">
       <Text color={colors.hint}>
         {isLoading
           ? ko
             ? 'Ctrl+C \uCDE8\uC18C  |  Shift+\u2191\u2193 \uC2A4\uD06C\uB864  |  Ctrl+O \uC0C1\uC138'
             : 'Ctrl+C cancel  |  Shift+\u2191\u2193 scroll  |  Ctrl+O verbose'
           : ko
-            ? 'Enter \uC804\uC1A1  |  Esc \uBA54\uB274  |  Ctrl+K \uD314\uB808\uD2B8  |  Ctrl+X \uB9AC\uB354\uD0A4  |  /help'
-            : 'Enter send  |  Esc menu  |  Ctrl+K palette  |  Ctrl+X leader  |  /help'}
+            ? 'Enter \uC804\uC1A1  |  Esc \uBA54\uB274  |  Ctrl+K \uD314\uB808\uD2B8  |  /help'
+            : 'Enter send  |  Esc menu  |  Ctrl+K palette  |  /help'}
       </Text>
+      {statusInfo && <Text color={colors.dimText}>{statusInfo}</Text>}
     </Box>
   );
 }
@@ -825,19 +829,8 @@ function App({
 
   return (
     <Box flexDirection="column" width="100%">
-      <StatusBar
-        provider={currentProvider}
-        model={currentModel}
-        modelRole={modelRole}
-        status={status}
-        currentTool={agent.currentTool ?? undefined}
-        toolsEnabled={toolsEnabled}
-        usage={agent.usage}
-        roleIcon={currentRole?.icon}
-        roleName={currentRole?.name}
-        elapsedMs={agent.elapsedMs}
-        verbose={verbose}
-      />
+      {/* StatusBar removed — caused 4x duplicate rendering bug in Ink.
+          Key info is shown in welcome screen + input bar instead. */}
 
       {showWelcome && agent.messages.length === 0 ? (
         <WelcomeScreen
@@ -938,7 +931,13 @@ function App({
         roleName={currentRole?.name}
       />
 
-      <KeyHints isLoading={agent.isLoading} menuOpen={menuState !== 'none'} leaderActive={leader.leaderActive} lang={currentLang} />
+      <KeyHints
+        isLoading={agent.isLoading}
+        menuOpen={menuState !== 'none'}
+        leaderActive={leader.leaderActive}
+        lang={currentLang}
+        statusInfo={`${currentProvider}/${currentModel}  ${(agent.usage.promptTokens + agent.usage.completionTokens) >= 1000 ? `${((agent.usage.promptTokens + agent.usage.completionTokens) / 1000).toFixed(1)}k` : String(agent.usage.promptTokens + agent.usage.completionTokens)} tok  ${agent.usage.totalCost === 0 ? '$0' : agent.usage.totalCost < 0.01 ? `$${agent.usage.totalCost.toFixed(4)}` : `$${agent.usage.totalCost.toFixed(2)}`}`}
+      />
     </Box>
   );
 }
