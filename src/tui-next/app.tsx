@@ -147,6 +147,9 @@ function App({
     if (key.ctrl && key.name === 'c') {
       if (isLoading && abortRef.current) {
         abortRef.current.abort();
+      } else {
+        // Not loading — exit app
+        process.exit(0);
       }
     }
   });
@@ -364,6 +367,14 @@ function App({
           <text attributes={TextAttributes.BOLD} content={`${roleIcon} ${roleName}`} />
           <text attributes={TextAttributes.DIM} content={'Shift+Enter ↵  Tab ⇄ mode'} />
         </box>
+        {!isLoading && inputValue.length === 0 && (
+          <text attributes={TextAttributes.DIM} content={
+            roleName === 'Hanimo' ? '의도 자동 감지 — 코딩, 대화, 분석, 시스템 관리 모두 가능'
+            : roleName === 'Dev' ? '코딩 에이전트 — 파일 읽기/쓰기, 셸, git'
+            : roleName === 'Plan' ? '분석/계획 — 읽기 전용, 수정 불가'
+            : ''
+          } />
+        )}
         <input
           value={inputValue}
           onInput={(v: string) => setInputValue(v)}
