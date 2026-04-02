@@ -18,6 +18,12 @@ export interface UsageState {
   totalCost: number;
 }
 
+export interface ToolStats {
+  calls: number;
+  successes: number;
+  errors: number;
+}
+
 export interface UseAgentReturn {
   messages: DisplayMessage[];
   streamingText: string;
@@ -25,6 +31,8 @@ export interface UseAgentReturn {
   usage: UsageState;
   currentTool: string | null;
   elapsedMs: number;
+  toolStats: ToolStats;
+  totalActiveMs: number;
   sendMessage: (text: string) => void;
   cancelRun: () => void;
   addSystemMessage: (content: string) => void;
@@ -69,6 +77,12 @@ export function useAgent({ model, systemPrompt, tools, streaming }: UseAgentOpti
     completionTokens: 0,
     totalCost: 0,
   });
+
+  // Tool call stats
+  const [toolStats, setToolStats] = useState<ToolStats>({ calls: 0, successes: 0, errors: 0 });
+  // Cumulative active time (across all agent runs)
+  const totalActiveMsRef = useRef(0);
+  const [totalActiveMs, setTotalActiveMs] = useState(0);
 
   // Elapsed time tracking
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -116,6 +130,7 @@ export function useAgent({ model, systemPrompt, tools, streaming }: UseAgentOpti
 
         case 'tool-call':
           setCurrentTool(event.toolName);
+          setToolStats(prev => ({ ...prev, calls: prev.calls + 1 }));
           setDisplayMessages((prev) => [
             ...prev,
             {
@@ -129,6 +144,9 @@ export function useAgent({ model, systemPrompt, tools, streaming }: UseAgentOpti
 
         case 'tool-result':
           setCurrentTool(null);
+          setToolStats(prev => event.isError
+            ? { ...prev, errors: prev.errors + 1 }
+            : { ...prev, successes: prev.successes + 1 });
           setDisplayMessages((prev) => [
             ...prev,
             {
@@ -239,6 +257,11 @@ export function useAgent({ model, systemPrompt, tools, streaming }: UseAgentOpti
           // Other errors handled via event
         })
         .finally(() => {
+          if (startTimeRef.current !== null) {
+            const runMs = Date.now() - startTimeRef.current;
+            totalActiveMsRef.current += runMs;
+            setTotalActiveMs(totalActiveMsRef.current);
+          }
           setIsLoading(false);
           isLoadingRef.current = false;
           abortControllerRef.current = null;
@@ -283,6 +306,8 @@ export function useAgent({ model, systemPrompt, tools, streaming }: UseAgentOpti
     usage,
     currentTool,
     elapsedMs,
+    toolStats,
+    totalActiveMs,
     sendMessage,
     cancelRun,
     addSystemMessage,

@@ -28,6 +28,29 @@ function DiffLine({ line }: { line: string }): React.ReactElement {
   }
 }
 
+/**
+ * Detect if content looks like a unified diff (has @@ hunk headers and ---/+++ file headers).
+ */
+export function isDiffContent(content: string): boolean {
+  return content.includes('@@') &&
+    (content.includes('--- ') || content.includes('+++ '));
+}
+
+/**
+ * Extract file path from diff content (first --- or +++ line).
+ */
+export function extractDiffFilePath(content: string): string {
+  for (const line of content.split('\n')) {
+    if (line.startsWith('+++ ') && !line.startsWith('+++ /dev/null')) {
+      return line.slice(4).split('\t')[0]?.replace(/^[ab]\//, '') ?? 'file';
+    }
+    if (line.startsWith('--- ') && !line.startsWith('--- /dev/null')) {
+      return line.slice(4).split('\t')[0]?.replace(/^[ab]\//, '') ?? 'file';
+    }
+  }
+  return 'diff';
+}
+
 export function FileDiff({ diff, filePath }: FileDiffProps): React.ReactElement {
   const lines = diff.split('\n');
 

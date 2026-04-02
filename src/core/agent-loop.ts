@@ -10,17 +10,15 @@ import type {
 import { compactMessages } from './compaction.js';
 import { getModelPricing } from '../providers/model-registry.js';
 import { isEnabled } from './feature-flags.js';
-
-// Max messages before triggering compaction
-const MAX_CONTEXT_MESSAGES = 40;
+import { getMaxContextMessages } from '../providers/context-window.js';
 
 /**
  * Simple synchronous truncation fallback.
  */
-function truncateMessages(messages: Message[]): Message[] {
-  if (messages.length <= MAX_CONTEXT_MESSAGES) return messages;
+function truncateMessages(messages: Message[], maxMessages: number): Message[] {
+  if (messages.length <= maxMessages) return messages;
   const head = messages.slice(0, 2);
-  const tail = messages.slice(-(MAX_CONTEXT_MESSAGES - 2));
+  const tail = messages.slice(-(maxMessages - 2));
   return [...head, { role: 'system' as const, content: '[Earlier messages truncated to fit context window]' }, ...tail];
 }
 
@@ -112,12 +110,13 @@ export async function runAgentLoop(
   const updatedMessages: Message[] = [...messages];
 
   // Smart compaction: use LLM summary if possible, fallback to truncation
+  const maxCtxMessages = getMaxContextMessages(modelId);
   let contextMessages: Message[];
-  if (updatedMessages.length > MAX_CONTEXT_MESSAGES) {
+  if (updatedMessages.length > maxCtxMessages) {
     try {
-      contextMessages = await compactMessages(model, updatedMessages, 8);
+      contextMessages = await compactMessages(model, updatedMessages, 8, maxCtxMessages);
     } catch {
-      contextMessages = truncateMessages(updatedMessages);
+      contextMessages = truncateMessages(updatedMessages, maxCtxMessages);
     }
   } else {
     contextMessages = updatedMessages;

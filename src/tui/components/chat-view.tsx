@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Spinner } from './spinner.js';
 import { colors } from '../theme.js';
+import { FileDiff, isDiffContent, extractDiffFilePath } from './file-diff.js';
 
 export interface DisplayMessage {
   id: string;
@@ -73,15 +74,25 @@ const MessageBubble = React.memo(function MessageBubble({
         maxToolLines,
       );
       const isError = message.content.startsWith('Error:');
+      const showDiff = isDiffContent(message.content) &&
+        (message.toolName === 'git_diff' || message.toolName === 'edit_file' ||
+         message.toolName === 'patch' || message.toolName === 'hashline_edit');
       return (
         <Box paddingX={1} flexDirection="column">
           <Text color={colors.toolCall} dimColor>
             {'\u2514'} {message.toolName ?? 'tool'}
           </Text>
           <Box paddingLeft={2} flexDirection="column">
-            <Text color={isError ? colors.error : colors.toolResult}>
-              {truncated}
-            </Text>
+            {showDiff ? (
+              <FileDiff
+                diff={truncated}
+                filePath={extractDiffFilePath(message.content)}
+              />
+            ) : (
+              <Text color={isError ? colors.error : colors.toolResult}>
+                {truncated}
+              </Text>
+            )}
             {hidden > 0 && (
               <Text color={colors.dimText}>
                 {'\u2501\u2501'} {hidden} more lines (Ctrl+O verbose){' '}

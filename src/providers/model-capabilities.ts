@@ -7,6 +7,7 @@ export interface ModelCapability {
   role: ModelRole;
   toolCalling: boolean;
   codingTier: 'strong' | 'moderate' | 'weak' | 'none';
+  contextWindow?: number;  // Token count (e.g. 128000, 200000, 1000000)
   note?: string;
 }
 
@@ -27,101 +28,101 @@ export const ROLE_BADGES: Record<ModelRole, string> = {
 
 const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
   // ── 5B 이하 ──────────────────────────────────────
-  'qwen3.5:4b':          { role: 'assistant', toolCalling: true,  codingTier: 'moderate', note: '4B 최강, tool calling 정확도 높음' },
-  'qwen3:4b':            { role: 'assistant', toolCalling: true,  codingTier: 'moderate', note: 'thinking 모드 주의' },
-  'nemotron-3-nano:4b':  { role: 'assistant', toolCalling: true,  codingTier: 'moderate', note: 'NVIDIA 효율적' },
-  'phi4-mini:3.8b':      { role: 'assistant', toolCalling: true,  codingTier: 'moderate', note: 'finish_reason 이슈 가능' },
-  'granite4:3b':         { role: 'assistant', toolCalling: true,  codingTier: 'moderate', note: 'IBM 엔터프라이즈' },
-  'llama3.2:3b':         { role: 'chat',      toolCalling: false, codingTier: 'weak',     note: '프롬프트 기반 tool만' },
-  'qwen3:1.7b':          { role: 'chat',      toolCalling: true,  codingTier: 'weak',     note: '도구 신뢰성 낮음' },
-  'gemma3:1b':           { role: 'chat',      toolCalling: false, codingTier: 'none' },
-  'qwen3:0.6b':          { role: 'chat',      toolCalling: true,  codingTier: 'none',     note: '토이급' },
+  'qwen3.5:4b':          { role: 'assistant', toolCalling: true,  codingTier: 'moderate', contextWindow: 32768,   note: '4B 최강, tool calling 정확도 높음' },
+  'qwen3:4b':            { role: 'assistant', toolCalling: true,  codingTier: 'moderate', contextWindow: 32768,   note: 'thinking 모드 주의' },
+  'nemotron-3-nano:4b':  { role: 'assistant', toolCalling: true,  codingTier: 'moderate', contextWindow: 8192,    note: 'NVIDIA 효율적' },
+  'phi4-mini:3.8b':      { role: 'assistant', toolCalling: true,  codingTier: 'moderate', contextWindow: 16384,   note: 'finish_reason 이슈 가능' },
+  'granite4:3b':         { role: 'assistant', toolCalling: true,  codingTier: 'moderate', contextWindow: 8192,    note: 'IBM 엔터프라이즈' },
+  'llama3.2:3b':         { role: 'chat',      toolCalling: false, codingTier: 'weak',     contextWindow: 8192,    note: '프롬프트 기반 tool만' },
+  'qwen3:1.7b':          { role: 'chat',      toolCalling: true,  codingTier: 'weak',     contextWindow: 32768,   note: '도구 신뢰성 낮음' },
+  'gemma3:1b':           { role: 'chat',      toolCalling: false, codingTier: 'none',     contextWindow: 8192 },
+  'qwen3:0.6b':          { role: 'chat',      toolCalling: true,  codingTier: 'none',     contextWindow: 32768,   note: '토이급' },
 
   // ── 5B ~ 10B ─────────────────────────────────────
-  'qwen3.5:9b':          { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'GPT-OSS-120B급 성능' },
-  'qwen3:8b':            { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'thinking 모드로 복잡한 작업도 가능' },
-  'llama3.1:8b':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'tool calling 안정성 최고' },
-  'qwen2.5-coder:7b':    { role: 'assistant', toolCalling: true,  codingTier: 'strong',   note: 'tool calling finish_reason 버그' },
-  'mistral:7b':          { role: 'assistant', toolCalling: true,  codingTier: 'moderate' },
-  'codegemma:7b':        { role: 'chat',      toolCalling: false, codingTier: 'moderate' },
+  'qwen3.5:9b':          { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'GPT-OSS-120B급 성능' },
+  'qwen3:8b':            { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'thinking 모드로 복잡한 작업도 가능' },
+  'llama3.1:8b':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'tool calling 안정성 최고' },
+  'qwen2.5-coder:7b':    { role: 'assistant', toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'tool calling finish_reason 버그' },
+  'mistral:7b':          { role: 'assistant', toolCalling: true,  codingTier: 'moderate', contextWindow: 32768 },
+  'codegemma:7b':        { role: 'chat',      toolCalling: false, codingTier: 'moderate', contextWindow: 8192 },
 
   // ── 10B ~ 20B ────────────────────────────────────
-  'qwen3:14b':           { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '품질/자원 밸런스 최적' },
-  'deepseek-coder-v2:16b': { role: 'assistant', toolCalling: true, codingTier: 'strong',  note: '커뮤니티 Modelfile 필요' },
-  'starcoder2:15b':      { role: 'chat',      toolCalling: false, codingTier: 'moderate', note: '코드 완성 전용' },
-  'codellama:34b':       { role: 'chat',      toolCalling: false, codingTier: 'moderate', note: '구형, Ollama 네이티브 tool 미지원' },
+  'qwen3:14b':           { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: '품질/자원 밸런스 최적' },
+  'deepseek-coder-v2:16b': { role: 'assistant', toolCalling: true, codingTier: 'strong',  contextWindow: 128000,  note: '커뮤니티 Modelfile 필요' },
+  'starcoder2:15b':      { role: 'chat',      toolCalling: false, codingTier: 'moderate', contextWindow: 16384,   note: '코드 완성 전용' },
+  'codellama:34b':       { role: 'chat',      toolCalling: false, codingTier: 'moderate', contextWindow: 16384,   note: '구형, Ollama 네이티브 tool 미지원' },
 
   // ── 20B ~ 50B ────────────────────────────────────
-  'qwen3-coder:30b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '코딩 에이전트 최강, 256K 컨텍스트' },
-  'qwen3.5:27b':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'SWE-bench GPT-5 mini급' },
-  'qwen3:32b':           { role: 'agent',     toolCalling: true,  codingTier: 'strong' },
-  'devstral:24b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Mistral 코딩 에이전트 특화' },
-  'nemotron-cascade-2:30b': { role: 'agent',  toolCalling: true,  codingTier: 'strong',   note: 'NVIDIA, 24GB VRAM OK' },
-  'gpt-oss:20b':         { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: 'OpenAI 오픈소스, Apache 2.0' },
-  'qwen2.5-coder:32b':   { role: 'assistant', toolCalling: true,  codingTier: 'strong',   note: 'tool calling 포맷 이슈' },
-  'command-r:35b':       { role: 'assistant', toolCalling: true,  codingTier: 'weak',     note: 'RAG 특화' },
+  'qwen3-coder:30b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 262144,  note: '코딩 에이전트 최강, 256K 컨텍스트' },
+  'qwen3.5:27b':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'SWE-bench GPT-5 mini급' },
+  'qwen3:32b':           { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 32768 },
+  'devstral:24b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'Mistral 코딩 에이전트 특화' },
+  'nemotron-cascade-2:30b': { role: 'agent',  toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'NVIDIA, 24GB VRAM OK' },
+  'gpt-oss:20b':         { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: 'OpenAI 오픈소스, Apache 2.0' },
+  'qwen2.5-coder:32b':   { role: 'assistant', toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'tool calling 포맷 이슈' },
+  'command-r:35b':       { role: 'assistant', toolCalling: true,  codingTier: 'weak',     contextWindow: 128000,  note: 'RAG 특화' },
 
   // ── llama3.2 (default tag) ───────────────────────
-  'llama3.2':            { role: 'chat',      toolCalling: false, codingTier: 'weak' },
+  'llama3.2':            { role: 'chat',      toolCalling: false, codingTier: 'weak',     contextWindow: 8192 },
 
   // ══════════════════════════════════════════════════
   // CLOUD MODELS
   // ══════════════════════════════════════════════════
 
   // ── OpenAI ──────────────────────────────────────
-  'gpt-4o':              { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'OpenAI 최고 범용, 128K ctx' },
-  'gpt-4o-mini':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '저렴 + 빠름, 128K ctx' },
-  'gpt-4.1':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '코딩 최적화, 1M ctx' },
-  'gpt-4.1-mini':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '4.1 경량, 1M ctx' },
-  'gpt-4.1-nano':        { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '초경량, 1M ctx' },
-  'o3-mini':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 특화, 200K ctx' },
-  'o4-mini':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 최신, 200K ctx' },
-  'codex-mini-latest':   { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Codex 코딩 전용' },
+  'gpt-4o':              { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'OpenAI 최고 범용, 128K ctx' },
+  'gpt-4o-mini':         { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: '저렴 + 빠름, 128K ctx' },
+  'gpt-4.1':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 1000000, note: '코딩 최적화, 1M ctx' },
+  'gpt-4.1-mini':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 1000000, note: '4.1 경량, 1M ctx' },
+  'gpt-4.1-nano':        { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 1000000, note: '초경량, 1M ctx' },
+  'o3-mini':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 200000,  note: '추론 특화, 200K ctx' },
+  'o4-mini':             { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 200000,  note: '추론 최신, 200K ctx' },
+  'codex-mini-latest':   { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 200000,  note: 'Codex 코딩 전용' },
 
   // ── Anthropic ───────────────────────────────────
-  'claude-opus-4-20250514':   { role: 'agent', toolCalling: true, codingTier: 'strong',  note: '최고 성능, 200K ctx. API 키 필요' },
-  'claude-sonnet-4-20250514': { role: 'agent', toolCalling: true, codingTier: 'strong',  note: '속도/성능 밸런스, 200K ctx' },
-  'claude-haiku-4-20250414':  { role: 'agent', toolCalling: true, codingTier: 'moderate', note: '가장 빠름/저렴, 200K ctx' },
+  'claude-opus-4-20250514':   { role: 'agent', toolCalling: true, codingTier: 'strong',  contextWindow: 200000,  note: '최고 성능, 200K ctx. API 키 필요' },
+  'claude-sonnet-4-20250514': { role: 'agent', toolCalling: true, codingTier: 'strong',  contextWindow: 200000,  note: '속도/성능 밸런스, 200K ctx' },
+  'claude-haiku-4-20250414':  { role: 'agent', toolCalling: true, codingTier: 'moderate', contextWindow: 200000, note: '가장 빠름/저렴, 200K ctx' },
 
   // ── Google Gemini ───────────────────────────────
-  'gemini-2.5-pro':      { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '1M ctx, 추론 최강' },
-  'gemini-2.5-flash':    { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '1M ctx, 빠름/저렴' },
-  'gemini-2.0-flash':    { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '이전 세대, 안정적' },
+  'gemini-2.5-pro':      { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 1000000, note: '1M ctx, 추론 최강' },
+  'gemini-2.5-flash':    { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 1000000, note: '1M ctx, 빠름/저렴' },
+  'gemini-2.0-flash':    { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 1000000, note: '이전 세대, 안정적' },
 
   // ── DeepSeek ────────────────────────────────────
-  'deepseek-chat':       { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'V3, 128K ctx, 저렴' },
-  'deepseek-coder':      { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '코딩 전용' },
-  'deepseek-reasoner':   { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'R1, 추론 특화' },
+  'deepseek-chat':       { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'V3, 128K ctx, 저렴' },
+  'deepseek-coder':      { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: '코딩 전용' },
+  'deepseek-reasoner':   { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'R1, 추론 특화' },
 
   // ── Groq ────────────────────────────────────────
-  'llama-3.3-70b-versatile': { role: 'agent', toolCalling: true, codingTier: 'strong',   note: 'Groq 초고속 추론' },
-  'qwen-qwq-32b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Groq 추론 모델' },
-  'llama-3.1-8b-instant': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', note: 'Groq 초저지연' },
+  'llama-3.3-70b-versatile': { role: 'agent', toolCalling: true, codingTier: 'strong',   contextWindow: 128000,  note: 'Groq 초고속 추론' },
+  'qwen-qwq-32b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: 'Groq 추론 모델' },
+  'llama-3.1-8b-instant': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: 'Groq 초저지연' },
 
   // ── Mistral ─────────────────────────────────────
-  'codestral-latest':    { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'Mistral 코딩 전용' },
-  'mistral-large-latest': { role: 'agent',    toolCalling: true,  codingTier: 'strong',   note: 'Mistral 최고 성능' },
-  'mistral-small-latest': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', note: 'Mistral 경량' },
+  'codestral-latest':    { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 256000,  note: 'Mistral 코딩 전용' },
+  'mistral-large-latest': { role: 'agent',    toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'Mistral 최고 성능' },
+  'mistral-small-latest': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: 'Mistral 경량' },
 
   // ── GLM (Zhipu) ─────────────────────────────────
-  'glm-4-plus':          { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '중국 최고 성능' },
-  'glm-4-flash':         { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '무료 티어 가능' },
-  'glm-4-air':           { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: '저렴' },
+  'glm-4-plus':          { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: '중국 최고 성능' },
+  'glm-4-flash':         { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: '무료 티어 가능' },
+  'glm-4-air':           { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: '저렴' },
 
   // ── DGX SPARK / Custom ──────────────────────────
-  'gpt-oss:120b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: 'OpenAI 오픈소스 대형' },
-  'deepseek-v3:latest':  { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '671B MoE, DGX 전용' },
-  'deepseek-r1:32b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 특화 32B' },
-  'deepseek-r1:14b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   note: '추론 특화 14B' },
-  'mixtral:8x22b-instruct': { role: 'agent',  toolCalling: true,  codingTier: 'strong',   note: '176B MoE' },
-  'qwen2.5:32b-instruct': { role: 'agent',    toolCalling: true,  codingTier: 'strong',   note: '32B 범용' },
-  'qwen3-coder-next:q8_0': { role: 'agent',   toolCalling: true,  codingTier: 'strong',   note: '코딩 에이전트 차세대' },
-  'nemotron-3-nano:30b': { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: 'NVIDIA 30B' },
-  'glm-4.7-flash:latest': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', note: 'GLM 오픈소스' },
-  'glm-4.7-flash:bf16':  { role: 'agent',     toolCalling: true,  codingTier: 'moderate', note: 'GLM bf16 정밀도' },
-  'mistral-small3.2:latest': { role: 'agent',  toolCalling: true, codingTier: 'moderate', note: 'Mistral 소형' },
-  'llava:13b':           { role: 'assistant',  toolCalling: false, codingTier: 'weak',     note: '비전 모델' },
-  'glm-ocr:bf16':        { role: 'assistant',  toolCalling: false, codingTier: 'none',     note: 'OCR 전용' },
+  'gpt-oss:120b':        { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: 'OpenAI 오픈소스 대형' },
+  'deepseek-v3:latest':  { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: '671B MoE, DGX 전용' },
+  'deepseek-r1:32b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: '추론 특화 32B' },
+  'deepseek-r1:14b':     { role: 'agent',     toolCalling: true,  codingTier: 'strong',   contextWindow: 128000,  note: '추론 특화 14B' },
+  'mixtral:8x22b-instruct': { role: 'agent',  toolCalling: true,  codingTier: 'strong',   contextWindow: 65536,   note: '176B MoE' },
+  'qwen2.5:32b-instruct': { role: 'agent',    toolCalling: true,  codingTier: 'strong',   contextWindow: 32768,   note: '32B 범용' },
+  'qwen3-coder-next:q8_0': { role: 'agent',   toolCalling: true,  codingTier: 'strong',   contextWindow: 262144,  note: '코딩 에이전트 차세대' },
+  'nemotron-3-nano:30b': { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 32768,   note: 'NVIDIA 30B' },
+  'glm-4.7-flash:latest': { role: 'agent',    toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: 'GLM 오픈소스' },
+  'glm-4.7-flash:bf16':  { role: 'agent',     toolCalling: true,  codingTier: 'moderate', contextWindow: 128000,  note: 'GLM bf16 정밀도' },
+  'mistral-small3.2:latest': { role: 'agent',  toolCalling: true, codingTier: 'moderate', contextWindow: 128000,  note: 'Mistral 소형' },
+  'llava:13b':           { role: 'assistant',  toolCalling: false, codingTier: 'weak',     contextWindow: 4096,    note: '비전 모델' },
+  'glm-ocr:bf16':        { role: 'assistant',  toolCalling: false, codingTier: 'none',     contextWindow: 8192,    note: 'OCR 전용' },
 };
 
 // ── Prefix-based fallbacks ────────────────────────────────────────────

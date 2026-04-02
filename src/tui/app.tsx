@@ -31,8 +31,15 @@ import { useLeaderKey } from './hooks/use-leader-key.js';
 import { CommandPalette } from './components/command-palette.js';
 import type { PaletteItem } from './components/command-palette.js';
 import { WelcomeScreen } from './components/welcome-screen.js';
+import { printExitSummary } from './exit-summary.js';
+import type { SessionStats } from './exit-summary.js';
 
 type MenuState = 'none' | 'main' | 'model' | 'provider' | 'lang' | 'role' | 'palette' | 'sessions' | 'theme';
+
+// Module-level session stats — updated by App, read by startApp on exit
+let sessionStatsSnapshot: SessionStats | null = null;
+const sessionStartTime = Date.now();
+const sessionId = crypto.randomUUID();
 
 const ROLE_DESC_KO: Record<string, string> = {
   hanimo: '만능 모드 — 의도 자동 감지, 코딩/대화/분석/시스템 관리 🐶',
@@ -487,6 +494,22 @@ function App({
       agent.sendMessage(initialPrompt);
     }
   }, []); // Run once on mount
+
+  // Keep session stats snapshot updated for exit summary
+  useEffect(() => {
+    sessionStatsSnapshot = {
+      sessionId,
+      toolCalls: agent.toolStats.calls,
+      toolSuccesses: agent.toolStats.successes,
+      toolErrors: agent.toolStats.errors,
+      wallTimeMs: Date.now() - sessionStartTime,
+      agentActiveMs: agent.totalActiveMs,
+      apiTimeMs: agent.totalActiveMs,
+      promptTokens: agent.usage.promptTokens,
+      completionTokens: agent.usage.completionTokens,
+      totalCost: agent.usage.totalCost,
+    };
+  });
 
   const status = agent.currentTool
     ? ('tool' as const)
@@ -958,9 +981,18 @@ export function startApp(options: StartAppOptions): void {
   instance.waitUntilExit().then(() => {
     // Restore: show cursor + leave alternate screen buffer
     process.stdout.write('\x1B[?25h\x1B[?1049l');
+    // Print session summary
+    if (sessionStatsSnapshot) {
+      sessionStatsSnapshot.wallTimeMs = Date.now() - sessionStartTime;
+      printExitSummary(sessionStatsSnapshot);
+    }
     process.exit(0);
   }).catch(() => {
     process.stdout.write('\x1B[?25h\x1B[?1049l');
+    if (sessionStatsSnapshot) {
+      sessionStatsSnapshot.wallTimeMs = Date.now() - sessionStartTime;
+      printExitSummary(sessionStatsSnapshot);
+    }
     process.exit(1);
   });
 }

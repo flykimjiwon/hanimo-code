@@ -6,13 +6,15 @@ import { globSearchTool } from './glob-search.js';
 import { grepSearchTool } from './grep-search.js';
 import { hashReadFileTool, hashlineEditTool } from './hashline-edit.js';
 import { webfetchTool } from './webfetch.js';
+import { webSearchTool } from './web-search.js';
 import { todoTool } from './todo.js';
 import { batchTool } from './batch.js';
+import { patchTool } from './patch.js';
 import { lspDiagnosticsTool } from './lsp-diagnostics.js';
 import { memoryWriteTool, memoryReadTool } from './memory.js';
 import { isEnabled } from '../core/feature-flags.js';
 
-export function createToolRegistry() {
+export function createToolRegistry(): ToolSet {
   return {
     // Core file ops
     read_file: readFileTool,
@@ -32,21 +34,24 @@ export function createToolRegistry() {
     git_log: gitLogTool,
     // New tools
     webfetch: webfetchTool,
+    web_search: webSearchTool,
     todo: todoTool,
     batch: batchTool,
+    patch: patchTool,
     diagnostics: lspDiagnosticsTool,
     ...(isEnabled('MEMORY_SYSTEM') ? { memory_write: memoryWriteTool, memory_read: memoryReadTool } : {}),
   };
 }
 
 // Read-only tools for Assistant role (no write/edit/shell/git-commit)
-export function createReadOnlyTools() {
+export function createReadOnlyTools(): ToolSet {
   return {
     read_file: readFileTool,
     hashline_read: hashReadFileTool,
     glob_search: globSearchTool,
     grep_search: grepSearchTool,
     webfetch: webfetchTool,
+    web_search: webSearchTool,
     todo: todoTool,
     batch: batchTool,
     diagnostics: lspDiagnosticsTool,
@@ -96,7 +101,9 @@ export {
   globSearchTool,
   grepSearchTool,
   webfetchTool,
+  webSearchTool,
   todoTool,
   batchTool,
+  patchTool,
   lspDiagnosticsTool,
 };

@@ -75,6 +75,8 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 - Run shell commands and view output
 - Use git for version control operations
 - Fetch web pages and documentation (webfetch)
+- Search the web for documentation, error solutions, and package info (web_search)
+- Apply unified diff patches to one or more files (patch)
 - Track multi-step work with a todo list (todo)
 - Run multiple read operations in parallel (batch)
 - Get TypeScript/ESLint diagnostics without modifying files (diagnostics)

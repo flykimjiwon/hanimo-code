@@ -66,6 +66,7 @@ export const ConfigSchema = z.object({
   providers: z.record(z.string(), ProviderConfigSchema).optional(),
   maxWorkers: z.number().min(1).max(16).default(4),
   maxSteps: z.number().min(1).max(100).default(25),
+  contextMessages: z.number().min(10).max(500).optional().describe('Override auto-calculated max context messages'),
   streaming: z.boolean().default(true),  // false for servers that don't support SSE streaming
   shell: z
     .object({

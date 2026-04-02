@@ -2,6 +2,23 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { colors } from '../theme.js';
 
+// Mascot: 하니(honey bee) + 모돌(bichon puppy) fusion
+// Bichon silhouette with bee antennae and wings
+const MASCOT_LINES = [
+  '    \\  /        ',
+  '     ()         ',
+  '  (\\_◕ᴥ◕_/)    ',
+  ' ≋/|      |\\≋  ',
+  '   |  ♡♡  |     ',
+  '    \\_||_/      ',
+];
+
+// Compact mascot for narrow terminals
+const MASCOT_COMPACT = [
+  ' (◕ᴥ◕)≋',
+  '  /|\\   ',
+];
+
 // ASCII art — fits within 52 columns
 const LOGO_LINES = [
   ' ██   ██  █████  ███   ██ ██ ███   ███  ██████ ',
@@ -93,17 +110,43 @@ export const Banner = React.memo(function Banner({
   themeId,
 }: BannerProps): React.ReactElement {
   const useCompact = cols < 60;
-  const lines = useCompact ? LOGO_COMPACT : LOGO_LINES;
+  const logoLines = useCompact ? LOGO_COMPACT : LOGO_LINES;
+  const mascotLines = useCompact ? MASCOT_COMPACT : MASCOT_LINES;
   const scheme = (themeId ? BANNER_SCHEMES[themeId] : undefined) ?? DEFAULT_SCHEME;
   const gradient = useCompact ? scheme.compact : scheme.full;
+  const showInline = cols >= 75; // Show mascot inline with logo if wide enough
 
   return (
     <Box flexDirection="column" alignItems="center" width="100%" paddingTop={1}>
-      {lines.map((line, i) => (
-        <Box key={i} justifyContent="center" width="100%">
-          <Text color={gradient[i % gradient.length]} bold>{line}</Text>
+      {showInline ? (
+        /* Wide layout: mascot left + logo right */
+        <Box justifyContent="center" width="100%">
+          <Box flexDirection="column" marginRight={2}>
+            {mascotLines.map((line, i) => (
+              <Text key={`m${i}`} color={gradient[i % gradient.length]}>{line}</Text>
+            ))}
+          </Box>
+          <Box flexDirection="column">
+            {logoLines.map((line, i) => (
+              <Text key={`l${i}`} color={gradient[i % gradient.length]} bold>{line}</Text>
+            ))}
+          </Box>
         </Box>
-      ))}
+      ) : (
+        /* Narrow layout: mascot above logo */
+        <>
+          {mascotLines.map((line, i) => (
+            <Box key={`m${i}`} justifyContent="center" width="100%">
+              <Text color={gradient[i % gradient.length]}>{line}</Text>
+            </Box>
+          ))}
+          {logoLines.map((line, i) => (
+            <Box key={`l${i}`} justifyContent="center" width="100%">
+              <Text color={gradient[i % gradient.length]} bold>{line}</Text>
+            </Box>
+          ))}
+        </>
+      )}
       <Box justifyContent="center" width="100%" marginTop={1}>
         <Text color={colors.dimText}>
           {'v' + version}

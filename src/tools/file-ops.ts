@@ -113,11 +113,25 @@ export const editFileTool = tool({
       const updated = content.replace(oldStr, newStr);
       await writeFile(path, updated, 'utf-8');
 
+      // Generate a minimal inline diff for display
+      const oldLines = oldStr.split('\n');
+      const newLines = newStr.split('\n');
+      const matchIdx = content.indexOf(oldStr);
+      const startLine = content.slice(0, matchIdx).split('\n').length;
+      const diffLines = [
+        `--- a/${path}`,
+        `+++ b/${path}`,
+        `@@ -${startLine},${oldLines.length} +${startLine},${newLines.length} @@`,
+        ...oldLines.map(l => `-${l}`),
+        ...newLines.map(l => `+${l}`),
+      ];
+
       return {
         success: true,
         path,
         replacedChars: oldStr.length,
         newChars: newStr.length,
+        diff: diffLines.join('\n'),
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

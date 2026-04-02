@@ -3,7 +3,7 @@ import type { LanguageModelV1 } from 'ai';
 import type { Message } from './types.js';
 import { isEnabled } from './feature-flags.js';
 
-const MAX_CONTEXT_MESSAGES = 40;
+const DEFAULT_MAX_CONTEXT_MESSAGES = 40;
 
 const COMPACTION_PROMPT = `You are a conversation compactor. Summarize the conversation so far into a concise context summary that preserves:
 1. What the user asked for (original task/goal)
@@ -81,6 +81,7 @@ export async function compactMessages(
   model: LanguageModelV1,
   messages: Message[],
   keepRecent: number = 6,
+  maxMessages: number = DEFAULT_MAX_CONTEXT_MESSAGES,
 ): Promise<Message[]> {
   if (messages.length <= keepRecent + 2) return messages;
 
@@ -98,7 +99,7 @@ export async function compactMessages(
     }, 0);
 
     // If under 50K chars after snip+micro, the lightweight compaction is enough
-    if (totalLength < 50000 && processed.length <= MAX_CONTEXT_MESSAGES) {
+    if (totalLength < 50000 && processed.length <= maxMessages) {
       return processed;
     }
   }

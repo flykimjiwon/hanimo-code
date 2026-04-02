@@ -18,23 +18,25 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 describe('Integration: Tool Registry', () => {
-  it('should register exactly 16 tools', () => {
+  it('should register exactly 18 tools', () => {
     const tools = createToolRegistry();
     const names = Object.keys(tools);
-    expect(names.length).toBe(16);
+    expect(names.length).toBe(18);
     expect(names).toContain('read_file');
     expect(names).toContain('hashline_read');
     expect(names).toContain('hashline_edit');
     expect(names).toContain('webfetch');
+    expect(names).toContain('web_search');
     expect(names).toContain('todo');
     expect(names).toContain('batch');
+    expect(names).toContain('patch');
     expect(names).toContain('diagnostics');
   });
 
-  it('should create read-only tools (8)', () => {
+  it('should create read-only tools (9)', () => {
     const tools = createReadOnlyTools();
     const names = Object.keys(tools);
-    expect(names.length).toBe(8);
+    expect(names.length).toBe(9);
     expect(names).not.toContain('write_file');
     expect(names).not.toContain('shell_exec');
     expect(names).not.toContain('git_commit');
