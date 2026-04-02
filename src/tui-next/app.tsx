@@ -352,7 +352,10 @@ function App({
       {commandMatches.length > 0 && (
         <box flexDirection="column" paddingX={2}>
           {commandMatches.map((cmd) => (
-            <text key={cmd.name} content={`  /${cmd.name.padEnd(16)} ${cmd.descriptionKo}`} attributes={TextAttributes.DIM} />
+            <box key={cmd.name}>
+              <text fg="cyan" content={`  /${cmd.name}`} />
+              <text attributes={TextAttributes.DIM} content={`  ${cmd.descriptionKo}`} />
+            </box>
           ))}
         </box>
       )}
@@ -360,6 +363,7 @@ function App({
       {/* Input */}
       <box borderStyle="rounded" paddingX={1} flexDirection="column">
         <box justifyContent="space-between">
+          <text content="" />
           <text attributes={TextAttributes.BOLD} content={`${roleIcon} ${roleName}`} />
           <text attributes={TextAttributes.DIM} content={'Shift+Enter ↵  Tab ⇄ mode'} />
         </box>
