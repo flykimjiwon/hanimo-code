@@ -141,6 +141,10 @@ function App({
   // Welcome screen: show until first message is sent
   const [showWelcome, setShowWelcome] = useState(true);
 
+  // Delay initial render to avoid Ink accumulating partial renders during state setup
+  const [ready, setReady] = useState(false);
+  useEffect(() => { setReady(true); }, []);
+
   // Current theme ID (for banner color scheme)
   const [currentThemeId, setCurrentThemeId] = useState('catppuccin');
 
@@ -815,6 +819,9 @@ function App({
     agent.addSystemMessage(`Session loaded: ${session?.provider}/${session?.model} (${messages.length} messages)`);
     setMenuState('none');
   }, [agent]);
+
+  // Wait one tick for all initial state to settle before rendering
+  if (!ready) return <Box />;
 
   return (
     <Box flexDirection="column" width="100%">

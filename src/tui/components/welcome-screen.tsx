@@ -36,7 +36,7 @@ export const WelcomeScreen = React.memo(function WelcomeScreen({
 
   return (
     <Box flexDirection="column" width="100%" height={height} justifyContent="center" alignItems="center">
-      <Banner version="0.1.0" tagline={'\uD130\uBBF8\uB110 AI \uCF54\uB529 \uC5B4\uC2DC\uC2A4\uD134\uD2B8'} cols={cols} themeId={themeId} />
+      <Banner cols={cols} themeId={themeId} />
 
       {/* Provider/model info — compact single line */}
       <Box justifyContent="center" width="100%" marginTop={1}>
