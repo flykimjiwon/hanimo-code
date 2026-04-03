@@ -824,9 +824,10 @@ function App({
   if (!ready) return <Box />;
 
   return (
-    <Box flexDirection="column" width="100%">
-      {/* StatusBar removed — caused 4x duplicate rendering bug in Ink.
-          Key info is shown in welcome screen + input bar instead. */}
+    <Box flexDirection="column" width="100%" height={termRows} overflow="hidden">
+      {/* Root Box must have fixed height={termRows} to prevent Ink from
+          accumulating renders. Without this, each re-render appends output
+          instead of overwriting, causing 3-4x duplicate lines. */}
 
       {showWelcome && agent.messages.length === 0 ? (
         <WelcomeScreen
