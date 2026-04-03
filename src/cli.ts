@@ -382,7 +382,8 @@ export async function main(): Promise<void> {
           networkMode,
           streaming: config.streaming,
         });
-      } catch {
+      } catch (tuiErr) {
+        console.error('[TUI error]', tuiErr instanceof Error ? tuiErr.message : tuiErr);
         console.log('[TUI unavailable — falling back to text mode]');
         await startTextMode({
           provider: config.provider,

@@ -521,10 +521,10 @@ function App({
       ? ('thinking' as const)
       : ('idle' as const);
 
-  // Calculate height: status bar (2) + input (7: 5 content + 2 border) + hints (1) + padding (1) + overflow buffer (2) = 13
-  // Extra buffer prevents layout overflow on narrow terminals
+  // Calculate height: input bar (5: badge + hint + prompt + 2 border) + hints (1) + buffer (1) = 7
+  // StatusBar was removed — all info is now in KeyHints
   const menuHeight = menuState !== 'none' ? 12 : 0;
-  const chatHeight = Math.max(termRows - 13 - menuHeight, 3);
+  const chatHeight = Math.max(termRows - 7 - menuHeight, 3);
 
   // Tab completions: slash commands + current provider's model names
   const completions = useMemo(() => {

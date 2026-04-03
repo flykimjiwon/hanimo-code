@@ -393,7 +393,8 @@ async function selectModel(
   defaultModel: string,
   rl: ReturnType<typeof createInterface>,
 ): Promise<string> {
-  const PAGE_SIZE = 15;
+  // 터미널 높이에 맞춰 동적 페이지 크기 (헤더/푸터 7줄 제외)
+  const PAGE_SIZE = Math.max(10, Math.min(40, (process.stdout.rows || 24) - 7));
   let page = 0;
   let filtered = models;
   let searchTerm = '';
@@ -703,12 +704,9 @@ export async function runOnboarding(): Promise<void> {
   rl.close();
 
   // Save config
-  // Local/custom providers often don't support SSE streaming reliably
-  const localProviders = new Set(['ollama', 'vllm', 'lmstudio', 'custom']);
   const savedConfig: SavedConfig = {
     provider,
     model,
-    ...(localProviders.has(provider) ? { streaming: false } : {}),
     providers: {},
   };
 

@@ -90,6 +90,7 @@ export async function runAgentLoop(
     onEvent,
     abortSignal,
     streaming = true,
+    maxTokens = 16384,
   } = options;
 
   // Warm pricing cache for this model
@@ -133,6 +134,7 @@ export async function runAgentLoop(
           messages: contextMessages,
           tools,
           maxSteps,
+          maxTokens,
           abortSignal,
         });
       } catch (toolErr) {
@@ -145,6 +147,7 @@ export async function runAgentLoop(
             system: systemPrompt,
             messages: contextMessages,
             maxSteps: 1,
+            maxTokens,
             abortSignal,
           });
         } else {
@@ -202,6 +205,7 @@ export async function runAgentLoop(
       messages: contextMessages,
       tools,
       maxSteps,
+      maxTokens,
       abortSignal,
       ...(isEnabled('PROMPT_CACHE') ? {
         experimental_providerMetadata: {
@@ -336,6 +340,7 @@ export async function runAgentLoop(
           system: systemPrompt,
           messages: contextMessages,
           maxSteps: 1,
+          maxTokens,
           abortSignal,
         });
         fullResponse = fallback.text;

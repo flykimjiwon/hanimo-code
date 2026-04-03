@@ -82,6 +82,13 @@ export function buildSystemPrompt(context: ProjectContext, role?: RoleDefinition
 - Run multiple read operations in parallel (batch)
 - Get TypeScript/ESLint diagnostics without modifying files (diagnostics)
 
+## Tool Usage (CRITICAL)
+- When asked to create or write files, ALWAYS use the write_file tool. Do NOT just show code in the response.
+- When asked to modify files, ALWAYS use edit_file or hashline_edit. Do NOT just describe the change.
+- When asked to read files, ALWAYS use read_file. Do NOT guess the content.
+- When asked to run commands, ALWAYS use shell_exec. Do NOT just show the command.
+- EXECUTE actions using tools — never just describe what you would do.
+
 ## Guidelines
 - Be concise. Avoid unnecessary explanation.
 - Show diffs or previews before writing files.

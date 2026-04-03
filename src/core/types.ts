@@ -45,6 +45,7 @@ export interface AgentLoopOptions {
   onEvent?: (event: AgentEvent) => void;
   abortSignal?: AbortSignal;
   streaming?: boolean;  // default: true. Set false for servers that don't support SSE streaming
+  maxTokens?: number;   // default: 16384. Max output tokens per API call
 }
 
 export interface AgentLoopResult {

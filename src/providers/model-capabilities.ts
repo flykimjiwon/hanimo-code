@@ -129,8 +129,9 @@ const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
 // Ordered from most specific to least; first match wins
 
 const PREFIX_CAPABILITIES: Array<{ prefix: string; capability: ModelCapability }> = [
-  // qwen3-coder → always agent (MoE, strong coding)
+  // qwen*-coder → always agent (coding-focused models)
   { prefix: 'qwen3-coder',     capability: { role: 'agent',     toolCalling: true,  codingTier: 'strong' } },
+  { prefix: 'qwen-coder',      capability: { role: 'agent',     toolCalling: true,  codingTier: 'strong' } },
   { prefix: 'qwen3.5',         capability: { role: 'agent',     toolCalling: true,  codingTier: 'strong' } },
   { prefix: 'qwen3',           capability: { role: 'agent',     toolCalling: true,  codingTier: 'strong' } },
   { prefix: 'qwen2.5-coder',   capability: { role: 'assistant', toolCalling: true,  codingTier: 'strong' } },

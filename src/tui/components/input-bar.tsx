@@ -157,6 +157,9 @@ export const InputBar = React.memo(function InputBar({
       // Ignore control sequences
       if (key.ctrl || key.meta) return;
 
+      // Skip mouse escape sequences that leak through SGR mouse tracking
+      if (input && /\[<\d+;\d+;\d+[Mm]/.test(input)) return;
+
       // Insert character at cursor position
       if (input) {
         const insertPos = value.length - cursorOffset;
