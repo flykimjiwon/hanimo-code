@@ -29,3 +29,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Go binary
+hanimo
+dist/
