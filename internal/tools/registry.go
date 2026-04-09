@@ -133,6 +133,37 @@ func AllTools() []openai.Tool {
 				},
 			},
 		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "hashline_read",
+				Description: "Read file with hash-tagged line numbers for safe editing. Each line gets a 4-char MD5 hash anchor.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "File path (relative to cwd or absolute)"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "hashline_edit",
+				Description: "Edit file using hash anchors to verify lines haven't changed since read. Prevents stale-edit corruption.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":         {Type: "string", Description: "File path to edit"},
+						"start_anchor": {Type: "string", Description: "Start anchor in N#hash format (e.g. '3#e4d9')"},
+						"end_anchor":   {Type: "string", Description: "End anchor in N#hash format (e.g. '5#b2a1')"},
+						"new_content":  {Type: "string", Description: "Replacement content for the anchored line range"},
+					},
+					Required: []string{"path", "start_anchor", "end_anchor", "new_content"},
+				},
+			},
+		},
 	}
 }
 
@@ -212,6 +243,20 @@ func ReadOnlyTools() []openai.Tool {
 						"path":    {Type: "string", Description: "Base directory (default: current directory)"},
 					},
 					Required: []string{"pattern"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "hashline_read",
+				Description: "Read file with hash-tagged line numbers for safe editing. Each line gets a 4-char MD5 hash anchor.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "File path to read with hash anchors"},
+					},
+					Required: []string{"path"},
 				},
 			},
 		},
@@ -362,6 +407,34 @@ func executeInner(name string, argsJSON string) string {
 		result, err := GlobSearch(pattern, searchPath)
 		if err != nil {
 			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "hashline_read":
+		path, _ := args["path"].(string)
+		if path == "" {
+			return "Error: path is required"
+		}
+		result, err := HashlineRead(path)
+		if err != nil {
+			return fmt.Sprintf("ERROR: %s", err.Error())
+		}
+		if len(result) > 50000 {
+			return result[:50000] + "\n\n... [truncated, file too large]"
+		}
+		return result
+
+	case "hashline_edit":
+		path, _ := args["path"].(string)
+		startAnchor, _ := args["start_anchor"].(string)
+		endAnchor, _ := args["end_anchor"].(string)
+		newContent, _ := args["new_content"].(string)
+		if path == "" || startAnchor == "" || endAnchor == "" {
+			return "Error: path, start_anchor, and end_anchor are required"
+		}
+		result, err := HashlineEdit(path, startAnchor, endAnchor, newContent)
+		if err != nil {
+			return fmt.Sprintf("ERROR: %s", err.Error())
 		}
 		return result
 
