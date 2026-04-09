@@ -25,6 +25,7 @@ var PaletteItems = []PaletteItem{
 	{Label: "Diagnostics", Description: "Run code diagnostics", Action: "/diagnostics"},
 	{Label: "Remember", Description: "Save a memory", Action: "/remember"},
 	{Label: "Memories", Description: "Show saved memories", Action: "/memories"},
+	{Label: "Language", Description: "Toggle Korean/English", Action: "/lang"},
 	{Label: "Config", Description: "Show configuration", Action: "/config"},
 	{Label: "Switch Theme", Description: "Change color theme", Action: "/theme"},
 	{Label: "Clear", Description: "Clear conversation", Action: "/clear"},

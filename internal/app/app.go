@@ -74,6 +74,12 @@ type Model struct {
 	paletteQuery    string
 	paletteSelected int
 
+	showMenu      bool
+	menuItems     []string
+	menuSelected  int
+	menuAction    string // current submenu: "", "model", "provider"
+	modelList     []string
+
 	inSetup    bool
 	setupInput textarea.Model
 	setupCfg   config.Config
@@ -186,6 +192,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Pass non-key messages through (e.g. window resize)
 	}
 
+	// Menu handling
+	if m.showMenu {
+		if msg, ok := msg.(tea.KeyPressMsg); ok {
+			return m.updateMenu(msg)
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if m.streaming {
@@ -228,6 +241,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+
+		case "esc":
+			m.openMenu()
+			return m, nil
 
 		case "ctrl+k":
 			m.showPalette = !m.showPalette
@@ -561,9 +578,18 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 			"  /config — 현재 설정 표시    /usage — 토큰 사용량\n" +
 			"  /auto <task> — 자율 모드 (최대 20회 반복)\n" +
 			"  /save [name] — 세션 저장    /load — 세션 목록    /search [keyword] — 세션 검색\n" +
-			"  /remember key=value — 메모리 저장    /memories — 프로젝트 메모리 목록"
+			"  /remember key=value — 메모리 저장    /memories — 프로젝트 메모리 목록\n" +
+			"  /lang — 언어 전환 (한국어/English)    Esc — 메뉴"
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: help, Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/lang", "/language":
+		ui.ToggleLang()
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  Language switched to %s", ui.LangLabel()), Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
@@ -787,6 +813,28 @@ func (m Model) View() tea.View {
 		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode)
 
 		content = lipgloss.JoinVertical(lipgloss.Left, vpContent, inputBox, statusBar)
+
+		// Overlay menu if open
+		if m.showMenu {
+			menu := ui.RenderMenu(m.menuItems, m.menuSelected, m.menuAction, m.width)
+			menuLines := strings.Split(menu, "\n")
+			contentLinesList := strings.Split(content, "\n")
+			startY := (len(contentLinesList) - len(menuLines)) / 3
+			if startY < 1 {
+				startY = 1
+			}
+			for i, mLine := range menuLines {
+				row := startY + i
+				if row < len(contentLinesList) {
+					pad := (m.width - lipgloss.Width(mLine)) / 2
+					if pad < 0 {
+						pad = 0
+					}
+					contentLinesList[row] = strings.Repeat(" ", pad) + mLine
+				}
+			}
+			content = strings.Join(contentLinesList, "\n")
+		}
 
 		// Overlay command palette if open
 		if m.showPalette {
@@ -1054,6 +1102,211 @@ func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
+}
+
+func (m *Model) openMenu() {
+	t := ui.T()
+	m.menuItems = []string{
+		t.ModelSwitch,
+		t.ProviderSwitch,
+		t.Language + " (" + ui.LangLabel() + ")",
+		t.Theme,
+		t.Config,
+		t.Usage,
+		t.AutoMode,
+		t.Diagnostics,
+		t.Help,
+		t.Clear,
+	}
+	m.menuSelected = 0
+	m.menuAction = ""
+	m.modelList = nil
+	m.showMenu = true
+}
+
+func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		if m.menuAction != "" {
+			// Go back to main menu from submenu
+			m.menuAction = ""
+			m.menuSelected = 0
+			m.openMenu()
+			return m, nil
+		}
+		m.showMenu = false
+		return m, nil
+
+	case "up":
+		if m.menuSelected > 0 {
+			m.menuSelected--
+		}
+		return m, nil
+
+	case "down":
+		if m.menuSelected < len(m.menuItems)-1 {
+			m.menuSelected++
+		}
+		return m, nil
+
+	case "enter":
+		if len(m.menuItems) == 0 || m.menuSelected >= len(m.menuItems) {
+			return m, nil
+		}
+
+		if m.menuAction == "model" {
+			// Model selected from submenu
+			selected := m.menuItems[m.menuSelected]
+			m.showMenu = false
+			switch m.activeTab {
+			case 1:
+				m.cfg.Models.Dev = selected
+			default:
+				m.cfg.Models.Super = selected
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  모델 변경: %s", selected), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return m, nil
+		}
+
+		if m.menuAction == "provider" {
+			// Provider selected from submenu
+			selected := m.menuItems[m.menuSelected]
+			m.showMenu = false
+			if p, ok := m.cfg.Providers[selected]; ok {
+				m.cfg.API.BaseURL = p.BaseURL
+				if p.APIKey != "" {
+					m.cfg.API.APIKey = p.APIKey
+				}
+				m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", selected, p.BaseURL), Timestamp: time.Now(),
+				})
+			}
+			m.updateViewport()
+			return m, nil
+		}
+
+		// Main menu actions
+		t := ui.T()
+		item := m.menuItems[m.menuSelected]
+
+		// Match by checking prefix (language item has suffix)
+		switch {
+		case item == t.ModelSwitch:
+			// Fetch model list from provider
+			var models []string
+			if m.client != nil && m.client.GetProvider() != nil {
+				if list, err := m.client.GetProvider().ListModels(); err == nil {
+					for _, mi := range list {
+						models = append(models, mi.ID)
+					}
+				}
+			}
+			if len(models) == 0 {
+				// Fallback: show current model
+				models = []string{m.currentModel()}
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  모델 목록을 가져올 수 없습니다. /model <name> 으로 직접 변경하세요.", Timestamp: time.Now(),
+				})
+				m.showMenu = false
+				m.updateViewport()
+				return m, nil
+			}
+			m.menuAction = "model"
+			m.menuItems = models
+			m.modelList = models
+			m.menuSelected = 0
+			return m, nil
+
+		case item == t.ProviderSwitch:
+			var provNames []string
+			for name := range m.cfg.Providers {
+				provNames = append(provNames, name)
+			}
+			if len(provNames) == 0 {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  등록된 프로바이더가 없습니다.", Timestamp: time.Now(),
+				})
+				m.showMenu = false
+				m.updateViewport()
+				return m, nil
+			}
+			m.menuAction = "provider"
+			m.menuItems = provNames
+			m.menuSelected = 0
+			return m, nil
+
+		case strings.HasPrefix(item, t.Language):
+			ui.ToggleLang()
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  Language switched to %s", ui.LangLabel()), Timestamp: time.Now(),
+			})
+			m.showMenu = false
+			m.updateViewport()
+			return m, nil
+
+		case item == t.Theme:
+			m.showMenu = false
+			if handled, cmd := m.handleSlashCommand("/theme"); handled {
+				return m, cmd
+			}
+			return m, nil
+
+		case item == t.Config:
+			m.showMenu = false
+			if handled, cmd := m.handleSlashCommand("/config"); handled {
+				return m, cmd
+			}
+			return m, nil
+
+		case item == t.Usage:
+			m.showMenu = false
+			if handled, cmd := m.handleSlashCommand("/usage"); handled {
+				return m, cmd
+			}
+			return m, nil
+
+		case item == t.AutoMode:
+			m.showMenu = false
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  /auto <task> 로 자율 모드를 시작하세요.", Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return m, nil
+
+		case item == t.Diagnostics:
+			m.showMenu = false
+			if handled, cmd := m.handleSlashCommand("/diagnostics"); handled {
+				return m, cmd
+			}
+			return m, nil
+
+		case item == t.Help:
+			m.showMenu = false
+			if handled, cmd := m.handleSlashCommand("/help"); handled {
+				return m, cmd
+			}
+			return m, nil
+
+		case item == t.Clear:
+			m.showMenu = false
+			if handled, cmd := m.handleSlashCommand("/clear"); handled {
+				return m, cmd
+			}
+			return m, nil
+		}
+
+		m.showMenu = false
+		return m, nil
+
+	case "ctrl+c":
+		return m, tea.Quit
+	}
+
+	return m, nil
 }
 
 func truncate(s string, n int) string {

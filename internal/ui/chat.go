@@ -90,10 +90,10 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 
 	if toolCount > 0 {
 		toolStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#34D399")).Bold(true)
-		left += toolStyle.Render(fmt.Sprintf("  Tool:ON(%d)", toolCount))
+		left += toolStyle.Render(fmt.Sprintf("  %s(%d)", T().ToolOn, toolCount))
 	} else {
 		toolOffStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#F87171")).Bold(true)
-		left += toolOffStyle.Render("  Tool:OFF")
+		left += toolOffStyle.Render("  " + T().ToolOff)
 	}
 
 	if len(autoMode) > 0 && autoMode[0] {
@@ -108,7 +108,8 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 		left += Subtle.Render(fmt.Sprintf("  %.1fs", elapsed.Seconds()))
 	}
 
-	right := Subtle.Render("Shift+Enter newline  Tab switch  /clear  Ctrl+C ")
+	t := T()
+	right := Subtle.Render(t.NewLine + "  " + t.SwitchMode + "  " + t.Menu + "  " + t.Exit + " ")
 
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right) - 2
 	if gap < 1 {
