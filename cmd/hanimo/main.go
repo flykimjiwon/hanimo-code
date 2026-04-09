@@ -35,6 +35,8 @@ func main() {
 	versionFlag := flag.Bool("version", false, "버전 출력")
 	setupFlag := flag.Bool("setup", false, "설정 재실행 (API URL/키 재입력)")
 	resetFlag := flag.Bool("reset", false, "설정 초기화 (config 삭제 후 재설정)")
+	resumeFlag := flag.String("resume", "", "세션 복원 (ID 또는 이름)")
+	debugFlag := flag.Bool("debug", false, "디버그 모드 활성화")
 	// Short aliases
 	flag.StringVar(providerFlag, "p", "", "LLM 프로바이더 (단축)")
 	flag.StringVar(modelFlag, "m", "", "모델 이름 (단축)")
@@ -43,6 +45,17 @@ func main() {
 	if *versionFlag {
 		fmt.Printf("하니모 (hanimo) %s\n", version)
 		os.Exit(0)
+	}
+
+	// Handle --resume: stub for session resume
+	if *resumeFlag != "" {
+		fmt.Printf("  session resume not yet wired (requested: %s)\n", *resumeFlag)
+		os.Exit(0)
+	}
+
+	// Handle --debug: enable debug mode at runtime
+	if *debugFlag {
+		config.DebugMode = "true"
 	}
 
 	// Handle --reset: delete config and force setup

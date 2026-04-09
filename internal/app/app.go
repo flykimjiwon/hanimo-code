@@ -15,6 +15,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	tgc "github.com/flykimjiwon/hanimo"
+	"github.com/flykimjiwon/hanimo/internal/agents"
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
 	"github.com/flykimjiwon/hanimo/internal/llm"
@@ -65,6 +66,13 @@ type Model struct {
 	toolIter     int // tool loop iteration counter (max 20)
 	pendingQueue []string // messages queued while streaming
 	knowledgeInj *knowledge.Injector
+
+	autoMode bool   // autonomous mode active
+	autoTask string // task description for auto mode
+
+	showPalette     bool
+	paletteQuery    string
+	paletteSelected int
 
 	inSetup    bool
 	setupInput textarea.Model
@@ -170,6 +178,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateSetup(msg)
 	}
 
+	// Command palette handling
+	if m.showPalette {
+		if msg, ok := msg.(tea.KeyPressMsg); ok {
+			return m.updatePalette(msg)
+		}
+		// Pass non-key messages through (e.g. window resize)
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if m.streaming {
@@ -212,6 +228,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+
+		case "ctrl+k":
+			m.showPalette = !m.showPalette
+			m.paletteQuery = ""
+			m.paletteSelected = 0
+			return m, nil
 
 		case "ctrl+l":
 			// Keep system prompt, clear conversation
@@ -389,6 +411,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Role: openai.ChatMessageRoleAssistant, Content: m.streamBuf,
 				})
 			}
+
+			// Check auto mode markers
+			if m.autoMode {
+				complete, pause := agents.CheckAutoMarkers(m.streamBuf)
+				if complete {
+					m.autoMode = false
+					m.autoTask = ""
+					// Restore system prompt without auto suffix
+					mode := llm.Mode(m.activeTab)
+					m.history[0] = openai.ChatCompletionMessage{
+						Role: openai.ChatMessageRoleSystem, Content: llm.SystemPrompt(mode) + m.projectCtx,
+					}
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: "  [AUTO MODE] 작업 완료", Timestamp: time.Now(),
+					})
+				} else if pause {
+					m.autoMode = false
+					m.autoTask = ""
+					mode := llm.Mode(m.activeTab)
+					m.history[0] = openai.ChatCompletionMessage{
+						Role: openai.ChatMessageRoleSystem, Content: llm.SystemPrompt(mode) + m.projectCtx,
+					}
+					m.msgs = append(m.msgs, ui.Message{
+						Role: ui.RoleSystem, Content: "  [AUTO MODE] 일시정지 — 사용자 입력 필요", Timestamp: time.Now(),
+					})
+				}
+			}
+
 			m.streamBuf = ""
 			m.updateViewport()
 
@@ -509,6 +559,7 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		help := "  Enter — 전송    Shift+Enter — 줄바꿈    /clear — 대화삭제    Ctrl+C — 종료\n" +
 			"  /model [name] — 모델 확인/변경    /provider [name] — 프로바이더 확인/변경\n" +
 			"  /config — 현재 설정 표시    /usage — 토큰 사용량\n" +
+			"  /auto <task> — 자율 모드 (최대 20회 반복)\n" +
 			"  /save [name] — 세션 저장    /load — 세션 목록    /search [keyword] — 세션 검색\n" +
 			"  /remember key=value — 메모리 저장    /memories — 프로젝트 메모리 목록"
 		m.msgs = append(m.msgs, ui.Message{
@@ -636,6 +687,65 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		})
 		m.updateViewport()
 		return true, nil
+
+	case "/theme":
+		if arg == "" {
+			var names []string
+			for k, t := range ui.Themes {
+				marker := "  "
+				if k == ui.CurrentTheme {
+					marker = "* "
+				}
+				names = append(names, fmt.Sprintf("  %s%s (%s)", marker, k, t.Name))
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  테마 목록:\n" + strings.Join(names, "\n"), Timestamp: time.Now(),
+			})
+		} else {
+			if ui.ApplyTheme(arg) {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  테마 변경: %s", arg), Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  알 수 없는 테마: %s", arg), Timestamp: time.Now(),
+				})
+			}
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/diagnostics":
+		cwd, _ := os.Getwd()
+		target := arg
+		result, _ := tools.RunDiagnostics(cwd, target)
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: result, Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/auto":
+		if arg == "" {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  사용법: /auto <task description>", Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		m.autoMode = true
+		m.autoTask = arg
+		// Inject auto prompt suffix into system message
+		mode := llm.Mode(m.activeTab)
+		sysPrompt := llm.SystemPrompt(mode) + m.projectCtx + agents.AutoPromptSuffix
+		m.history[0] = openai.ChatCompletionMessage{
+			Role: openai.ChatMessageRoleSystem, Content: sysPrompt,
+		}
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: fmt.Sprintf("  [AUTO MODE] 자율 모드 시작: %s", arg), Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, m.sendMessage(arg)
 	}
 
 	return false, nil
@@ -674,9 +784,34 @@ func (m Model) View() tea.View {
 		if m.streaming {
 			elapsed = time.Since(m.streamStart)
 		}
-		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)))
+		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode)
 
 		content = lipgloss.JoinVertical(lipgloss.Left, vpContent, inputBox, statusBar)
+
+		// Overlay command palette if open
+		if m.showPalette {
+			filtered := ui.FuzzyFilter(m.paletteQuery, ui.PaletteItems)
+			palette := ui.RenderPalette(filtered, m.paletteSelected, m.paletteQuery, m.width)
+			// Center the palette overlay
+			paletteLines := strings.Split(palette, "\n")
+			contentLinesList := strings.Split(content, "\n")
+			startY := (len(contentLinesList) - len(paletteLines)) / 3
+			if startY < 1 {
+				startY = 1
+			}
+			for i, pLine := range paletteLines {
+				row := startY + i
+				if row < len(contentLinesList) {
+					// Center horizontally
+					pad := (m.width - lipgloss.Width(pLine)) / 2
+					if pad < 0 {
+						pad = 0
+					}
+					contentLinesList[row] = strings.Repeat(" ", pad) + pLine
+				}
+			}
+			content = strings.Join(contentLinesList, "\n")
+		}
 	}
 
 	v := tea.NewView(content)
@@ -864,6 +999,61 @@ func (m *Model) cancelStream() {
 	}
 	m.streamBuf = ""
 	m.updateViewport()
+}
+
+func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	filtered := ui.FuzzyFilter(m.paletteQuery, ui.PaletteItems)
+
+	switch msg.String() {
+	case "esc", "ctrl+k":
+		m.showPalette = false
+		m.paletteQuery = ""
+		m.paletteSelected = 0
+		return m, nil
+
+	case "up":
+		if m.paletteSelected > 0 {
+			m.paletteSelected--
+		}
+		return m, nil
+
+	case "down":
+		if m.paletteSelected < len(filtered)-1 {
+			m.paletteSelected++
+		}
+		return m, nil
+
+	case "enter":
+		if len(filtered) > 0 && m.paletteSelected < len(filtered) {
+			action := filtered[m.paletteSelected].Action
+			m.showPalette = false
+			m.paletteQuery = ""
+			m.paletteSelected = 0
+			if handled, cmd := m.handleSlashCommand(action); handled {
+				return m, cmd
+			}
+		}
+		return m, nil
+
+	case "backspace":
+		if len(m.paletteQuery) > 0 {
+			m.paletteQuery = m.paletteQuery[:len(m.paletteQuery)-1]
+			m.paletteSelected = 0
+		}
+		return m, nil
+
+	case "ctrl+c":
+		return m, tea.Quit
+
+	default:
+		// Append typed character to query
+		key := msg.String()
+		if len(key) == 1 {
+			m.paletteQuery += key
+			m.paletteSelected = 0
+		}
+		return m, nil
+	}
 }
 
 func truncate(s string, n int) string {

@@ -31,5 +31,7 @@ Thumbs.db
 *.swp
 
 # Go binary
-hanimo
+/hanimo
+*.exe
 dist/
+_legacy_ts/node_modules/

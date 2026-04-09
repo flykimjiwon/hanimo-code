@@ -7,14 +7,6 @@ import (
 
 // techDictionary maps known technical terms (lowercased) to their canonical keyword.
 var techDictionary = map[string]string{
-	// BXM (Tier 0)
-	"bxm": "bxm", "뱅크웨어": "bxm", "bankware": "bxm",
-	"bean": "bean", "빈": "bean", "@bxmbean": "bean",
-	"dbio": "dbio",
-	"service": "service", "서비스": "service",
-	"centercut": "centercut", "센터컷": "centercut",
-	"io": "io", "dto": "dto",
-
 	// Go
 	"go": "go", "golang": "go",
 	"goroutine": "goroutine", "고루틴": "goroutine",
@@ -83,16 +75,10 @@ var techDictionary = map[string]string{
 	"refactor": "refactoring", "리팩토링": "refactoring",
 	"security": "security", "보안": "security",
 
-	// BXM patterns
-	"다건": "다건", "paging": "paging", "페이징": "paging",
-	"조회": "조회", "select": "select",
-	"트랜잭션": "transaction", "transaction": "transaction",
-	"배치": "batch", "batch": "batch",
-	"예외": "exception", "exception": "exception",
-	"insert": "insert", "update": "update", "delete": "delete",
-	"등록": "insert", "수정": "update", "삭제": "delete",
-	"studio": "studio", "스튜디오": "studio",
-	"lock": "lock", "락": "lock",
+	// Database patterns
+	"select": "select", "insert": "insert", "update": "update", "delete": "delete",
+	"transaction": "transaction", "트랜잭션": "transaction",
+	"batch": "batch",
 }
 
 // multiWordTerms holds compound terms sorted by descending length so that

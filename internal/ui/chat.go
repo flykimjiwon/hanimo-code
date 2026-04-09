@@ -72,7 +72,7 @@ func RenderMessages(messages []Message, streaming string, width int) string {
 	return strings.Join(lines, "\n")
 }
 
-func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, cwd string, width int, debug bool, toolCount int) string {
+func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, cwd string, width int, debug bool, toolCount int, autoMode ...bool) string {
 	modeStyle := lipgloss.NewStyle().
 		Foreground(ModeColor(mode)).
 		Bold(true)
@@ -94,6 +94,11 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 	} else {
 		toolOffStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#F87171")).Bold(true)
 		left += toolOffStyle.Render("  Tool:OFF")
+	}
+
+	if len(autoMode) > 0 && autoMode[0] {
+		autoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FBBF24")).Bold(true)
+		left += autoStyle.Render("  [AUTO]")
 	}
 
 	if tokens > 0 {

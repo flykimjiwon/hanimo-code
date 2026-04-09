@@ -223,6 +223,21 @@ func AllTools() []openai.Tool {
 				},
 			},
 		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "diagnostics",
+				Description: "Run code diagnostics (go vet, tsc, eslint, ruff). Auto-detects project type.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir":  {Type: "string", Description: "Project directory to run diagnostics in"},
+						"file": {Type: "string", Description: "Optional specific file to check"},
+					},
+					Required: []string{"dir"},
+				},
+			},
+		},
 	}
 }
 
@@ -360,6 +375,21 @@ func ReadOnlyTools() []openai.Tool {
 						"count": {Type: "string", Description: "Number of commits to show (default: 10)"},
 					},
 					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "diagnostics",
+				Description: "Run code diagnostics (go vet, tsc, eslint, ruff). Auto-detects project type.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir":  {Type: "string", Description: "Project directory to run diagnostics in"},
+						"file": {Type: "string", Description: "Optional specific file to check"},
+					},
+					Required: []string{"dir"},
 				},
 			},
 		},
@@ -610,6 +640,18 @@ func executeInner(name string, argsJSON string) string {
 			return "Error: message is required"
 		}
 		result, err := GitCommit(path, message)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "diagnostics":
+		dir, _ := args["dir"].(string)
+		if dir == "" {
+			dir = "."
+		}
+		file, _ := args["file"].(string)
+		result, err := RunDiagnostics(dir, file)
 		if err != nil {
 			return fmt.Sprintf("Error: %v", err)
 		}
