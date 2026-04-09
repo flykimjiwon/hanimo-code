@@ -10,6 +10,7 @@ import (
 	"github.com/flykimjiwon/hanimo/internal/app"
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/llm"
+	"github.com/flykimjiwon/hanimo/internal/session"
 )
 
 func printDebugBanner(cfg config.Config) {
@@ -64,6 +65,13 @@ func main() {
 	if *modelFlag != "" {
 		cfg.Default.Model = *modelFlag
 	}
+
+	// Initialize SQLite database
+	if err := session.InitDB(config.ConfigDir()); err != nil {
+		fmt.Fprintf(os.Stderr, "DB 초기화 오류: %v\n", err)
+		os.Exit(1)
+	}
+	defer session.CloseDB()
 
 	// Initialize debug logging (no-op if DebugMode != "true")
 	config.InitDebugLog()

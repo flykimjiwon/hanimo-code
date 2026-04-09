@@ -164,6 +164,65 @@ func AllTools() []openai.Tool {
 				},
 			},
 		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_status",
+				Description: "Show git status (short format) for a directory. Returns modified, added, deleted files.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "Directory path (default: current directory)"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_diff",
+				Description: "Show git diff for a directory. Use staged=true to see staged changes.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":   {Type: "string", Description: "Directory path (default: current directory)"},
+						"staged": {Type: "string", Description: "Set to 'true' to show staged changes"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_log",
+				Description: "Show recent git commits in oneline format.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":  {Type: "string", Description: "Directory path (default: current directory)"},
+						"count": {Type: "string", Description: "Number of commits to show (default: 10)"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_commit",
+				Description: "Create a git commit with the given message. Files must be staged first.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":    {Type: "string", Description: "Directory path"},
+						"message": {Type: "string", Description: "Commit message"},
+					},
+					Required: []string{"path", "message"},
+				},
+			},
+		},
 	}
 }
 
@@ -255,6 +314,50 @@ func ReadOnlyTools() []openai.Tool {
 					Type: "object",
 					Properties: map[string]propertySchema{
 						"path": {Type: "string", Description: "File path to read with hash anchors"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_status",
+				Description: "Show git status (short format) for a directory.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "Directory path (default: current directory)"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_diff",
+				Description: "Show git diff for a directory. Use staged=true to see staged changes.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":   {Type: "string", Description: "Directory path (default: current directory)"},
+						"staged": {Type: "string", Description: "Set to 'true' to show staged changes"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_log",
+				Description: "Show recent git commits in oneline format.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":  {Type: "string", Description: "Directory path (default: current directory)"},
+						"count": {Type: "string", Description: "Number of commits to show (default: 10)"},
 					},
 					Required: []string{"path"},
 				},
@@ -435,6 +538,80 @@ func executeInner(name string, argsJSON string) string {
 		result, err := HashlineEdit(path, startAnchor, endAnchor, newContent)
 		if err != nil {
 			return fmt.Sprintf("ERROR: %s", err.Error())
+		}
+		return result
+
+	case "git_status":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		result, err := GitStatus(path)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		if result == "" {
+			return "Nothing to commit, working tree clean"
+		}
+		return result
+
+	case "git_diff":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		staged := false
+		if s, ok := args["staged"].(string); ok && s == "true" {
+			staged = true
+		}
+		if s, ok := args["staged"].(bool); ok && s {
+			staged = true
+		}
+		result, err := GitDiff(path, staged)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		if result == "" {
+			return "No changes"
+		}
+		if len(result) > 30000 {
+			return result[:30000] + "\n\n... [truncated]"
+		}
+		return result
+
+	case "git_log":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		n := 10
+		if c, ok := args["count"].(string); ok {
+			fmt.Sscanf(c, "%d", &n)
+		}
+		if c, ok := args["count"].(float64); ok {
+			n = int(c)
+		}
+		if n <= 0 {
+			n = 10
+		}
+		result, err := GitLog(path, n)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "git_commit":
+		path, _ := args["path"].(string)
+		message, _ := args["message"].(string)
+		if path == "" {
+			path = "."
+		}
+		if message == "" {
+			return "Error: message is required"
+		}
+		result, err := GitCommit(path, message)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
 		}
 		return result
 

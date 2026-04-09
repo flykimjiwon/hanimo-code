@@ -506,13 +506,138 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		return true, nil
 
 	case "/help":
-		help := `  Enter — 전송    Shift+Enter — 줄바꿈    /clear — 대화삭제    Ctrl+C — 종료`
+		help := "  Enter — 전송    Shift+Enter — 줄바꿈    /clear — 대화삭제    Ctrl+C — 종료\n" +
+			"  /model [name] — 모델 확인/변경    /provider [name] — 프로바이더 확인/변경\n" +
+			"  /config — 현재 설정 표시    /usage — 토큰 사용량\n" +
+			"  /save [name] — 세션 저장    /load — 세션 목록    /search [keyword] — 세션 검색\n" +
+			"  /remember key=value — 메모리 저장    /memories — 프로젝트 메모리 목록"
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: help, Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
 	}
+
+	// Commands with optional arguments (prefix match)
+	parts := strings.SplitN(input, " ", 2)
+	cmd := parts[0]
+	arg := ""
+	if len(parts) > 1 {
+		arg = strings.TrimSpace(parts[1])
+	}
+
+	switch cmd {
+	case "/model":
+		if arg == "" {
+			modelID := m.currentModel()
+			displayName := modelID
+			if info, ok := llm.Models[modelID]; ok {
+				displayName = info.DisplayName
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  현재 모델: %s (%s)", displayName, modelID), Timestamp: time.Now(),
+			})
+		} else {
+			switch m.activeTab {
+			case 1:
+				m.cfg.Models.Dev = arg
+			default:
+				m.cfg.Models.Super = arg
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  모델 변경: %s", arg), Timestamp: time.Now(),
+			})
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/provider":
+		if arg == "" {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  현재 프로바이더: %s", m.cfg.API.BaseURL), Timestamp: time.Now(),
+			})
+		} else {
+			if p, ok := m.cfg.Providers[arg]; ok {
+				m.cfg.API.BaseURL = p.BaseURL
+				if p.APIKey != "" {
+					m.cfg.API.APIKey = p.APIKey
+				}
+				m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", arg, p.BaseURL), Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  알 수 없는 프로바이더: %s", arg), Timestamp: time.Now(),
+				})
+			}
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/config":
+		modeNames := []string{"super", "dev", "plan"}
+		modeName := modeNames[m.activeTab]
+		cwd, _ := os.Getwd()
+		info := fmt.Sprintf("  Provider: %s\n  Model (super): %s\n  Model (dev): %s\n  Mode: %s\n  Project: %s",
+			m.cfg.API.BaseURL, m.cfg.Models.Super, m.cfg.Models.Dev, modeName, cwd)
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: info, Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/usage":
+		elapsed := m.lastElapsed
+		info := fmt.Sprintf("  토큰 수신: %d tokens\n  마지막 응답 시간: %v", m.tokenCount, elapsed)
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: info, Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/save":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  [세션 저장 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/load":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  [세션 로드 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/search":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  [세션 검색 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/remember":
+		if arg == "" {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  사용법: /remember key=value", Timestamp: time.Now(),
+			})
+		} else {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  [메모리 저장 기능은 아직 구현 중입니다: %s]", arg), Timestamp: time.Now(),
+			})
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/memories":
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  [메모리 목록 기능은 아직 구현 중입니다]", Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+	}
+
 	return false, nil
 }
 
