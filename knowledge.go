@@ -1,4 +1,4 @@
-package tgc
+package hanimo
 
 import "embed"
 

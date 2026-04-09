@@ -42,9 +42,9 @@ type Config struct {
 
 // Build-time overridable defaults (set via -ldflags)
 var (
-	DefaultBaseURL  = "https://api.novita.ai/openai"
-	DefaultModel    = "openai/gpt-oss-120b"
-	DefaultDevModel = "qwen/qwen3-coder-30b"
+	DefaultBaseURL  = "http://localhost:11434/v1"
+	DefaultModel    = "qwen3:8b"
+	DefaultDevModel = "qwen3:8b"
 	ConfigDirName   = ".hanimo"
 	DebugMode       = "false" // set to "true" via ldflags in build-debug
 )
@@ -179,9 +179,14 @@ func Save(cfg Config) error {
 }
 
 func NeedsSetup() bool {
+	// Ollama doesn't need API key, so skip setup if using default (localhost)
 	cfg, err := Load()
 	if err != nil {
-		return true
+		return false // don't block startup
+	}
+	// No setup needed if using Ollama (localhost) or if API key is set
+	if strings.Contains(cfg.API.BaseURL, "localhost") || strings.Contains(cfg.API.BaseURL, "127.0.0.1") {
+		return false
 	}
 	return cfg.API.APIKey == "" && os.Getenv("HANIMO_API_KEY") == ""
 }

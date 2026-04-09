@@ -14,7 +14,7 @@ import (
 	"charm.land/lipgloss/v2"
 	openai "github.com/sashabaranov/go-openai"
 
-	tgc "github.com/flykimjiwon/hanimo"
+	hanimo "github.com/flykimjiwon/hanimo"
 	"github.com/flykimjiwon/hanimo/internal/agents"
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
@@ -121,7 +121,7 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 
 	// Initialize knowledge store
 	var knowledgeInj *knowledge.Injector
-	if knowledgeStore, err := knowledge.NewStore(tgc.KnowledgeFS); err == nil {
+	if knowledgeStore, err := knowledge.NewStore(hanimo.KnowledgeFS); err == nil {
 		knowledgeInj = knowledge.NewInjector(knowledgeStore, 8192)
 		config.DebugLog("[KNOWLEDGE] loaded %d documents", knowledgeStore.DocCount())
 	} else {
@@ -828,7 +828,7 @@ func (m Model) viewSetup() string {
 
 	var b strings.Builder
 	b.WriteString("\n\n")
-	b.WriteString(title.Render("  택가이코드 설정"))
+	b.WriteString(title.Render("  hanimo setup"))
 	b.WriteString("\n")
 	b.WriteString(dim.Render("  OpenAI-compatible API 연결"))
 	b.WriteString("\n\n")

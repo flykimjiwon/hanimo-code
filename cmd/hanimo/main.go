@@ -16,7 +16,7 @@ import (
 func printDebugBanner(cfg config.Config) {
 	fmt.Println()
 	fmt.Println("  ╔══════════════════════════════════════════════╗")
-	fmt.Println("  ║          [DEBUG MODE] 택가이코드             ║")
+	fmt.Println("  ║          [DEBUG MODE] hanimo             ║")
 	fmt.Println("  ╚══════════════════════════════════════════════╝")
 	fmt.Printf("  Version:   %s\n", version)
 	fmt.Printf("  BaseURL:   %s\n", cfg.API.BaseURL)
@@ -118,7 +118,7 @@ func main() {
 
 func parseMode(mode string) int {
 	switch mode {
-	case "super", "슈퍼택가이":
+	case "super":
 		return int(llm.ModeSuper)
 	case "dev", "개발":
 		return int(llm.ModeDev)
