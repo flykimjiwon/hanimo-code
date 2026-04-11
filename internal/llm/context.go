@@ -12,6 +12,36 @@ import (
 	"time"
 )
 
+// IsHanimoOwnRepo reports whether the current working directory is inside
+// hanimo's own source repo. Walks up from cwd looking for a go.mod whose
+// module path is github.com/flykimjiwon/hanimo. Used to gate write-side
+// tools with an extra confirmation so a stray `/auto` doesn't self-modify.
+func IsHanimoOwnRepo() bool {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	dir := cwd
+	for i := 0; i < 8; i++ { // cap the walk to avoid crawling the whole disk
+		goMod := filepath.Join(dir, "go.mod")
+		if data, err := os.ReadFile(goMod); err == nil {
+			first := strings.SplitN(string(data), "\n", 2)[0]
+			if strings.HasPrefix(first, "module ") &&
+				strings.Contains(first, "github.com/flykimjiwon/hanimo") {
+				return true
+			}
+			// Found a go.mod but it's not hanimo — stop walking.
+			return false
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return false
+		}
+		dir = parent
+	}
+	return false
+}
+
 // GatherSystemContext returns minimal context (~50 tokens) for system prompt injection.
 // Heavy info (IP, git status, file listing) is available on-demand via tools.
 func GatherSystemContext() string {
@@ -28,6 +58,15 @@ func GatherSystemContext() string {
 
 	// Date only (~10 tok)
 	b.WriteString(fmt.Sprintf("- Date: %s\n", time.Now().Format("2006-01-02")))
+
+	// Self-repo guard: if the user is running hanimo inside its own source
+	// tree, tell the model explicitly. The model should confirm before
+	// editing hanimo's own source — it's too easy to brick the tool.
+	if IsHanimoOwnRepo() {
+		b.WriteString("\n⚠️  SELF-REPO WARNING: 현재 CWD는 hanimo 자체 소스 레포입니다.\n")
+		b.WriteString("- hanimo 자신의 소스를 수정하려면 반드시 먼저 사용자에게 ASK_USER 로 확인.\n")
+		b.WriteString("- 무심코 file_edit/file_write 하면 다음 빌드에서 hanimo 자체가 깨질 수 있습니다.\n")
+	}
 
 	return b.String()
 }
