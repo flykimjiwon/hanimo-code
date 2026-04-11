@@ -161,6 +161,9 @@ func Load() (Config, error) {
 		if err := yaml.Unmarshal(data, &cfg); err != nil {
 			return cfg, fmt.Errorf("config parse error: %w", err)
 		}
+		distroUserHasConfig = true
+	} else {
+		distroUserHasConfig = false
 	}
 
 	if v := os.Getenv("HANIMO_API_BASE_URL"); v != "" {

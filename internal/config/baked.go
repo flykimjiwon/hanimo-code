@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 // Build-time baked configuration.
 //
 // hanimo supports three distribution modes, selected at `go build` time via
@@ -76,6 +78,30 @@ var (
 	BakedBrand = ""
 )
 
+// ValidateBakedMode panics at process start if the baked mode fields
+// are internally inconsistent. Called from main.go before any TUI
+// initialization so misconfigured builds fail loudly instead of
+// silently behaving like vanilla.
+func ValidateBakedMode() {
+	switch BakedMode {
+	case "", "distro", "sealed":
+	default:
+		panic(fmt.Sprintf("config: unknown BakedMode %q (expected \"\", \"distro\", or \"sealed\")", BakedMode))
+	}
+	if BakedMode == "sealed" && BakedAPIKey == "" {
+		panic("config: BakedMode=sealed requires BakedAPIKey to be set at build time")
+	}
+	if BakedMode == "sealed" && BakedBaseURL == "" {
+		panic("config: BakedMode=sealed requires BakedBaseURL to be set at build time")
+	}
+	if BakedMode == "distro" && BakedBaseURL == "" {
+		panic("config: BakedMode=distro requires BakedBaseURL to be set at build time")
+	}
+	if BakedAPIKey != "" && BakedMode != "sealed" {
+		panic("config: BakedAPIKey must only be set when BakedMode=sealed")
+	}
+}
+
 // BakeInfo returns a human-readable summary of the baked configuration,
 // suitable for /config output and the startup banner.
 func BakeInfo() string {
@@ -133,21 +159,46 @@ func applyBaked(cfg Config) Config {
 			cfg.Default.Provider = BakedProvider
 		}
 	case "distro":
-		// Distro: force endpoint/provider/model, leave API key to user.
+		// Distro: freeze endpoint/provider/model, leave API key to user.
+		//
+		// The endpoint is forced because that's the whole point of a
+		// distro build — an admin pinning where traffic goes. We do NOT
+		// clobber any of the MODEL fields anymore: the old heuristic
+		// (overwrite when the field equals DefaultModel) falsely
+		// triggered if a user's explicit choice happened to match the
+		// default, which silently swapped their model under them.
+		//
+		// Precedence for models in distro builds is therefore:
+		//   user config.yaml > env HANIMO_MODEL_* > baked model > built-in default
+		// applyBaked only fires when the earlier layers left the field
+		// at its built-in default value AND there was no config.yaml on
+		// disk — which we detect via the presence of a config file in
+		// the caller (see Load).
 		if BakedBaseURL != "" {
 			cfg.API.BaseURL = BakedBaseURL
-		}
-		if BakedModel != "" && cfg.Models.Super == DefaultModel {
-			cfg.Models.Super = BakedModel
-		}
-		if BakedDevModel != "" && cfg.Models.Dev == DefaultDevModel {
-			cfg.Models.Dev = BakedDevModel
-		} else if BakedModel != "" && cfg.Models.Dev == DefaultDevModel {
-			cfg.Models.Dev = BakedModel
 		}
 		if BakedProvider != "" && cfg.Default.Provider == "" {
 			cfg.Default.Provider = BakedProvider
 		}
+		if !distroUserHasConfig {
+			if BakedModel != "" {
+				cfg.Models.Super = BakedModel
+			}
+			devBake := BakedDevModel
+			if devBake == "" {
+				devBake = BakedModel
+			}
+			if devBake != "" {
+				cfg.Models.Dev = devBake
+			}
+		}
 	}
 	return cfg
 }
+
+// distroUserHasConfig is flipped by Load() when a ~/.hanimo/config.yaml
+// was actually read from disk so applyBaked can tell "user chose the
+// default value" from "no user config at all, just the built-in default".
+// It is intentionally a package-level flag rather than a parameter on
+// applyBaked so the existing three-line call sites stay unchanged.
+var distroUserHasConfig bool

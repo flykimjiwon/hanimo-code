@@ -24,6 +24,12 @@ func TestApplyBaked_Vanilla(t *testing.T) {
 }
 
 func TestApplyBaked_Distro(t *testing.T) {
+	// Simulate a fresh install (no user config.yaml on disk) so the
+	// model fallback branch of applyBaked actually fires.
+	prev := distroUserHasConfig
+	defer func() { distroUserHasConfig = prev }()
+	distroUserHasConfig = false
+
 	withBaked("distro", "https://baked.example/v1", "novita", "qwen/qwen3-coder-30b", "sk-should-ignore", func() {
 		cfg := applyBaked(DefaultConfig())
 		if cfg.API.BaseURL != "https://baked.example/v1" {
@@ -43,6 +49,29 @@ func TestApplyBaked_Distro(t *testing.T) {
 		}
 		if !IsDistro() {
 			t.Errorf("distro should report IsDistro")
+		}
+	})
+}
+
+// Regression: when a user has a config.yaml on disk, distro must NOT
+// rewrite their model choice even if the chosen model happens to match
+// the built-in default. The old heuristic (compare to DefaultModel)
+// silently swapped user-chosen models under them.
+func TestDistroDoesNotClobberUserModel(t *testing.T) {
+	prev := distroUserHasConfig
+	defer func() { distroUserHasConfig = prev }()
+	distroUserHasConfig = true
+
+	withBaked("distro", "https://baked.example/v1", "novita", "qwen/qwen3-coder-30b", "", func() {
+		cfg := DefaultConfig()
+		cfg.Models.Super = DefaultModel
+		cfg.Models.Dev = DefaultDevModel
+		got := applyBaked(cfg)
+		if got.Models.Super != DefaultModel {
+			t.Errorf("distro must not rewrite user Super model when config.yaml exists, got %q", got.Models.Super)
+		}
+		if got.Models.Dev != DefaultDevModel {
+			t.Errorf("distro must not rewrite user Dev model when config.yaml exists, got %q", got.Models.Dev)
 		}
 	})
 }

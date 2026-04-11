@@ -119,7 +119,10 @@ var dangerousPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`\bcurl\b.*\s+-h\s+['"]?authorization`),         // curl -H "Authorization: Bearer …"
 	regexp.MustCompile(`\bcurl\b.*\s+-u\s+[^:\s]+:[^\s]+`),             // curl -u user:pass
 	regexp.MustCompile(`\benv\s*\|\s*(curl|wget|nc)\b`),                // env | curl — leak env
-	regexp.MustCompile(`\bcat\s+.*\.(pem|key|crt|p12|pfx)\b`),          // dump private keys
+	// Only match when the extension is the LAST component of the filename
+	// (end-of-token or followed by whitespace/shell separator) so paths
+	// like `config.key.json` or `app.crt.bak` don't false-positive.
+	regexp.MustCompile(`\bcat\s+\S*\.(pem|key|crt|p12|pfx)(\s|$|[|;>&])`), // dump private keys
 	regexp.MustCompile(`\bcat\s+.*/\.ssh/id_`),                         // dump SSH keys
 	regexp.MustCompile(`\bcat\s+.*/\.aws/credentials`),                 // dump AWS creds
 	regexp.MustCompile(`\bcat\s+.*/\.(npm|pypi|docker)rc`),             // dump config creds

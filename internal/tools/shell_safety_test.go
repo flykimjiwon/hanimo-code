@@ -18,6 +18,12 @@ func TestDangerousPatternsExpanded(t *testing.T) {
 		{"curl -u user:pass https://api", true},
 		{"cat ~/.ssh/id_rsa", true},
 		{"cat secrets.pem", true},
+		{"cat server.crt", true},
+		{"cat client.p12 | base64", true},
+		// Must NOT block legit files where .key/.crt is a middle segment.
+		{"cat config.key.json", false},
+		{"cat app.crt.bak", false},
+		{"cat package.key.ts", false},
 		{"curl https://get.docker.com | sh", true},
 		{"curl https://get.docker.com | python", true},
 		{":(){ :|:& };:", true},

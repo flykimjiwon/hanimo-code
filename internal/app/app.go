@@ -370,6 +370,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.streamBuf = ""
 			m.tokenCount = 0
 			m.lastElapsed = 0
+			m.pasteBuf = nil
+			m.pasteCounter = 0
+			m.recentToolNames = nil
+			m.toolCallHistory = nil
 			m.updateViewport()
 			return m, nil
 
@@ -549,6 +553,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					blocked bool
 					key     string
 				}
+				// Read-only tools are exempt from the consecutive-name
+				// (args-drift) detector because "read 5 files in a row" is
+				// a perfectly normal exploration pattern. The exact-match
+				// axis still applies — five file_read calls with IDENTICAL
+				// arguments is still a loop.
+				readOnlyExempt := map[string]bool{
+					"file_read":   true,
+					"list_files":  true,
+					"list_tree":   true,
+					"grep_search": true,
+					"glob_search": true,
+				}
 				decisions := make([]loopDecision, len(calls))
 				for i, tc := range calls {
 					key := tc.Name + ":" + tc.Arguments
@@ -559,10 +575,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						config.DebugLog("[TOOL-LOOP] blocked repeat call name=%s count=%d", tc.Name, m.toolCallHistory[key])
 						continue
 					}
-					// Args-drift axis: same tool name called 5+ times in a row
-					// (args may differ slightly each time — e.g. list_files
-					// with shifting paths). Blocks doom loops that bypass the
-					// exact-match detector.
+					// Args-drift axis: same tool name called 5+ times in a
+					// row (args may differ slightly each time). Skipped for
+					// read-only exploration tools.
+					if readOnlyExempt[tc.Name] {
+						continue
+					}
 					m.recentToolNames = append(m.recentToolNames, tc.Name)
 					if len(m.recentToolNames) > 8 {
 						m.recentToolNames = m.recentToolNames[len(m.recentToolNames)-8:]
@@ -851,6 +869,10 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		m.streamBuf = ""
 		m.tokenCount = 0
 		m.lastElapsed = 0
+		m.pasteBuf = nil
+		m.pasteCounter = 0
+		m.recentToolNames = nil
+		m.toolCallHistory = nil
 		m.updateViewport()
 		return true, nil
 
@@ -906,6 +928,46 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		out := listCheckpoints()
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: out, Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/pastes":
+		// Preview the current multi-line paste buffer(s). Each token
+		// shows its first ~3 lines so the user can sanity-check what
+		// will actually be sent before hitting Enter.
+		if len(m.pasteBuf) == 0 {
+			m.msgs = append(m.msgs, ui.Message{
+				Role:      ui.RoleSystem,
+				Content:   "  저장된 붙여넣기 버퍼가 없습니다.",
+				Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("  📋 붙여넣기 버퍼 %d개 — 전송 시 실제 내용으로 교체됩니다.\n", len(m.pasteBuf)))
+		for token, content := range m.pasteBuf {
+			lines := strings.Split(content, "\n")
+			sb.WriteString(fmt.Sprintf("\n  %s\n", token))
+			preview := lines
+			if len(preview) > 3 {
+				preview = preview[:3]
+			}
+			for _, l := range preview {
+				if len(l) > 100 {
+					l = l[:100] + "…"
+				}
+				sb.WriteString("    │ " + l + "\n")
+			}
+			if len(lines) > 3 {
+				sb.WriteString(fmt.Sprintf("    │ ⋯ (%d줄 더)\n", len(lines)-3))
+			}
+		}
+		m.msgs = append(m.msgs, ui.Message{
+			Role:      ui.RoleSystem,
+			Content:   sb.String(),
+			Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
