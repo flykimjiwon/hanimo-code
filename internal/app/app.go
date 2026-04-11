@@ -129,8 +129,12 @@ type Model struct {
 
 // expandPastes substitutes stored multi-line paste content back into the
 // input string. Any placeholder tokens that remain in the text are replaced
-// with the original clipboard content. The buffer is cleared on each call
-// so pastes don't leak across unrelated sends.
+// with the original clipboard content.
+//
+// The buffer is intentionally NOT cleared on expansion — /pastes needs to
+// show what the user already sent, not just what's staged for the next
+// turn. The map is evicted only on /clear, Ctrl+L, or when the rolling
+// cap kicks in (handled at paste-insertion time).
 func (m *Model) expandPastes(s string) string {
 	if len(m.pasteBuf) == 0 {
 		return s
@@ -138,8 +142,6 @@ func (m *Model) expandPastes(s string) string {
 	for token, content := range m.pasteBuf {
 		s = strings.ReplaceAll(s, token, content)
 	}
-	m.pasteBuf = nil
-	m.pasteCounter = 0
 	return s
 }
 
@@ -290,6 +292,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if lineCount >= 2 {
 			if m.pasteBuf == nil {
 				m.pasteBuf = map[string]string{}
+			}
+			// Rolling cap: keep at most 20 pastes per session so a
+			// chatty user doesn't accumulate unbounded memory. When
+			// we hit the cap, drop the oldest numbered token.
+			const maxPastes = 20
+			if len(m.pasteBuf) >= maxPastes {
+				oldest := m.pasteCounter - maxPastes + 1
+				if oldest > 0 {
+					for token := range m.pasteBuf {
+						if strings.Contains(token, fmt.Sprintf("#%d:", oldest)) {
+							delete(m.pasteBuf, token)
+							break
+						}
+					}
+				}
 			}
 			m.pasteCounter++
 			token := fmt.Sprintf("[붙여넣기 #%d: %d줄]", m.pasteCounter, lineCount)
