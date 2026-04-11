@@ -25,6 +25,69 @@ type Message struct {
 	Tag       string // optional tag for filtering (e.g. "modebox")
 }
 
+// Q/A block background tints — subtle enough not to hurt readability,
+// strong enough to make user vs assistant visually distinct without the
+// `>` prefix carrying the whole load. Honey gold identity preserved.
+var (
+	userBlockBg = lipgloss.Color("#2A1F0A") // deep amber tint for user
+	asstBlockBg = lipgloss.Color("#1A1608") // darker honey tint for assistant
+)
+
+// renderUserBlock wraps a user message in a subtly tinted, left-bar
+// accented block: honey-gold bar + amber background + 🐝 label.
+func renderUserBlock(content string, width int) string {
+	barStyle := lipgloss.NewStyle().
+		Foreground(ColorPrimary).
+		Background(userBlockBg).
+		Bold(true)
+	textStyle := lipgloss.NewStyle().
+		Foreground(ColorText).
+		Background(userBlockBg)
+	blockWidth := width - 2
+	if blockWidth < 20 {
+		blockWidth = 20
+	}
+	wrapped := wrapText(content, blockWidth-4)
+	var out []string
+	for i, line := range strings.Split(wrapped, "\n") {
+		bar := "  ▌ "
+		if i == 0 {
+			bar = "  ▌ "
+		}
+		padded := line
+		displayW := lipgloss.Width(line)
+		if displayW < blockWidth-4 {
+			padded = line + strings.Repeat(" ", blockWidth-4-displayW)
+		}
+		out = append(out, barStyle.Render(bar)+textStyle.Render(padded))
+	}
+	return strings.Join(out, "\n")
+}
+
+// renderAssistantBlock wraps markdown-rendered assistant content in a
+// darker honey-tinted block with a left accent bar.
+func renderAssistantBlock(rendered string, width int) string {
+	barStyle := lipgloss.NewStyle().
+		Foreground(ColorAccent).
+		Background(asstBlockBg)
+	bgStyle := lipgloss.NewStyle().
+		Background(asstBlockBg)
+	blockWidth := width - 2
+	if blockWidth < 20 {
+		blockWidth = 20
+	}
+	var out []string
+	for _, line := range strings.Split(rendered, "\n") {
+		displayW := lipgloss.Width(line)
+		padded := line
+		if displayW < blockWidth-4 {
+			padded = line + strings.Repeat(" ", blockWidth-4-displayW)
+		}
+		out = append(out, barStyle.Render("  ▎ ")+bgStyle.Render(padded))
+	}
+	return strings.Join(out, "\n")
+}
+
 func RenderMessages(messages []Message, streaming string, width int) string {
 	var lines []string
 	contentWidth := width - 6
@@ -32,20 +95,20 @@ func RenderMessages(messages []Message, streaming string, width int) string {
 	for _, msg := range messages {
 		switch msg.Role {
 		case RoleUser:
-			prefix := UserMsg.Render("  > ")
-			content := wrapText(msg.Content, contentWidth-4)
-			lines = append(lines, prefix+content)
+			// User messages get a tinted block with an accent bar so
+			// they're instantly distinguishable from assistant replies
+			// without relying solely on the "  > " prefix.
+			block := renderUserBlock(msg.Content, contentWidth)
+			lines = append(lines, block)
 		case RoleAssistant:
-			rendered := renderMarkdown(msg.Content, contentWidth)
+			rendered := renderMarkdown(msg.Content, contentWidth-4)
 			msgLines := strings.Split(rendered, "\n")
 			// Show line count for long messages
 			if len(msgLines) > 20 {
 				countStyle := lipgloss.NewStyle().Foreground(ColorMuted)
 				lines = append(lines, countStyle.Render(fmt.Sprintf("  [%d lines]", len(msgLines))))
 			}
-			for _, line := range msgLines {
-				lines = append(lines, "  "+line)
-			}
+			lines = append(lines, renderAssistantBlock(rendered, contentWidth))
 			lines = append(lines, "")
 			continue
 		case RoleSystem:
@@ -56,9 +119,16 @@ func RenderMessages(messages []Message, streaming string, width int) string {
 			lines = append(lines, "")
 			continue
 		case RoleTool:
+			// Tool result: can be multi-line (see FormatToolResult).
+			// Render each line in the accent color so long outputs stay
+			// visually tied together.
 			toolStyle := lipgloss.NewStyle().Foreground(ColorAccent)
-			wrapped := wrapText(msg.Content, contentWidth-2)
-			lines = append(lines, toolStyle.Render("  "+wrapped))
+			for _, rawLine := range strings.Split(msg.Content, "\n") {
+				wrapped := wrapText(rawLine, contentWidth-2)
+				for _, l := range strings.Split(wrapped, "\n") {
+					lines = append(lines, toolStyle.Render("  "+l))
+				}
+			}
 		}
 		lines = append(lines, "")
 	}

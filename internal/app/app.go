@@ -52,6 +52,7 @@ type toolResultMsg struct {
 type toolResult struct {
 	callID string
 	name   string
+	args   string // raw JSON arguments — used to render diff boxes for file_edit/file_write
 	output string
 }
 
@@ -665,6 +666,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						results = append(results, toolResult{
 							callID: tc.ID,
 							name:   tc.Name,
+							args:   tc.Arguments,
 							output: output,
 						})
 					}
@@ -839,9 +841,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Content:    r.output,
 				ToolCallID: r.callID,
 			})
-			preview := truncateArgs(r.output, 100)
+			// file_edit / file_write get a diff box rendered from the
+			// raw call arguments; everything else uses the generic
+			// auto-collapsing preview.
+			var preview string
+			if diff := ui.FormatToolDiff(r.name, r.args, r.output); diff != "" {
+				preview = diff
+			} else {
+				preview = ui.FormatToolResult(r.name, r.output)
+			}
 			m.msgs = append(m.msgs, ui.Message{
-				Role: ui.RoleTool, Content: fmt.Sprintf("<< %s: %s", r.name, preview), Timestamp: time.Now(),
+				Role: ui.RoleTool, Content: preview, Timestamp: time.Now(),
 			})
 		}
 		m.streamBuf = ""
@@ -1506,13 +1516,17 @@ func (m *Model) overlayHeight() int {
 
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
+// streamStatus composes the waiting-for-provider line. All
+// domain-flavoured text (bee / honey / hive) comes from ui.ActivePersona
+// so a downstream fork can re-skin the product by swapping the persona
+// struct — see internal/ui/persona.go.
 func (m *Model) streamStatus() string {
 	elapsed := time.Since(m.streamStart)
 	frame := spinnerFrames[int(elapsed.Milliseconds()/150)%len(spinnerFrames)]
+	p := ui.ActivePersona
 
 	if m.lastChunkAt.IsZero() {
-		// No chunks received yet
-		return fmt.Sprintf("%s 연결중... (%.1fs)", frame, elapsed.Seconds())
+		return fmt.Sprintf("%s %s... (%.1fs)", frame, p.ColdStart, elapsed.Seconds())
 	}
 
 	sinceLastChunk := time.Since(m.lastChunkAt)
@@ -1522,12 +1536,13 @@ func (m *Model) streamStatus() string {
 	}
 
 	if sinceLastChunk > 15*time.Second {
-		return fmt.Sprintf("%s 응답없음 (%.0fs 대기중 · %dtok)", frame, sinceLastChunk.Seconds(), m.tokenCount)
+		return fmt.Sprintf("%s %s (%.0fs 대기 · %dtok)", frame, p.Stall15s, sinceLastChunk.Seconds(), m.tokenCount)
 	}
 	if sinceLastChunk > 5*time.Second {
-		return fmt.Sprintf("%s 응답지연... (%.0fs · %dtok · %.1ftok/s)", frame, elapsed.Seconds(), m.tokenCount, tps)
+		return fmt.Sprintf("%s %s (%.0fs · %dtok · %.1ftok/s)", frame, p.Stall5s, elapsed.Seconds(), m.tokenCount, tps)
 	}
-	return fmt.Sprintf("%s 수신중 (%.1fs · %dtok · %.1ftok/s)", frame, elapsed.Seconds(), m.tokenCount, tps)
+	verb := ui.ThinkingVerbFor(elapsed.Seconds())
+	return fmt.Sprintf("%s %s (%.1fs · %dtok · %.1ftok/s)", frame, verb, elapsed.Seconds(), m.tokenCount, tps)
 }
 
 func (m *Model) updateViewport() {
