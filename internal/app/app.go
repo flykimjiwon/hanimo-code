@@ -72,6 +72,13 @@ type Model struct {
 	pendingQueue []string // messages queued while streaming
 	knowledgeInj *knowledge.Injector
 
+	// Multi-line paste buffer. When the user pastes content with >=2 lines,
+	// we stash the full text here and insert a compact placeholder token
+	// ("[붙여넣기 #N: M줄]") into the textarea so the input stays readable.
+	// On send, expandPastes() swaps placeholders back to the original text.
+	pasteBuf     map[string]string
+	pasteCounter int
+
 	autoMode bool   // autonomous mode active
 	autoTask string // task description for auto mode
 
@@ -112,6 +119,22 @@ type Model struct {
 	width  int
 	height int
 	ready  bool
+}
+
+// expandPastes substitutes stored multi-line paste content back into the
+// input string. Any placeholder tokens that remain in the text are replaced
+// with the original clipboard content. The buffer is cleared on each call
+// so pastes don't leak across unrelated sends.
+func (m *Model) expandPastes(s string) string {
+	if len(m.pasteBuf) == 0 {
+		return s
+	}
+	for token, content := range m.pasteBuf {
+		s = strings.ReplaceAll(s, token, content)
+	}
+	m.pasteBuf = nil
+	m.pasteCounter = 0
+	return s
 }
 
 func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
@@ -251,6 +274,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.PasteMsg:
+		// Bracketed paste. Multi-line pastes are collapsed to a compact
+		// placeholder like "[붙여넣기 #1: 42줄]" so the input stays readable;
+		// the original content is restored by expandPastes() on send.
+		// Single-line pastes are inserted verbatim.
+		pasted := msg.Content
+		lineCount := strings.Count(pasted, "\n") + 1
+		if lineCount >= 2 {
+			if m.pasteBuf == nil {
+				m.pasteBuf = map[string]string{}
+			}
+			m.pasteCounter++
+			token := fmt.Sprintf("[붙여넣기 #%d: %d줄]", m.pasteCounter, lineCount)
+			m.pasteBuf[token] = pasted
+			m.textarea.InsertString(token)
+		} else {
+			m.textarea.InsertString(pasted)
+		}
+		lines := strings.Count(m.textarea.Value(), "\n") + 1
+		if lines > m.textarea.Height() && lines <= 10 {
+			m.textarea.SetHeight(lines)
+			m.recalcLayout()
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		if m.streaming {
 			switch msg.String() {
@@ -259,15 +307,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case "enter":
 				// Queue message while streaming
-				input := strings.TrimSpace(m.textarea.Value())
-				if input != "" {
-					m.pendingQueue = append(m.pendingQueue, input)
+				raw := strings.TrimSpace(m.textarea.Value())
+				if raw != "" {
+					expanded := m.expandPastes(raw)
+					m.pendingQueue = append(m.pendingQueue, expanded)
 					m.textarea.Reset()
 					m.textarea.SetHeight(1)
 					m.recalcLayout()
-					// Show queued indicator
+					// Show queued indicator with the compact (placeholder) form
+					// so long pastes don't blow up the chat log.
 					m.msgs = append(m.msgs, ui.Message{
-						Role: ui.RoleUser, Content: input + " [대기중]", Timestamp: time.Now(),
+						Role: ui.RoleUser, Content: raw + " [대기중]", Timestamp: time.Now(),
 					})
 					m.updateViewport()
 				}
@@ -354,7 +404,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if handled, cmd := m.handleSlashCommand(input); handled {
 					return m, cmd
 				}
-				return m, m.sendMessage(input)
+				expanded := m.expandPastes(input)
+				return m, m.sendMessage(expanded)
 			}
 			return m, nil
 
@@ -1123,27 +1174,34 @@ func (m Model) View() tea.View {
 		}
 		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress)
 
-		// Intent hint line (Super mode only) — shown directly above the input box.
+		// Build the stack of anchor blocks rendered directly above the input.
+		// Order (top → bottom):
+		//   1. Intent hint (Super mode)
+		//   2. ASK_USER question (if active)
+		//   3. inputBox
+		// This keeps context-sensitive prompts glued to the input instead of
+		// floating in the middle of the screen.
+		stack := []string{vpContent}
+
 		if m.activeTab == int(llm.ModeSuper) && m.intentHint != "" {
 			hintStyle := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#F9E2AF")).
 				Italic(true)
-			hintLine := hintStyle.Render("  " + m.intentHint)
-			content = lipgloss.JoinVertical(lipgloss.Left, vpContent, hintLine, inputBox, statusBar)
-		} else {
-			content = lipgloss.JoinVertical(lipgloss.Left, vpContent, inputBox, statusBar)
+			stack = append(stack, hintStyle.Render("  "+m.intentHint))
 		}
 
-		// Interactive ASK_USER overlay — rendered as a centered box on top.
 		if m.askQuestion != nil {
-			var overlay string
+			var askBlock string
 			if m.askQuestion.Type == agents.AskTypeText {
-				overlay = ui.RenderAskText(m.askQuestion.Question, m.askInput, m.width)
+				askBlock = ui.RenderAskText(m.askQuestion.Question, m.askInput, m.width)
 			} else {
-				overlay = ui.RenderAskUser(m.askQuestion.Question, m.askQuestion.Options, m.askSelected, m.width)
+				askBlock = ui.RenderAskUser(m.askQuestion.Question, m.askQuestion.Options, m.askSelected, m.width)
 			}
-			content = overlayCenter(content, overlay, m.width)
+			stack = append(stack, askBlock)
 		}
+
+		stack = append(stack, inputBox, statusBar)
+		content = lipgloss.JoinVertical(lipgloss.Left, stack...)
 
 		// Dangerous-op confirmation overlay
 		if m.dangerCmd != "" {
