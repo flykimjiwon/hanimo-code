@@ -141,8 +141,20 @@ func ConfigPath() string {
 	return filepath.Join(ConfigDir(), "config.yaml")
 }
 
+// Load resolves configuration in this precedence order (highest first):
+//
+//   1. sealed bake     — admin-frozen values, cannot be overridden
+//   2. environment     — HANIMO_* vars (skipped in sealed mode)
+//   3. ~/.hanimo/config.yaml — user config (skipped in sealed mode)
+//   4. distro bake     — admin endpoint/provider/model (only where user is silent)
+//   5. built-in default — DefaultBaseURL etc.
 func Load() (Config, error) {
 	cfg := DefaultConfig()
+
+	// Sealed binaries ignore user config and env entirely.
+	if IsSealed() {
+		return applyBaked(cfg), nil
+	}
 
 	data, err := os.ReadFile(ConfigPath())
 	if err == nil {
@@ -164,6 +176,8 @@ func Load() (Config, error) {
 		cfg.Models.Dev = v
 	}
 
+	// Distro bake fills in any remaining empty/default fields.
+	cfg = applyBaked(cfg)
 	return cfg, nil
 }
 
@@ -180,6 +194,10 @@ func Save(cfg Config) error {
 }
 
 func NeedsSetup() bool {
+	// Sealed binaries ship with everything frozen — never prompt.
+	if IsSealed() {
+		return false
+	}
 	// Ollama doesn't need API key, so skip setup if using default (localhost)
 	cfg, err := Load()
 	if err != nil {
@@ -193,19 +211,38 @@ func NeedsSetup() bool {
 }
 
 func RunSetupWizard() (Config, error) {
-	cfg := DefaultConfig()
+	cfg := applyBaked(DefaultConfig())
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("\n  하니모 설정")
+	fmt.Printf("\n  %s 설정  (%s)\n", BakedBrandName(), BakeInfo())
 
-	fmt.Printf("  API Base URL [%s]: ", DefaultBaseURL)
-	if input, _ := reader.ReadString('\n'); strings.TrimSpace(input) != "" {
-		cfg.API.BaseURL = strings.TrimSpace(input)
-	}
+	if IsDistro() {
+		// Distro: endpoint is baked. Only ask for the key.
+		fmt.Printf("  엔드포인트: %s (빌드 고정)\n", cfg.API.BaseURL)
+		if cfg.Default.Provider != "" {
+			fmt.Printf("  프로바이더: %s (빌드 고정)\n", cfg.Default.Provider)
+		}
+		if cfg.Models.Super != "" {
+			fmt.Printf("  기본 모델: %s (빌드 고정)\n", cfg.Models.Super)
+		}
+		fmt.Print("  API Key: ")
+		if input, _ := reader.ReadString('\n'); strings.TrimSpace(input) != "" {
+			cfg.API.APIKey = strings.TrimSpace(input)
+		}
+	} else {
+		hint := cfg.API.BaseURL
+		if hint == "" {
+			hint = DefaultBaseURL
+		}
+		fmt.Printf("  API Base URL [%s]: ", hint)
+		if input, _ := reader.ReadString('\n'); strings.TrimSpace(input) != "" {
+			cfg.API.BaseURL = strings.TrimSpace(input)
+		}
 
-	fmt.Print("  API Key: ")
-	if input, _ := reader.ReadString('\n'); strings.TrimSpace(input) != "" {
-		cfg.API.APIKey = strings.TrimSpace(input)
+		fmt.Print("  API Key: ")
+		if input, _ := reader.ReadString('\n'); strings.TrimSpace(input) != "" {
+			cfg.API.APIKey = strings.TrimSpace(input)
+		}
 	}
 
 	if err := Save(cfg); err != nil {
