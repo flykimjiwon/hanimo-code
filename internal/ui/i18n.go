@@ -41,6 +41,7 @@ type Strings struct {
 	Memories       string
 	Theme          string
 	Clear          string
+	ToolList       string
 }
 
 // KO contains Korean UI strings.
@@ -73,6 +74,7 @@ var KO = Strings{
 	Memories:       "메모리 조회",
 	Theme:          "테마 변경",
 	Clear:          "대화 초기화",
+	ToolList:       "도구 목록",
 }
 
 // EN contains English UI strings.
@@ -105,6 +107,7 @@ var EN = Strings{
 	Memories:       "Memories",
 	Theme:          "Theme",
 	Clear:          "Clear",
+	ToolList:       "Tool List",
 }
 
 // T returns the current language's string set.

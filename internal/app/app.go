@@ -1428,6 +1428,8 @@ func (m *Model) sendMessage(input string) tea.Cmd {
 	m.tokenCount = 0
 	m.toolIter = 0
 	m.toolCallHistory = map[string]int{}
+	m.recentToolNames = nil
+	tools.ResetReadSet()
 	m.streamStart = time.Now()
 	m.lastChunkAt = time.Time{}
 	m.updateViewport()
@@ -1544,6 +1546,7 @@ func (m *Model) openMenu() {
 		t.Theme,
 		t.Config,
 		t.Usage,
+		t.ToolList,
 		t.AutoMode,
 		t.Diagnostics,
 		t.Help,
@@ -1700,6 +1703,16 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
+		case item == t.ToolList:
+			m.showMenu = false
+			m.msgs = append(m.msgs, ui.Message{
+				Role:      ui.RoleSystem,
+				Content:   renderToolList(m.activeTab),
+				Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return m, nil
+
 		case item == t.AutoMode:
 			m.showMenu = false
 			m.msgs = append(m.msgs, ui.Message{
@@ -1762,6 +1775,30 @@ func overlayCenter(base, overlay string, width int) string {
 		baseLines[row] = strings.Repeat(" ", pad) + oLine
 	}
 	return strings.Join(baseLines, "\n")
+}
+
+// renderToolList produces a human-readable summary of every tool currently
+// exposed to the LLM in the active mode. Used by the menu "도구 목록" entry
+// so users can inspect exactly what the agent is allowed to call without
+// digging through source.
+func renderToolList(mode int) string {
+	defs := tools.ToolsForMode(mode)
+	modeName := "Super"
+	switch mode {
+	case 1:
+		modeName = "Deep Agent"
+	case 2:
+		modeName = "Plan (read-only)"
+	}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "  📋 현재 모드: %s — 사용 가능한 도구 %d개\n\n", modeName, len(defs))
+	for i, d := range defs {
+		if d.Function == nil {
+			continue
+		}
+		fmt.Fprintf(&sb, "  %2d. %-14s  %s\n", i+1, d.Function.Name, truncate(d.Function.Description, 80))
+	}
+	return sb.String()
 }
 
 func truncate(s string, n int) string {
