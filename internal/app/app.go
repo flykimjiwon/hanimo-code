@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -861,6 +862,7 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 			"  /plan <task> — 단계별 실행 계획 생성    /approve — 계획 승인/실행    /reject — 계획 거부\n" +
 			"  /save [name] — 세션 저장    /load — 세션 목록    /search [keyword] — 세션 검색\n" +
 			"  /remember key=value — 메모리 저장    /memories — 프로젝트 메모리 목록\n" +
+			"  /checkpoint — 체크포인트 생성(git stash)    /rollback — 최근 체크포인트 복원    /checkpoints — 체크포인트 목록\n" +
 			"  /lang — 언어 전환 (한국어/English)    Esc — 메뉴"
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: help, Timestamp: time.Now(),
@@ -872,6 +874,38 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		ui.ToggleLang()
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: fmt.Sprintf("  Language switched to %s", ui.LangLabel()), Timestamp: time.Now(),
+		})
+		m.updateViewport()
+		return true, nil
+
+	case "/checkpoint":
+		// Stash current working tree + untracked files under a hanimo-
+		// prefixed label so the user can roll back a risky auto/deep run.
+		out, err := runCheckpoint("")
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  " + out, Timestamp: time.Now(),
+		})
+		if err != nil {
+			config.DebugLog("[CHECKPOINT] %v", err)
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/rollback":
+		out, err := runRollback()
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: "  " + out, Timestamp: time.Now(),
+		})
+		if err != nil {
+			config.DebugLog("[ROLLBACK] %v", err)
+		}
+		m.updateViewport()
+		return true, nil
+
+	case "/checkpoints":
+		out := listCheckpoints()
+		m.msgs = append(m.msgs, ui.Message{
+			Role: ui.RoleSystem, Content: out, Timestamp: time.Now(),
 		})
 		m.updateViewport()
 		return true, nil
@@ -1352,10 +1386,23 @@ func (m *Model) streamStatus() string {
 
 func (m *Model) updateViewport() {
 	var stream string
+	msgs := m.msgs
 	if m.streaming {
 		stream = m.streamStatus()
+		// Live render: while streaming, surface the partial streamBuf
+		// as a transient assistant message so the user actually sees
+		// text arrive token-by-token instead of staring at a spinner
+		// until the whole response lands. The buffer isn't persisted
+		// into m.msgs until streamChunkMsg.done fires.
+		if m.streamBuf != "" {
+			msgs = append(msgs, ui.Message{
+				Role:      ui.RoleAssistant,
+				Content:   m.streamBuf,
+				Timestamp: time.Now(),
+			})
+		}
 	}
-	content := ui.RenderMessages(m.msgs, stream, m.viewport.Width())
+	content := ui.RenderMessages(msgs, stream, m.viewport.Width())
 	m.viewport.SetContent(content)
 	m.viewport.GotoBottom()
 }
@@ -1775,6 +1822,101 @@ func overlayCenter(base, overlay string, width int) string {
 		baseLines[row] = strings.Repeat(" ", pad) + oLine
 	}
 	return strings.Join(baseLines, "\n")
+}
+
+// runCheckpoint creates a git stash labeled with a hanimo prefix so the
+// user can experiment with /auto or /deep and roll back with /rollback.
+// Falls back to a friendly message when cwd isn't a git repo or there's
+// nothing to stash.
+func runCheckpoint(label string) (string, error) {
+	if !inGitRepo() {
+		return "현재 디렉토리는 git 레포가 아닙니다. /checkpoint 는 git 기반입니다.", nil
+	}
+	// git stash -u always complains if there's nothing to stash — check first.
+	status := exec.Command("git", "status", "--porcelain")
+	out, err := status.Output()
+	if err != nil {
+		return fmt.Sprintf("git status 실패: %v", err), err
+	}
+	if strings.TrimSpace(string(out)) == "" {
+		return "변경 사항이 없어 체크포인트를 만들지 않았습니다.", nil
+	}
+	msg := label
+	if msg == "" {
+		msg = fmt.Sprintf("hanimo:%s", time.Now().Format("2006-01-02-15:04:05"))
+	} else {
+		msg = "hanimo:" + msg
+	}
+	cmd := exec.Command("git", "stash", "push", "-u", "-m", msg)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Sprintf("체크포인트 실패: %s", strings.TrimSpace(string(out))), err
+	}
+	return fmt.Sprintf("✓ 체크포인트 생성: %s  — /rollback 으로 되돌릴 수 있습니다.", msg), nil
+}
+
+// runRollback pops the most recent hanimo-labeled stash.
+func runRollback() (string, error) {
+	if !inGitRepo() {
+		return "현재 디렉토리는 git 레포가 아닙니다.", nil
+	}
+	list := exec.Command("git", "stash", "list")
+	out, err := list.Output()
+	if err != nil {
+		return fmt.Sprintf("git stash list 실패: %v", err), err
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	var target string
+	for _, line := range lines {
+		if strings.Contains(line, "hanimo:") {
+			// Lines look like: stash@{0}: On main: hanimo:2026-04-11-…
+			if i := strings.Index(line, ":"); i >= 0 {
+				target = strings.TrimSpace(line[:i])
+				break
+			}
+		}
+	}
+	if target == "" {
+		return "되돌릴 hanimo 체크포인트가 없습니다.", nil
+	}
+	cmd := exec.Command("git", "stash", "pop", target)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Sprintf("롤백 실패: %s", strings.TrimSpace(string(out))), err
+	}
+	return fmt.Sprintf("✓ 롤백 완료: %s — 변경 사항이 작업 디렉토리로 복원되었습니다.", target), nil
+}
+
+// listCheckpoints enumerates hanimo-prefixed stashes.
+func listCheckpoints() string {
+	if !inGitRepo() {
+		return "  현재 디렉토리는 git 레포가 아닙니다."
+	}
+	out, err := exec.Command("git", "stash", "list").Output()
+	if err != nil {
+		return fmt.Sprintf("  git stash list 실패: %v", err)
+	}
+	var sb strings.Builder
+	sb.WriteString("  📌 hanimo 체크포인트\n")
+	count := 0
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if strings.Contains(line, "hanimo:") {
+			sb.WriteString("  " + line + "\n")
+			count++
+		}
+	}
+	if count == 0 {
+		return "  hanimo 체크포인트가 없습니다. /checkpoint 로 생성하세요."
+	}
+	return sb.String()
+}
+
+// inGitRepo returns true if cwd is inside a git working tree.
+func inGitRepo() bool {
+	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(out)) == "true"
 }
 
 // renderToolList produces a human-readable summary of every tool currently
