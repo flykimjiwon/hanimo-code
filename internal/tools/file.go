@@ -98,10 +98,12 @@ func FileEdit(path, oldStr, newStr string) (int, error) {
 	content := string(data)
 	count := strings.Count(content, oldStr)
 	if count == 0 {
-		// Show a snippet of the file for context
+		// Show a snippet of the file for context. Slice by rune so
+		// Korean/CJK filenames or file contents don't produce garbled
+		// mid-codepoint bytes in the error message.
 		preview := content
-		if len(preview) > 500 {
-			preview = preview[:500] + "..."
+		if pr := []rune(preview); len(pr) > 500 {
+			preview = string(pr[:500]) + "..."
 		}
 		return 0, fmt.Errorf("old_string not found in %s. File preview:\n%s", path, preview)
 	}

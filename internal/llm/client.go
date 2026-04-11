@@ -208,8 +208,8 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 		if len(messages) > 0 {
 			last := messages[len(messages)-1]
 			preview := last.Content
-			if len(preview) > 200 {
-				preview = preview[:200] + "..."
+			if pr := []rune(preview); len(pr) > 200 {
+				preview = string(pr[:200]) + "..."
 			}
 			config.DebugLog("[API-REQ] lastMsg role=%s | len=%d | preview=%q", last.Role, len(last.Content), preview)
 		}

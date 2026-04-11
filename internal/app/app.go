@@ -972,8 +972,10 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 				preview = preview[:3]
 			}
 			for _, l := range preview {
-				if len(l) > 100 {
-					l = l[:100] + "…"
+				// Rune-based truncation so Korean/CJK characters
+				// don't get cut mid-codepoint.
+				if lr := []rune(l); len(lr) > 100 {
+					l = string(lr[:100]) + "…"
 				}
 				sb.WriteString("    │ " + l + "\n")
 			}
@@ -2059,10 +2061,16 @@ func truncate(s string, n int) string {
 	return string(runes[:n]) + "..."
 }
 
+// truncateArgs flattens a tool-call argument/result into a single-line
+// preview no longer than `max` RUNES. Counting bytes here splits UTF-8
+// multi-byte characters (notably Korean) mid-codepoint, which surfaced
+// as `작��` garbage in the tool-result line — fix enforced by using
+// []rune everywhere.
 func truncateArgs(s string, max int) string {
 	s = strings.ReplaceAll(s, "\n", " ")
-	if len(s) > max {
-		return s[:max] + "..."
+	runes := []rune(s)
+	if len(runes) > max {
+		return string(runes[:max]) + "..."
 	}
 	return s
 }
