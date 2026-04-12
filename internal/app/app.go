@@ -2002,9 +2002,15 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.menuAction == "model" {
-			// Model selected from submenu
 			selected := m.menuItems[m.menuSelected]
 			m.showMenu = false
+			// Hint entry: prefill textarea for manual input.
+			if strings.HasPrefix(selected, "✎") {
+				m.textarea.Reset()
+				m.textarea.InsertString("/model ")
+				m.textarea.Focus()
+				return m, nil
+			}
 			switch m.activeTab {
 			case 1:
 				m.cfg.Models.Dev = selected
@@ -2116,7 +2122,8 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Match by checking prefix (language item has suffix)
 		switch {
 		case item == t.ModelSwitch:
-			// Fetch model list from provider
+			// Fetch model list from provider, fall back to current
+			// config models so the menu is never empty.
 			var models []string
 			if m.client != nil && m.client.GetProvider() != nil {
 				if list, err := m.client.GetProvider().ListModels(); err == nil {
@@ -2126,14 +2133,17 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				}
 			}
 			if len(models) == 0 {
-				// Fallback: show current model
-				models = []string{m.currentModel()}
-				m.msgs = append(m.msgs, ui.Message{
-					Role: ui.RoleSystem, Content: "  모델 목록을 가져올 수 없습니다. /model <name> 으로 직접 변경하세요.", Timestamp: time.Now(),
-				})
-				m.showMenu = false
-				m.updateViewport()
-				return m, nil
+				// Fallback: show the configured models + a hint to type
+				// a custom name. This is better than closing the menu
+				// and printing an error.
+				seen := map[string]bool{}
+				for _, n := range []string{m.cfg.Models.Super, m.cfg.Models.Dev} {
+					if n != "" && !seen[n] {
+						models = append(models, n)
+						seen[n] = true
+					}
+				}
+				models = append(models, "✎ /model <name> 으로 직접 입력")
 			}
 			m.menuAction = "model"
 			m.menuItems = models
