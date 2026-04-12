@@ -80,16 +80,24 @@ func createStreamWithRetry(ctx context.Context, api *openai.Client, req openai.C
 	return nil, friendlyError(lastErr)
 }
 
-// defaultBaseURLs maps provider names to their default API base URLs.
-var defaultBaseURLs = map[string]string{
-	"openai":     "https://api.openai.com/v1",
-	"novita":     "https://api.novita.ai/v1",
-	"openrouter": "https://openrouter.ai/api/v1",
-	"deepseek":   "https://api.deepseek.com/v1",
-	"groq":       "https://api.groq.com/openai/v1",
-	"together":   "https://api.together.xyz/v1",
-	"fireworks":  "https://api.fireworks.ai/inference/v1",
-	"mistral":    "https://api.mistral.ai/v1",
+// DefaultBaseURLs maps provider names to their default OpenAI-compatible
+// API endpoints. Adding an entry here automatically exposes the
+// provider in the menu submenu and lets users switch to it with
+// `/provider <name>` without editing config.yaml.
+var DefaultBaseURLs = map[string]string{
+	"openai":      "https://api.openai.com/v1",
+	"novita":      "https://api.novita.ai/v1",
+	"openrouter":  "https://openrouter.ai/api/v1",
+	"deepseek":    "https://api.deepseek.com/v1",
+	"groq":        "https://api.groq.com/openai/v1",
+	"together":    "https://api.together.xyz/v1",
+	"fireworks":   "https://api.fireworks.ai/inference/v1",
+	"mistral":     "https://api.mistral.ai/v1",
+	"xai":         "https://api.x.ai/v1",
+	"cerebras":    "https://api.cerebras.ai/v1",
+	"siliconflow": "https://api.siliconflow.cn/v1",
+	"deepinfra":   "https://api.deepinfra.com/v1/openai",
+	"perplexity":  "https://api.perplexity.ai",
 }
 
 // OpenAICompatProvider implements Provider using the OpenAI-compatible API.
@@ -110,10 +118,10 @@ func normalizeBaseURL(url string) string {
 // NewOpenAICompat creates a new OpenAI-compatible provider.
 func NewOpenAICompat(name, baseURL, apiKey string) *OpenAICompatProvider {
 	if baseURL == "" {
-		if defaultURL, ok := defaultBaseURLs[name]; ok {
+		if defaultURL, ok := DefaultBaseURLs[name]; ok {
 			baseURL = defaultURL
 		} else {
-			baseURL = defaultBaseURLs["openai"]
+			baseURL = DefaultBaseURLs["openai"]
 		}
 	}
 

@@ -22,6 +22,7 @@ import (
 	"github.com/flykimjiwon/hanimo/internal/config"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
 	"github.com/flykimjiwon/hanimo/internal/llm"
+	"github.com/flykimjiwon/hanimo/internal/llm/providers"
 	"github.com/flykimjiwon/hanimo/internal/tools"
 	"github.com/flykimjiwon/hanimo/internal/ui"
 )
@@ -1081,21 +1082,34 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 			m.msgs = append(m.msgs, ui.Message{
 				Role: ui.RoleSystem, Content: fmt.Sprintf("  현재 프로바이더: %s", m.cfg.API.BaseURL), Timestamp: time.Now(),
 			})
-		} else {
-			if p, ok := m.cfg.Providers[arg]; ok {
-				m.cfg.API.BaseURL = p.BaseURL
-				if p.APIKey != "" {
-					m.cfg.API.APIKey = p.APIKey
-				}
-				m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
-				m.msgs = append(m.msgs, ui.Message{
-					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", arg, p.BaseURL), Timestamp: time.Now(),
-				})
-			} else {
-				m.msgs = append(m.msgs, ui.Message{
-					Role: ui.RoleSystem, Content: fmt.Sprintf("  알 수 없는 프로바이더: %s", arg), Timestamp: time.Now(),
-				})
+		} else if strings.Contains(arg, "://") {
+			// Raw URL passed directly — skip the named lookup and
+			// point the client at it. API key is unchanged so the
+			// user can prime their HANIMO_API_KEY before switching.
+			m.cfg.API.BaseURL = arg
+			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: 커스텀 URL (%s)", arg), Timestamp: time.Now(),
+			})
+		} else if p, ok := m.cfg.Providers[arg]; ok {
+			m.cfg.API.BaseURL = p.BaseURL
+			if p.APIKey != "" {
+				m.cfg.API.APIKey = p.APIKey
 			}
+			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", arg, p.BaseURL), Timestamp: time.Now(),
+			})
+		} else if url, ok := providers.DefaultBaseURLs[arg]; ok {
+			m.cfg.API.BaseURL = url
+			m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", arg, url), Timestamp: time.Now(),
+			})
+		} else {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  알 수 없는 프로바이더: %s — 이름 대신 전체 URL(https://...) 을 넣어도 됩니다", arg), Timestamp: time.Now(),
+			})
 		}
 		m.updateViewport()
 		return true, nil
@@ -1768,8 +1782,6 @@ func (m *Model) openMenu() {
 		t.Config,
 		t.Usage,
 		t.ToolList,
-		t.AutoMode,
-		t.Diagnostics,
 		t.Help,
 		t.Clear,
 	}
@@ -1827,19 +1839,67 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.menuAction == "provider" {
-			// Provider selected from submenu
-			selected := m.menuItems[m.menuSelected]
+			raw := m.menuItems[m.menuSelected]
+			// Strip the "* " / "  " cursor marker we added when
+			// building the list.
+			selected := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(raw, "* "), "+"))
 			m.showMenu = false
+
+			// Custom URL entry: prefill the textarea with "/provider "
+			// so the user can type a full URL (https://...) and hit
+			// Enter. /provider now accepts bare URLs directly.
+			if strings.HasPrefix(raw, "  + Custom URL") {
+				m.textarea.Reset()
+				m.textarea.InsertString("/provider https://")
+				m.textarea.Focus()
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  커스텀 엔드포인트 — 입력창에 URL을 이어 입력하고 Enter 를 누르세요.", Timestamp: time.Now(),
+				})
+				m.updateViewport()
+				return m, nil
+			}
+
+			// Named provider: check cfg first (it may have a key),
+			// then fall back to the OpenAI-compat default URL for the
+			// name. The API key stays as-is so the user doesn't lose
+			// their token when jumping between shared-key providers.
+			applied := false
 			if p, ok := m.cfg.Providers[selected]; ok {
 				m.cfg.API.BaseURL = p.BaseURL
 				if p.APIKey != "" {
 					m.cfg.API.APIKey = p.APIKey
 				}
+				applied = true
+			} else if url, ok := providers.DefaultBaseURLs[selected]; ok {
+				m.cfg.API.BaseURL = url
+				applied = true
+			}
+			if applied {
 				m.client = llm.NewClient(m.cfg.API.BaseURL, m.cfg.API.APIKey)
 				m.msgs = append(m.msgs, ui.Message{
-					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", selected, p.BaseURL), Timestamp: time.Now(),
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 변경: %s (%s)", selected, m.cfg.API.BaseURL), Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: fmt.Sprintf("  프로바이더 설정을 찾을 수 없습니다: %s", selected), Timestamp: time.Now(),
 				})
 			}
+			m.updateViewport()
+			return m, nil
+		}
+
+		if m.menuAction == "language" {
+			selected := m.menuItems[m.menuSelected]
+			m.showMenu = false
+			switch selected {
+			case "한국어":
+				ui.CurrentLang = ui.LangKorean
+			case "English":
+				ui.CurrentLang = ui.LangEnglish
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  언어 변경: %s", ui.LangLabel()), Timestamp: time.Now(),
+			})
 			m.updateViewport()
 			return m, nil
 		}
@@ -1894,30 +1954,59 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case item == t.ProviderSwitch:
+			// Union of: user config providers, dedicated-provider
+			// names (ollama/anthropic/google), and every OpenAI-compat
+			// default in providers.DefaultBaseURLs. De-duplicate, sort,
+			// mark the current one with "*", append "+ Custom URL..."
+			// at the end for ad-hoc endpoints.
+			seen := map[string]bool{}
 			var provNames []string
+			add := func(n string) {
+				if n == "" || seen[n] {
+					return
+				}
+				seen[n] = true
+				provNames = append(provNames, n)
+			}
+			for _, n := range []string{"ollama", "anthropic", "google"} {
+				add(n)
+			}
+			for name := range providers.DefaultBaseURLs {
+				add(name)
+			}
 			for name := range m.cfg.Providers {
-				provNames = append(provNames, name)
+				add(name)
 			}
-			if len(provNames) == 0 {
-				m.msgs = append(m.msgs, ui.Message{
-					Role: ui.RoleSystem, Content: "  등록된 프로바이더가 없습니다.", Timestamp: time.Now(),
-				})
-				m.showMenu = false
-				m.updateViewport()
-				return m, nil
+			sort.Strings(provNames)
+			// Mark current provider with "* " prefix so the user can
+			// spot it without guessing from the URL.
+			currentURL := m.cfg.API.BaseURL
+			display := make([]string, len(provNames))
+			cursor := 0
+			for i, n := range provNames {
+				marker := "  "
+				if matchesProvider(n, currentURL) {
+					marker = "* "
+					cursor = i
+				}
+				display[i] = marker + n
 			}
+			display = append(display, "  + Custom URL 입력...")
 			m.menuAction = "provider"
-			m.menuItems = provNames
-			m.menuSelected = 0
+			m.menuItems = display
+			m.menuSelected = cursor
 			return m, nil
 
 		case strings.HasPrefix(item, t.Language):
-			ui.ToggleLang()
-			m.msgs = append(m.msgs, ui.Message{
-				Role: ui.RoleSystem, Content: fmt.Sprintf("  Language switched to %s", ui.LangLabel()), Timestamp: time.Now(),
-			})
-			m.showMenu = false
-			m.updateViewport()
+			// Open a language submenu instead of toggling. Future
+			// additions (Japanese, Chinese, etc.) just append to the
+			// list below.
+			m.menuAction = "language"
+			m.menuItems = []string{"한국어", "English"}
+			m.menuSelected = 0
+			if ui.CurrentLang == ui.LangEnglish {
+				m.menuSelected = 1
+			}
 			return m, nil
 
 		case item == t.Theme:
@@ -1973,26 +2062,10 @@ func (m Model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.updateViewport()
 			return m, nil
 
-		case item == t.AutoMode:
-			// Prefill the textarea with "/auto " so the user can just
-			// type their task and press Enter — previously this menu
-			// entry only printed a hint which felt broken.
-			m.showMenu = false
-			m.textarea.Reset()
-			m.textarea.InsertString("/auto ")
-			m.textarea.Focus()
-			m.msgs = append(m.msgs, ui.Message{
-				Role: ui.RoleSystem, Content: "  자율 모드 — 입력창에 태스크를 이어서 입력하고 Enter 를 누르세요.", Timestamp: time.Now(),
-			})
-			m.updateViewport()
-			return m, nil
-
-		case item == t.Diagnostics:
-			m.showMenu = false
-			if handled, cmd := m.handleSlashCommand("/diagnostics"); handled {
-				return m, cmd
-			}
-			return m, nil
+		// AutoMode and Diagnostics dispatches removed — the menu no
+		// longer lists them. Deep Agent mode (Tab key) replaces the
+		// "자율 모드" menu entry, and /diagnostics remains available
+		// as a slash command for the rare user who wants it.
 
 		case item == t.Help:
 			m.showMenu = false
@@ -2136,6 +2209,28 @@ func inGitRepo() bool {
 		return false
 	}
 	return strings.TrimSpace(string(out)) == "true"
+}
+
+// matchesProvider reports whether a named provider matches the currently
+// configured API base URL. Used by the provider submenu to decide where
+// to put the "* " cursor marker so the user can see which row is active.
+func matchesProvider(name, currentURL string) bool {
+	if currentURL == "" {
+		return false
+	}
+	// Dedicated providers — match by substring of the canonical host.
+	dedicated := map[string]string{
+		"ollama":    "localhost:11434",
+		"anthropic": "api.anthropic.com",
+		"google":    "generativelanguage.googleapis.com",
+	}
+	if host, ok := dedicated[name]; ok {
+		return strings.Contains(currentURL, host)
+	}
+	if defURL, ok := providers.DefaultBaseURLs[name]; ok {
+		return strings.HasPrefix(currentURL, defURL) || strings.HasPrefix(defURL, currentURL)
+	}
+	return false
 }
 
 // renderToolList produces a human-readable summary of every tool currently
