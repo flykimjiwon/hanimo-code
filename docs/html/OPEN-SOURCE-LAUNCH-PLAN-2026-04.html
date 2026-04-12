@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>hanimo Open-Source Launch Plan — 2026-04</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <style type="text/css">:root{--bg:#ffffff;--fg:#1f2328;--muted:#656d76;--border:#d0d7de;--accent:#0969da;--code-bg:#f6f8fa;--table-alt:#f6f8fa;--shadow:0 1px 3px rgba(0,0,0,.08);}
+[data-theme="dark"]{--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--border:#30363d;--accent:#58a6ff;--code-bg:#161b22;--table-alt:#161b22;--shadow:0 1px 3px rgba(0,0,0,.5);}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--border:#30363d;--accent:#58a6ff;--code-bg:#161b22;--table-alt:#161b22;--shadow:0 1px 3px rgba(0,0,0,.5);}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Helvetica,Arial,sans-serif;line-height:1.65;max-width:960px;margin:0 auto;padding:2rem 1.25rem 6rem;font-size:16px;}
+h1,h2,h3,h4{font-weight:700;line-height:1.25;margin-top:2.2rem;margin-bottom:1rem;}
+h1{font-size:2.1rem;border-bottom:2px solid var(--border);padding-bottom:.5rem;}
+h2{font-size:1.55rem;border-bottom:1px solid var(--border);padding-bottom:.35rem;}
+h3{font-size:1.2rem}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--code-bg);border-radius:4px;padding:.15em .4em;font-size:.88em;font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem;overflow-x:auto;box-shadow:var(--shadow);}
+pre code{background:transparent;padding:0;font-size:.85em;line-height:1.5;}
+blockquote{border-left:4px solid var(--accent);background:var(--code-bg);margin:1rem 0;padding:.6rem 1rem;color:var(--muted);border-radius:0 6px 6px 0;}
+table{border-collapse:collapse;width:100%;margin:1.2rem 0;font-size:.92em;box-shadow:var(--shadow);border-radius:6px;overflow:hidden;}
+th,td{border:1px solid var(--border);padding:.55rem .8rem;text-align:left;vertical-align:top;}
+th{background:var(--code-bg);font-weight:600;}
+tbody tr:nth-child(even){background:var(--table-alt);}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+ul,ol{padding-left:1.6rem}
+li{margin:.25rem 0}
+#TOC{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;margin-bottom:2rem;}
+#TOC ul{padding-left:1.2rem;margin:.2rem 0}
+#theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--code-bg);color:var(--fg);border:1px solid var(--border);border-radius:999px;padding:.5rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600;box-shadow:var(--shadow);z-index:100;}
+#theme-toggle:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+<script>
+(function(){
+  const saved=localStorage.getItem('hanimo-theme');
+  if(saved)document.documentElement.setAttribute('data-theme',saved);
+})();
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effective=cur||(prefersDark?'dark':'light');
+  const next=effective==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('hanimo-theme',next);
+}
+</script>
+<header id="title-block-header">
+<h1 class="title">hanimo Open-Source Launch Plan — 2026-04</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#hanimo-open-source-launch-plan-2026-04">hanimo Open-Source Launch Plan — 2026-04</a>
+<ul>
+<li><a href="#tldr">0. TL;DR</a></li>
+<li><a href="#domain-decision-why-hanimo.dev">1. Domain Decision — Why <code>hanimo.dev</code></a></li>
+<li><a href="#github-layout">2. GitHub Layout</a></li>
+<li><a href="#license-apache-2.0-not-mit">3. License — Apache-2.0 (not MIT)</a></li>
+<li><a href="#landing-site-hanimo.dev">4. Landing Site — <code>hanimo.dev</code></a></li>
+<li><a href="#positioning-copy">5. Positioning &amp; Copy</a></li>
+<li><a href="#release-strategy">6. Release Strategy</a></li>
+<li><a href="#cicd-supply-chain">7. CI/CD &amp; Supply-chain</a></li>
+<li><a href="#community-support-infra">8. Community &amp; Support Infra</a></li>
+<li><a href="#risks-mitigations">9. Risks &amp; Mitigations</a></li>
+<li><a href="#immediate-next-actions-this-week">10. Immediate Next Actions (this week)</a></li>
+<li><a href="#relation-to-other-docs">11. Relation to other docs</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="hanimo-open-source-launch-plan-2026-04">hanimo Open-Source Launch Plan — 2026-04</h1>
+<blockquote>
+<p><strong>Scope:</strong> hanimo <strong>Code</strong> (Go TUI agent) + hanimo <strong>Web</strong> (Next.js web agent). <strong>Domain:</strong> <code>hanimo.dev</code> (primary) <strong>Goal:</strong> Open-source both on GitHub, ship a marketing/landing site on <code>hanimo.dev</code> that positions hanimo against closed SaaS (Claude Code / Cursor / Lovable / v0) <strong>and</strong> the open-source pack (opencode / Aider / Bolt.new / Continue).</p>
+</blockquote>
+<hr />
+<h2 id="tldr">0. TL;DR</h2>
+<ol type="1">
+<li><strong>Domain = <code>hanimo.dev</code>.</strong> Park <code>modol.app</code> / <code>modol.dev</code> as 301-redirects + keep the “Modol lineage” narrative in /about.</li>
+<li><strong>Two GitHub repos</strong>, not a monorepo: <code>hanimo-dev/hanimo-code</code> and <code>hanimo-dev/hanimo-web</code>. A third repo <code>hanimo-dev/hanimo.dev</code> hosts the marketing site.</li>
+<li><strong>Single landing site</strong> at <code>hanimo.dev</code> with two product tabs (<code>/code</code>, <code>/web</code>) — not subdomains. Keeps SEO consolidated and lets a shared “vs. the world” comparison table live at <code>/compare</code>.</li>
+<li><strong>License = Apache-2.0</strong> for both products (patent grant matters for enterprise adoption; MIT-style permissiveness retained).</li>
+<li><strong>Launch story is comparison-first</strong>, not feature-first. Every page answers: <em>“Why not Claude Code? Why not opencode? Why not Cursor?”</em></li>
+<li><strong>Soft launch:</strong> Week 9 MVP (private repo, invited testers). <strong>Public launch:</strong> Week 14 β (Show HN, r/LocalLLaMA, Korean dev communities). <strong>GA:</strong> Week 18.</li>
+</ol>
+<hr />
+<h2 id="domain-decision-why-hanimo.dev">1. Domain Decision — Why <code>hanimo.dev</code></h2>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Candidate</th>
+<th>Score</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>hanimo.dev</strong> ⭐</td>
+<td>10/10</td>
+<td>Matches product name 1:1. <code>.dev</code> is HTTPS-enforced and universally recognized as a developer TLD. Short, memorable, no Modol-era baggage.</td>
+</tr>
+<tr class="even">
+<td>modol.app</td>
+<td>4/10</td>
+<td>Ties brand to legacy name. <code>.app</code> is consumer-leaning.</td>
+</tr>
+<tr class="odd">
+<td>modol.dev</td>
+<td>5/10</td>
+<td>Same lineage confusion; better than <code>.app</code> but still a step backward.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation</strong></p>
+<ul>
+<li><strong>Buy all three.</strong> Domains are cheap; owning the set prevents squatting and lets the Modol story redirect cleanly.</li>
+<li><strong>Primary = <code>hanimo.dev</code>.</strong> All canonical URLs, GitHub org homepage, docs, blog, OG tags.</li>
+<li><strong><code>modol.dev</code> / <code>modol.app</code> → 301 → <code>hanimo.dev/about#lineage</code>.</strong> Free backlinks + smooth handoff for anyone who remembers the Modol era.</li>
+<li>Reserve <code>@hanimo</code> on GitHub, X/Twitter, Hugging Face, Discord vanity, npm, pkg.go.dev handle.</li>
+</ul>
+<hr />
+<h2 id="github-layout">2. GitHub Layout</h2>
+<h3 id="repo-structure-two-product-repos-one-site-repo">2.1 Repo structure (two product repos + one site repo)</h3>
+<pre><code>github.com/hanimo-dev/
+├── hanimo-code         # Go TUI agent (Bubble Tea v2)
+├── hanimo-web          # Next.js 15 web agent
+├── hanimo.dev          # Marketing site (Next.js 15 + MDX + Fumadocs)
+├── .github             # Shared org profile README, funding.yml, issue templates
+└── docs                # Cross-product design docs (optional, later)</code></pre>
+<p><strong>Why two repos, not a monorepo?</strong></p>
+<ul>
+<li>Different toolchains (Go vs pnpm) — CI stays simple.</li>
+<li>Different release cadences — Code ships binaries, Web ships a hosted instance + Docker image.</li>
+<li>Separate ★ counts = two proof points on the landing page.</li>
+<li>Easier to transfer/sell/sunset one product independently.</li>
+</ul>
+<h3 id="naming-conventions">2.2 Naming conventions</h3>
+<ul>
+<li>Binary: <code>hanimo</code> (not <code>hanimo-code</code>) — shorter to type, matches Claude Code’s <code>claude</code> precedent.</li>
+<li>Web package: <code>@hanimo/web</code> on npm, Docker image <code>ghcr.io/hanimo-dev/web:latest</code>.</li>
+<li>Default branch: <code>main</code>. Release tags: <code>v0.x.y</code> (SemVer). Release Please for automated changelogs.</li>
+</ul>
+<h3 id="must-have-files-in-each-repo">2.3 Must-have files in each repo</h3>
+<pre><code>README.md                 # &quot;vs. opencode / Claude Code&quot; table at the top
+LICENSE                   # Apache-2.0
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md        # Contributor Covenant 2.1
+SECURITY.md               # PGP key + security@hanimo.dev
+CHANGELOG.md              # Release Please
+.github/workflows/ci.yml
+.github/workflows/release.yml
+.github/ISSUE_TEMPLATE/
+.github/FUNDING.yml       # GitHub Sponsors + Open Collective
+docs/                     # mdBook (Code) / Fumadocs (Web)</code></pre>
+<hr />
+<h2 id="license-apache-2.0-not-mit">3. License — Apache-2.0 (not MIT)</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Axis</th>
+<th>MIT</th>
+<th>Apache-2.0 ✅</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Permissive</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>Patent grant</td>
+<td>❌</td>
+<td>✅ (crucial for enterprise legal review)</td>
+</tr>
+<tr class="odd">
+<td>NOTICE file</td>
+<td>❌</td>
+<td>✅ (attribution sanity)</td>
+</tr>
+<tr class="even">
+<td>Compatible with Claude Code / opencode dependencies</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p>Apache-2.0 is what opencode, Dify, RAGFlow, LlamaIndex, and most serious infra projects ship with. It reads as more mature than MIT to enterprise buyers.</p>
+<hr />
+<h2 id="landing-site-hanimo.dev">4. Landing Site — <code>hanimo.dev</code></h2>
+<h3 id="information-architecture">4.1 Information architecture</h3>
+<pre><code>hanimo.dev
+├── /                        Hero · 60-sec demo · social proof · dual CTA
+├── /code                    hanimo Code product page (TUI)
+├── /web                     hanimo Web product page (Next.js)
+├── /compare                 Full &quot;vs.&quot; matrix (Code, Web, Core, RAG, Community)
+│   ├── /compare/claude-code
+│   ├── /compare/cursor
+│   ├── /compare/opencode
+│   └── /compare/lovable
+├── /docs                    Product docs (Fumadocs, MDX, versioned)
+├── /blog                    Releases, benchmark posts, Modol → hanimo story
+├── /community               Forum, Discord, benchmark arena preview
+├── /about                   Team · Modol lineage · mission
+└── /brand                   Logo kit, colors, Figma file</code></pre>
+<p><strong>Single-domain strategy</strong> beats <code>code.hanimo.dev</code> / <code>web.hanimo.dev</code> because:</p>
+<ul>
+<li>Google consolidates E-E-A-T signals on one host.</li>
+<li>One <code>pnpm dev</code>, one deploy, one analytics account.</li>
+<li><code>/compare</code> can cross-link both products without awkward cross-origin flows.</li>
+</ul>
+<h3 id="homepage-wireframe">4.2 Homepage wireframe</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  hanimo           /code  /web  /compare  /docs  /blog  GH★  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│     The Open-Source AI Coding Platform                      │
+│     Successor to Modol. Local-first. Model-agnostic.        │
+│                                                             │
+│     [▶ Watch 60s demo]  [Install hanimo code]               │
+│                                                             │
+│     ★ 0 on GitHub (soon)   ·  Apache-2.0   ·   Made in Korea │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  TWO PRODUCTS, ONE PLATFORM                                 │
+│  ┌───────────────────┐  ┌───────────────────┐               │
+│  │  hanimo code      │  │  hanimo web       │               │
+│  │  Go · Bubble Tea  │  │  Next.js 15       │               │
+│  │  TUI agent for    │  │  Browser agent    │               │
+│  │  your terminal    │  │  with repo sync   │               │
+│  │  [Learn more →]   │  │  [Learn more →]   │               │
+│  └───────────────────┘  └───────────────────┘               │
+├─────────────────────────────────────────────────────────────┤
+│  WHY NOT CLAUDE CODE / CURSOR / OPENCODE?                   │
+│  [Full comparison table — 12 rows × 6 columns]              │
+├─────────────────────────────────────────────────────────────┤
+│  BENCHMARKS                                                 │
+│  SWE-bench Verified · Terminal-Bench 2.0 · Our own evals    │
+├─────────────────────────────────────────────────────────────┤
+│  HOW IT WORKS   · Hash-anchored edits · Repo-map · MCP      │
+│  MODOL LINEAGE  · Why we rebuilt from Modol                 │
+│  TESTIMONIALS   · Early-user quotes                         │
+├─────────────────────────────────────────────────────────────┤
+│  Footer · GitHub · Discord · X · RSS · security@hanimo.dev  │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="the-vs.-matrix-content-leverages-competitive-landscape-2026-04.md">4.3 The “vs.” matrix (content leverages <code>COMPETITIVE-LANDSCAPE-2026-04.md</code>)</h3>
+<p>A single 12-row × 6-column table is the single most important asset on the site.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>hanimo code</th>
+<th>Claude Code</th>
+<th>Codex CLI</th>
+<th>opencode</th>
+<th>Aider</th>
+<th>Cursor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>License</td>
+<td><strong>Apache-2.0</strong></td>
+<td>Proprietary</td>
+<td>Apache-2.0</td>
+<td>MIT</td>
+<td>Apache-2.0</td>
+<td>Proprietary</td>
+</tr>
+<tr class="even">
+<td>Runs offline</td>
+<td>✅ (Ollama, vLLM)</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>Model-agnostic</td>
+<td>✅ (75+ via LiteLLM)</td>
+<td>❌ (Claude only)</td>
+<td>❌ (OpenAI only)</td>
+<td>✅</td>
+<td>✅</td>
+<td>Partial</td>
+</tr>
+<tr class="even">
+<td><strong>Hash-anchored edits</strong></td>
+<td>✅ (unique)</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>Partial</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>Repo-map (tree-sitter + PageRank)</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ (origin)</td>
+<td>✅</td>
+</tr>
+<tr class="even">
+<td>MCP stdio + SSE</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr class="odd">
+<td>TUI first-class</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr class="even">
+<td>Web agent (same org)</td>
+<td>✅ (hanimo web)</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>IDE only</td>
+</tr>
+<tr class="odd">
+<td>Korean native UX</td>
+<td>✅</td>
+<td>Partial</td>
+<td>Partial</td>
+<td>❌</td>
+<td>❌</td>
+<td>Partial</td>
+</tr>
+<tr class="even">
+<td>Telemetry opt-in</td>
+<td>✅</td>
+<td>Opt-out</td>
+<td>Opt-out</td>
+<td>✅</td>
+<td>✅</td>
+<td>Opt-out</td>
+</tr>
+<tr class="odd">
+<td>Price</td>
+<td><strong>Free</strong></td>
+<td><br /><span class="math display">$$$ | $$</span><br />$</td>
+<td>Free</td>
+<td>Free</td>
+<td>$$</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Terminal-Bench 2.0</td>
+<td>TBA</td>
+<td>74.7%</td>
+<td>77.3%</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+<p>A parallel table lives at <code>/web</code> for hanimo Web vs. Lovable / v0 / Bolt.new / Continue / Open Interpreter.</p>
+<h3 id="tech-stack-for-the-site">4.4 Tech stack for the site</h3>
+<ul>
+<li><strong>Next.js 15</strong> App Router · React Server Components · Partial Prerendering</li>
+<li><strong>Fumadocs</strong> (MDX, built-in search, versioned docs) — better than Nextra for 2026</li>
+<li><strong>Tailwind v4</strong> + <strong>shadcn/ui</strong> (direct Modol inheritance — you already own this stack)</li>
+<li><strong>Contentlayer 2</strong> for blog posts</li>
+<li><strong>Vercel</strong> for hosting (free tier is enough pre-launch) OR Cloudflare Pages if you want zero lock-in</li>
+<li><strong>Umami</strong> (self-hosted, GDPR-clean) for analytics</li>
+<li><strong>Giscus</strong> for blog comments (GitHub Discussions-backed)</li>
+</ul>
+<hr />
+<h2 id="positioning-copy">5. Positioning &amp; Copy</h2>
+<h3 id="one-liner-candidates">5.1 One-liner candidates</h3>
+<ol type="1">
+<li><em>“The open-source AI coding platform. Successor to Modol.”</em> ← <strong>recommended</strong></li>
+<li><em>“Claude Code, but yours. Cursor, but open. Aider, but in 2026.”</em></li>
+<li><em>“Local-first, model-agnostic, Apache-2.0. Code and Web, one platform.”</em></li>
+</ol>
+<h3 id="four-differentiation-pillars-reuse-across-all-pages">5.2 Four differentiation pillars (reuse across all pages)</h3>
+<ol type="1">
+<li><strong>Dual-surface</strong> — one team, one design system, one MCP backbone, two products (Code + Web). Nobody else ships both under one brand.</li>
+<li><strong>Hash-anchored edits</strong> — the only agent that refuses to write to a file whose content hash drifted mid-turn. Ends the “agent overwrote my change” nightmare.</li>
+<li><strong>Model-agnostic by design</strong> — LiteLLM router + Ollama + vLLM under the hood. Swap providers without changing config.</li>
+<li><strong>Modol lineage</strong> — not a student project. Carries 2+ years of battle-tested design system (ModolAI) and RAG pipeline (ModolRAG).</li>
+</ol>
+<h3 id="things-not-to-say-on-the-landing-page">5.3 Things NOT to say on the landing page</h3>
+<ul>
+<li>“Better than Claude Code” — unprovable, invites ridicule. Use the matrix instead.</li>
+<li>“GPT-5 powered” — model names churn. Say “model-agnostic.”</li>
+<li>“AGI” / “autonomous” / “replaces developers.” Keep it grounded.</li>
+</ul>
+<hr />
+<h2 id="release-strategy">6. Release Strategy</h2>
+<h3 id="timeline-maps-to-hanimo-roadmap-2026-04.html">6.1 Timeline (maps to <code>hanimo-ROADMAP-2026-04.html</code>)</h3>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Week</th>
+<th>Gate</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>W6</strong></td>
+<td>Repos scaffolded</td>
+<td>Private repos, CI green, LICENSE + README stubs</td>
+</tr>
+<tr class="even">
+<td><strong>W9</strong></td>
+<td>🏁 <strong>MVP (private β)</strong></td>
+<td>Invite-only (~20 testers), no public announcement</td>
+</tr>
+<tr class="odd">
+<td><strong>W11</strong></td>
+<td>Landing site v0.1</td>
+<td>Homepage + /code + /web, no blog yet</td>
+</tr>
+<tr class="even">
+<td><strong>W14</strong></td>
+<td>🚀 <strong>Public β</strong></td>
+<td>Repos flipped public, Show HN, r/LocalLLaMA, r/golang, Korean dev forums, Product Hunt pending</td>
+</tr>
+<tr class="odd">
+<td><strong>W16</strong></td>
+<td>Docs + /compare finalized</td>
+<td><code>/compare/*</code> pages, benchmark post</td>
+</tr>
+<tr class="even">
+<td><strong>W18</strong></td>
+<td>🎉 <strong>v1.0 GA</strong></td>
+<td>Stable tags, Homebrew tap, <code>apt</code> repo, signed binaries</td>
+</tr>
+</tbody>
+</table>
+<h3 id="launch-day-checklist-week-14">6.2 Launch-day checklist (Week 14)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+README hero GIF (≤ 5MB, VHS or Asciinema)</li>
+<li><input type="checkbox" disabled></input>
+60-second demo video (YouTube + <code>/</code> hero)</li>
+<li><input type="checkbox" disabled></input>
+<code>/compare</code> matrix complete for at least 3 competitors</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo.dev/blog/hello-world</code> — the launch post (Modol → hanimo narrative)</li>
+<li><input type="checkbox" disabled></input>
+Show HN title drafted: <em>“Hanimo — Apache-2.0 TUI + Web coding agent (successor to Modol)”</em></li>
+<li><input type="checkbox" disabled></input>
+r/LocalLLaMA post focusing on offline/Ollama story</li>
+<li><input type="checkbox" disabled></input>
+Korean Velog/GeekNews cross-post (native audience)</li>
+<li><input type="checkbox" disabled></input>
+<code>security@hanimo.dev</code> MX live, PGP key published</li>
+<li><input type="checkbox" disabled></input>
+Discord server with #releases, #bug-reports, #benchmarks</li>
+<li><input type="checkbox" disabled></input>
+Sentry (or GlitchTip, self-hosted) wired for hanimo Web</li>
+<li><input type="checkbox" disabled></input>
+Crash telemetry <strong>opt-in</strong> with clear toggle</li>
+<li><input type="checkbox" disabled></input>
+All GitHub Actions cached and &lt; 6 min</li>
+</ul>
+<h3 id="who-to-tag-dm-on-launch-day">6.3 Who to tag / DM on launch day</h3>
+<ul>
+<li><strong>HN</strong> — user accounts with 500+ karma in your network (karma = visibility)</li>
+<li><strong>opencode maintainers</strong> — ask for a friendly RT; cite them as an inspiration</li>
+<li><strong>Aider’s Paul Gauthier</strong> — polite mention; Aider originated repo-map</li>
+<li><strong>Simon Willison</strong> — writes about local LLMs / offline agents; hanimo fits his beat</li>
+<li><strong>Korean dev Twitter</strong> — 향로 (Spring), 이선협 (Toss), 조코딩</li>
+<li><strong>Charm</strong> — Bubble Tea authors; they RT cool TUIs from their stack</li>
+<li><strong>Ollama</strong> — official account loves “runs on Ollama” demos</li>
+</ul>
+<hr />
+<h2 id="cicd-supply-chain">7. CI/CD &amp; Supply-chain</h2>
+<h3 id="hanimo-code-go">7.1 hanimo-code (Go)</h3>
+<ul>
+<li><code>golangci-lint</code> + <code>go test -race</code> + <code>go vet</code> on every PR</li>
+<li><code>goreleaser</code> for multi-arch builds: <code>darwin/arm64</code>, <code>darwin/amd64</code>, <code>linux/amd64</code>, <code>linux/arm64</code>, <code>windows/amd64</code></li>
+<li><strong>Cosign</strong> keyless signing (Sigstore) for release binaries</li>
+<li><strong>SLSA Level 3</strong> provenance via GitHub Actions reusable workflow</li>
+<li>Homebrew tap: <code>hanimo-dev/homebrew-tap</code></li>
+<li>Scoop bucket for Windows</li>
+<li><code>curl hanimo.dev/install.sh | sh</code> — signed, checksum-verified installer</li>
+</ul>
+<h3 id="hanimo-web-next.js">7.2 hanimo-web (Next.js)</h3>
+<ul>
+<li><code>pnpm lint</code> + <code>pnpm test</code> + <code>pnpm build</code> + Playwright smoke on every PR</li>
+<li>Docker image: <code>ghcr.io/hanimo-dev/web:${SHA}</code> and <code>:latest</code></li>
+<li><strong>Dependabot</strong> weekly, grouped by patch/minor</li>
+<li><strong>Snyk</strong> or <strong>GitHub Advanced Security</strong> for secret scanning (free for public repos)</li>
+<li>Chromatic (or Ladle) for component visual regression</li>
+</ul>
+<h3 id="both">7.3 Both</h3>
+<ul>
+<li>Conventional Commits enforced by <code>commitlint</code> + Husky</li>
+<li>Release Please for automated CHANGELOG + version bumps</li>
+<li>Pre-commit hook runs <code>typos</code> to catch embarrassing typos in comments</li>
+</ul>
+<hr />
+<h2 id="community-support-infra">8. Community &amp; Support Infra</h2>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Channel</th>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Real-time chat</td>
+<td><strong>Discord</strong></td>
+<td>Users, bug triage, early design feedback</td>
+</tr>
+<tr class="even">
+<td>Async discussion</td>
+<td><strong>GitHub Discussions</strong></td>
+<td>Versioned Q&amp;A, feature requests (indexable by Google)</td>
+</tr>
+<tr class="odd">
+<td>Bug reports</td>
+<td><strong>GitHub Issues</strong></td>
+<td>Strict templates — no “it doesn’t work” allowed</td>
+</tr>
+<tr class="even">
+<td>Security</td>
+<td><code>security@hanimo.dev</code> + PGP</td>
+<td>Private disclosure, 90-day window</td>
+</tr>
+<tr class="odd">
+<td>Monthly sync</td>
+<td><strong>Open dev call</strong> (Google Meet)</td>
+<td>Recorded → YouTube</td>
+</tr>
+<tr class="even">
+<td>Sponsors</td>
+<td>GitHub Sponsors + Open Collective</td>
+<td>Optional; don’t gate features</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hard rule:</strong> every issue gets a human reply within 48h for the first 3 months post-launch. Missed SLAs murder OSS momentum.</p>
+<hr />
+<h2 id="risks-mitigations">9. Risks &amp; Mitigations</h2>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Risk</th>
+<th>Probability</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>“Yet another coding agent” fatigue</td>
+<td><strong>High</strong></td>
+<td>Lead with <code>/compare</code> matrix, not features. Make the dual-surface story the headline.</td>
+</tr>
+<tr class="even">
+<td>Claude Code / Cursor undercut further</td>
+<td>High</td>
+<td>Apache-2.0 + offline story is structural moat, not a price war.</td>
+</tr>
+<tr class="odd">
+<td>Moltbook-style acquihire temptation for Community</td>
+<td>Med</td>
+<td>Launch Code + Web first; Community is phase 2. Defer exposure.</td>
+</tr>
+<tr class="even">
+<td>opencode already has 95K★ — why would they switch?</td>
+<td>Med</td>
+<td>Target Korean market first where opencode has weak localization; ride hash-edit as a unique asset.</td>
+</tr>
+<tr class="odd">
+<td>Maintainer burnout (solo founder)</td>
+<td><strong>High</strong></td>
+<td>Hard-cap issue response to office hours; auto-close stale issues at 60 days.</td>
+</tr>
+<tr class="even">
+<td>Brand confusion with “hanime”/“hentai” typos</td>
+<td>Low-Med</td>
+<td>Own the SEO by publishing early and often; “hanimo” is one letter off but <code>.dev</code> signals dev audience.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="immediate-next-actions-this-week">10. Immediate Next Actions (this week)</h2>
+<ol type="1">
+<li><strong>Buy all three domains</strong> (hanimo.dev + modol.app + modol.dev) — ~$60/yr total</li>
+<li><strong>Create <code>hanimo-dev</code> GitHub organization</strong>, reserve repo names</li>
+<li><strong>Reserve handles</strong>: X/Twitter <code>@hanimo_dev</code>, Discord vanity, Hugging Face org, npm <code>@hanimo</code></li>
+<li><strong>Scaffold <code>hanimo.dev</code> repo</strong> with Next.js 15 + Fumadocs (copy shadcn/ui from ModolAI)</li>
+<li><strong>Draft the <code>/compare</code> matrix</strong> in MDX using content from <code>COMPETITIVE-LANDSCAPE-2026-04.md</code></li>
+<li><strong>Write <code>README.md</code> v0</strong> for both product repos — lead with the matrix, not the install command</li>
+<li><strong>Apply for GitHub Sponsors</strong> (takes 1-2 weeks to approve)</li>
+<li><strong>File trademark search</strong> for “hanimo” (USPTO TESS + KIPRIS); avoid collisions before launch</li>
+</ol>
+<hr />
+<h2 id="relation-to-other-docs">11. Relation to other docs</h2>
+<ul>
+<li><code>MASTER-OVERVIEW-2026-04.md</code> — what hanimo Code <em>does</em></li>
+<li><code>PLATFORM-PLAN-2026-04.md</code> — 5-surface architecture (Code/Core/WebUI/RAG/Community)</li>
+<li><code>COMPETITIVE-LANDSCAPE-2026-04.md</code> — raw competitor research; this doc turns it into launch copy</li>
+<li><code>hanimo-ROADMAP-2026-04.html</code> — 18-week timeline; weeks referenced here map to that Gantt</li>
+</ul>
+<hr />
+<p><em>Document owner: kimjiwon · Last updated: 2026-04-11</em></p>
+</body>
+</html>

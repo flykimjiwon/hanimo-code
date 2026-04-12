@@ -35,3 +35,5 @@ Thumbs.db
 *.exe
 dist/
 _legacy_ts/node_modules/
+spark
+hanimo

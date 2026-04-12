@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>hanimo Session Index</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <style type="text/css">:root{--bg:#ffffff;--fg:#1f2328;--muted:#656d76;--border:#d0d7de;--accent:#0969da;--code-bg:#f6f8fa;--table-alt:#f6f8fa;--shadow:0 1px 3px rgba(0,0,0,.08);}
+[data-theme="dark"]{--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--border:#30363d;--accent:#58a6ff;--code-bg:#161b22;--table-alt:#161b22;--shadow:0 1px 3px rgba(0,0,0,.5);}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--border:#30363d;--accent:#58a6ff;--code-bg:#161b22;--table-alt:#161b22;--shadow:0 1px 3px rgba(0,0,0,.5);}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Helvetica,Arial,sans-serif;line-height:1.65;max-width:960px;margin:0 auto;padding:2rem 1.25rem 6rem;font-size:16px;}
+h1,h2,h3,h4{font-weight:700;line-height:1.25;margin-top:2.2rem;margin-bottom:1rem;}
+h1{font-size:2.1rem;border-bottom:2px solid var(--border);padding-bottom:.5rem;}
+h2{font-size:1.55rem;border-bottom:1px solid var(--border);padding-bottom:.35rem;}
+h3{font-size:1.2rem}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--code-bg);border-radius:4px;padding:.15em .4em;font-size:.88em;font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem;overflow-x:auto;box-shadow:var(--shadow);}
+pre code{background:transparent;padding:0;font-size:.85em;line-height:1.5;}
+blockquote{border-left:4px solid var(--accent);background:var(--code-bg);margin:1rem 0;padding:.6rem 1rem;color:var(--muted);border-radius:0 6px 6px 0;}
+table{border-collapse:collapse;width:100%;margin:1.2rem 0;font-size:.92em;box-shadow:var(--shadow);border-radius:6px;overflow:hidden;}
+th,td{border:1px solid var(--border);padding:.55rem .8rem;text-align:left;vertical-align:top;}
+th{background:var(--code-bg);font-weight:600;}
+tbody tr:nth-child(even){background:var(--table-alt);}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+ul,ol{padding-left:1.6rem}
+li{margin:.25rem 0}
+#TOC{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;margin-bottom:2rem;}
+#TOC ul{padding-left:1.2rem;margin:.2rem 0}
+#theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--code-bg);color:var(--fg);border:1px solid var(--border);border-radius:999px;padding:.5rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600;box-shadow:var(--shadow);z-index:100;}
+#theme-toggle:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+<script>
+(function(){
+  const saved=localStorage.getItem('hanimo-theme');
+  if(saved)document.documentElement.setAttribute('data-theme',saved);
+})();
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effective=cur||(prefersDark?'dark':'light');
+  const next=effective==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('hanimo-theme',next);
+}
+</script>
+<header id="title-block-header">
+<h1 class="title">hanimo Session Index</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#session-2026-04-11-산출물-인덱스">Session 2026-04-11 — 산출물 인덱스</a>
+<ul>
+<li><a href="#마크다운-원본-hanimodocs">1. 마크다운 원본 (<code>hanimo/docs/</code>)</a></li>
+<li><a href="#다크모드-html-docx-pdf-hanimodocshtml">2. 다크모드 HTML / DOCX / PDF (<code>hanimo/docs/html/</code>)</a></li>
+<li><a href="#핵심-결정-요약">3. 핵심 결정 요약</a></li>
+<li><a href="#다음-단계-클로드-코드로-이관-예정">4. 다음 단계 (클로드 코드로 이관 예정)</a></li>
+<li><a href="#관련-자산-위치-참조">5. 관련 자산 위치 참조</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="session-2026-04-11-산출물-인덱스">Session 2026-04-11 — 산출물 인덱스</h1>
+<blockquote>
+<p>Cowork 세션에서 생성·수집한 hanimo 플랫폼 기획 문서 전체 목록. 모든 파일은 <code>hanimo/docs/</code> 및 <code>hanimo/docs/html/</code> 하위에 통합 정리됨.</p>
+</blockquote>
+<hr />
+<h2 id="마크다운-원본-hanimodocs">1. 마크다운 원본 (<code>hanimo/docs/</code>)</h2>
+<table>
+<colgroup>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>파일</th>
+<th>내용</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td><code>MASTER-OVERVIEW-2026-04.md</code></td>
+<td>hanimo Code 기능·로드맵 12-섹션 총람</td>
+<td>Code 제품 스펙 기준점</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><code>PLATFORM-PLAN-2026-04.md</code></td>
+<td><strong>5-surface 아키텍처</strong> (Code · Core · WebUI · RAG · Community) · Modol 계승 · 18주 로드맵</td>
+<td>플랫폼 전략 master</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><code>COMPETITIVE-LANDSCAPE-2026-04.md</code></td>
+<td>5면 경쟁 분석 — Claude Code / Cursor / opencode / Aider / LiteLLM / Lovable / v0 / Dify / <strong>Moltbook</strong> 등</td>
+<td>포지셔닝 근거</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td><code>OPEN-SOURCE-LAUNCH-PLAN-2026-04.md</code></td>
+<td>hanimo.dev 도메인 + GitHub 레포 구조 + Apache-2.0 + <code>/compare</code> 매트릭스 + W14 공개 β 체크리스트</td>
+<td>런칭 실행 계획</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td><code>AGENTRANK-INTEGRATION-2026-04.md</code></td>
+<td><code>AI_Comunity/agentrank</code> 흡수 → <strong>AgentRank by hanimo</strong> 서브 브랜드 / 서브도메인 / MCP 바이럴 루프</td>
+<td>⑤ Community 구현 경로</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td><code>SESSION-2026-04-11-INDEX.md</code> (이 문서)</td>
+<td>세션 전체 인덱스</td>
+<td>네비게이션</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="다크모드-html-docx-pdf-hanimodocshtml">2. 다크모드 HTML / DOCX / PDF (<code>hanimo/docs/html/</code>)</h2>
+<table>
+<thead>
+<tr class="header">
+<th>파일</th>
+<th>형식</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>MASTER-OVERVIEW-2026-04.html</code></td>
+<td>HTML (dark toggle)</td>
+<td>TOC 포함</td>
+</tr>
+<tr class="even">
+<td><code>MASTER-OVERVIEW-2026-04.docx</code></td>
+<td>Word</td>
+<td>pandoc 출력 (렌더 품질 주의)</td>
+</tr>
+<tr class="odd">
+<td><code>MASTER-OVERVIEW-2026-04.pdf</code></td>
+<td>PDF</td>
+<td>soffice 변환본</td>
+</tr>
+<tr class="even">
+<td><code>PLATFORM-PLAN-2026-04.html</code></td>
+<td>HTML (dark toggle)</td>
+<td>5-surface 상세</td>
+</tr>
+<tr class="odd">
+<td><code>ROADMAP-2026-04.html</code></td>
+<td>HTML 대시보드</td>
+<td>KPI 카드 + 18주 Gantt + Community 루프 다이어그램</td>
+</tr>
+<tr class="even">
+<td><code>COMPETITIVE-LANDSCAPE-2026-04.html</code></td>
+<td>HTML (dark toggle)</td>
+<td>외부 링크 시테이션 포함</td>
+</tr>
+<tr class="odd">
+<td><code>OPEN-SOURCE-LAUNCH-PLAN-2026-04.html</code></td>
+<td>HTML (dark toggle)</td>
+<td>런칭 체크리스트</td>
+</tr>
+<tr class="even">
+<td><code>AGENTRANK-INTEGRATION-2026-04.html</code></td>
+<td>HTML (dark toggle)</td>
+<td>AgentRank 통합 전략</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>HTML 파일은 전부 self-contained 단일 파일. 다크/라이트 토글 버튼 우상단, <code>localStorage</code>에 선택 저장.</p>
+</blockquote>
+<hr />
+<h2 id="핵심-결정-요약">3. 핵심 결정 요약</h2>
+<h3 id="플랫폼-범위-5-surfaces">3.1 플랫폼 범위 — 5 surfaces</h3>
+<pre><code>① hanimo Code       ⭐ 주력 1   Go TUI (Bubble Tea v2) · Hash-anchored edit · MCP
+② hanimo Core       엔진       LiteLLM 라우터 · MCP 허브 (Code/Web 공유)
+③ hanimo Web        ⭐ 주력 2   Next.js 15 웹 에이전트 · ModolAI 디자인 계승
+④ hanimo RAG        엔진       FastAPI 파이프라인 · ModolRAG 계승 · pgvector
+⑤ AgentRank         커뮤니티   벤치마크·트렌드·5 AI 필자 · 서브 브랜드 유지</code></pre>
+<h3 id="브랜드-도메인">3.2 브랜드 &amp; 도메인</h3>
+<ul>
+<li><strong>메인 도메인</strong>: <code>hanimo.dev</code> (Apache-2.0 · HTTPS 강제 · 개발자 TLD)</li>
+<li><strong>보조 도메인</strong>: <code>modol.dev</code>, <code>modol.app</code> → <code>hanimo.dev/about#lineage</code> 301 리다이렉트</li>
+<li><strong>커뮤니티 도메인</strong>: <code>agentrank.hanimo.dev</code> (서브도메인, SEO·브랜드 독립)</li>
+<li><strong>GitHub org</strong>: <code>hanimo-dev</code> — <code>hanimo-code</code> / <code>hanimo-web</code> / <code>agentrank</code> / <code>hanimo.dev</code></li>
+</ul>
+<h3 id="대-차별화-축">3.3 4대 차별화 축</h3>
+<ol type="1">
+<li><strong>Dual-surface</strong> (Code + Web 한 팀 한 디자인시스템) — 경쟁사 없음</li>
+<li><strong>Hash-anchored edits</strong> — hanimo 고유 기능</li>
+<li><strong>Model-agnostic</strong> (LiteLLM + Ollama + vLLM, 75+ provider)</li>
+<li><strong>Modol 계승</strong> — 2+ 년 디자인/파이프라인 자산</li>
+</ol>
+<h3 id="일정-agentrank-병렬-진행-반영">3.4 일정 (AgentRank 병렬 진행 반영)</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Week</th>
+<th>마일스톤</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>W1-3</td>
+<td>AgentRank 레포 이전 + 디자인 토큰 통합 + Neon/Drizzle 연결</td>
+</tr>
+<tr class="even">
+<td>W6</td>
+<td><strong>AgentRank private β</strong> (agentrank.hanimo.dev)</td>
+</tr>
+<tr class="odd">
+<td>W9</td>
+<td>🏁 hanimo Code/Web <strong>MVP</strong> (private)</td>
+</tr>
+<tr class="even">
+<td>W10</td>
+<td>AgentRank 공개 β + 크롤러 풀셋</td>
+</tr>
+<tr class="odd">
+<td>W14</td>
+<td>🚀 hanimo Code/Web <strong>공개 β</strong> (Show HN / r/LocalLLaMA / GeekNews)</td>
+</tr>
+<tr class="even">
+<td>W18</td>
+<td>🎉 <strong>v1.0 GA</strong> (전 제품)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="다음-단계-클로드-코드로-이관-예정">4. 다음 단계 (클로드 코드로 이관 예정)</h2>
+<p>세션 중 보류된 작업 — 클로드 코드의 디자인 전용 skill 세트(<code>tui-designer</code>, <code>building-glamorous-tuis</code>, <code>building-tui-apps</code> 등)를 활용해 진행할 것 권장:</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+<code>hanimo.dev</code> 홈 랜딩 디자인 시안 (메인 히어로 + 2-product 카드 + <code>/compare</code> 매트릭스)</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo code</code> 제품 페이지 디자인 시안 (TUI 스크린샷 + 특징 그리드 + 벤치마크 섹션)</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo web</code> 제품 페이지 디자인 시안</li>
+<li><input type="checkbox" disabled></input>
+AgentRank 디자인 토큰 스냅샷 → <code>@hanimo/tokens</code> 패키지 설계</li>
+<li><input type="checkbox" disabled></input>
+hanimo Code TUI 자체 리디자인 (Charmbracelet Lip Gloss + Bubbles v2)</li>
+<li><input type="checkbox" disabled></input>
+MCP 도구 명세 초안 (<code>agentrank.query</code>, <code>agentrank.leaderboard</code>, <code>agentrank.compare</code>)</li>
+<li><input type="checkbox" disabled></input>
+이번 주 즉시 실행: 도메인 3종 구매, GitHub org <code>hanimo-dev</code> 생성, 핸들 선점</li>
+</ul>
+<hr />
+<h2 id="관련-자산-위치-참조">5. 관련 자산 위치 참조</h2>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>자산</th>
+<th>경로</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>hanimo Code 본체</td>
+<td><code>kimjiwon/hanimo/</code></td>
+<td>Go 프로젝트 active</td>
+</tr>
+<tr class="even">
+<td>AgentRank 프로토타입</td>
+<td><code>kimjiwon/AI_Comunity/agentrank/</code></td>
+<td>Next.js 16 · Phase 1 MVP LIVE 배지</td>
+</tr>
+<tr class="odd">
+<td>ModolAI (디자인 유산)</td>
+<td><code>kimjiwon/ModolAI/</code></td>
+<td>shadcn/ui · AGENT_PLUGIN_SYSTEM</td>
+</tr>
+<tr class="even">
+<td>ModolRAG (RAG 유산)</td>
+<td><code>kimjiwon/ModolRAG/</code></td>
+<td>FastAPI · Docker Compose</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Session date: 2026-04-11 · Next action: Claude Code에서 디자인 시안 착수</em></p>
+</body>
+</html>

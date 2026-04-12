@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>hanimo Platform Plan v2 — 2026-04</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <style type="text/css">:root {
+--bg: #ffffff; --fg: #1f2328; --fg-muted: #57606a;
+--border: #d0d7de; --code-bg: #eff1f3; --pre-bg: #f6f8fa;
+--table-alt: #fafbfc; --link: #0969da; --h2: #0969da; --h3: #24292f;
+--blockquote-bg: #f6f8fa;
+}
+[data-theme="dark"] {
+--bg: #0d1117; --fg: #e6edf3; --fg-muted: #9198a1;
+--border: #30363d; --code-bg: #1f242c; --pre-bg: #161b22;
+--table-alt: #151a21; --link: #4493f8; --h2: #4493f8; --h3: #e6edf3;
+--blockquote-bg: #161b22;
+}
+@media (prefers-color-scheme: dark) {
+:root:not([data-theme="light"]) {
+--bg: #0d1117; --fg: #e6edf3; --fg-muted: #9198a1;
+--border: #30363d; --code-bg: #1f242c; --pre-bg: #161b22;
+--table-alt: #151a21; --link: #4493f8; --h2: #4493f8; --h3: #e6edf3;
+--blockquote-bg: #161b22;
+}
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: -apple-system, "Segoe UI", "Noto Sans KR", sans-serif; max-width: 960px; margin: 2em auto; padding: 0 1.5em; line-height: 1.65; }
+h1 { border-bottom: 2px solid var(--border); padding-bottom: .3em; margin-top: 1.8em; }
+h2 { border-bottom: 1px solid var(--border); padding-bottom: .3em; margin-top: 1.6em; color: var(--h2); }
+h3 { margin-top: 1.3em; color: var(--h3); }
+h4 { color: var(--fg-muted); }
+code { background: var(--code-bg); padding: .15em .4em; border-radius: 4px; font-size: 85%; font-family: "SF Mono", Menlo, Consolas, monospace; }
+pre { background: var(--pre-bg); padding: 1em; border-radius: 6px; overflow-x: auto; line-height: 1.45; border: 1px solid var(--border); }
+pre code { background: transparent; padding: 0; }
+table { border-collapse: collapse; margin: 1em 0; width: 100%; font-size: 92%; }
+th, td { border: 1px solid var(--border); padding: .5em .8em; text-align: left; vertical-align: top; }
+th { background: var(--pre-bg); font-weight: 600; }
+tr:nth-child(even) td { background: var(--table-alt); }
+blockquote { border-left: 4px solid var(--link); background: var(--blockquote-bg); margin: 1em 0; padding: .6em 1em; color: var(--fg-muted); }
+hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .2em 0; }
+#theme-toggle {
+position: fixed; top: 1em; right: 1em; z-index: 1000;
+background: var(--pre-bg); color: var(--fg); border: 1px solid var(--border);
+border-radius: 6px; padding: .5em .9em; cursor: pointer; font-size: 14px;
+font-family: inherit; box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+#theme-toggle:hover { background: var(--code-bg); }
+</style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+<script>
+(function(){
+  var saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  updateBtn();
+})();
+function toggleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (!cur) cur = sysDark ? 'dark' : 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateBtn();
+}
+function updateBtn(){
+  var btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  var cur = document.documentElement.getAttribute('data-theme');
+  var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var isDark = cur === 'dark' || (!cur && sysDark);
+  btn.innerText = isDark ? '☀️ Light' : '🌙 Dark';
+}
+</script>
+<header id="title-block-header">
+<h1 class="title">hanimo Platform Plan v2 — 2026-04</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#hanimo-platform-plan-2026-04-v2">hanimo Platform Plan — 2026-04 (v2)</a>
+<ul>
+<li><a href="#tldr">0. TL;DR</a></li>
+<li><a href="#modol-계보와-hanimo의-정체성">1. Modol 계보와 hanimo의 정체성</a></li>
+<li><a href="#플랫폼-아키텍처-5개-서피스">2. 플랫폼 아키텍처 (5개 서피스)</a></li>
+<li><a href="#서피스별-상세">3. 서피스별 상세</a></li>
+<li><a href="#공용-인프라">4. 공용 인프라</a></li>
+<li><a href="#주-로드맵-v2">5. 18주 로드맵 (v2)</a></li>
+<li><a href="#모노레포-레이아웃-제안">6. 모노레포 레이아웃 (제안)</a></li>
+<li><a href="#modol-hanimo-계승-매트릭스">7. Modol → hanimo 계승 매트릭스</a></li>
+<li><a href="#성공-지표">8. 성공 지표</a></li>
+<li><a href="#리스크-완화">9. 리스크 &amp; 완화</a></li>
+<li><a href="#우선순위-top-10-오늘부터">10. 우선순위 TOP 10 — 오늘부터</a></li>
+<li><a href="#문서-관계">11. 문서 관계</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="hanimo-platform-plan-2026-04-v2">hanimo Platform Plan — 2026-04 (v2)</h1>
+<blockquote>
+<p><strong>한 문서로 보는 hanimo “플랫폼” 전략</strong> 작성일: 2026-04-11 · 개정: v2 전제: hanimo = <strong>Modol 계보 계승</strong> (ModolAI + ModolRAG DNA) + AI 코딩 에이전트 → <strong>AI 네이티브 플랫폼</strong>. 주력: <strong>① hanimo Code (CLI)</strong> + <strong>③ hanimo WebUI (Next.js)</strong> 두 축.</p>
+</blockquote>
+<hr />
+<h2 id="tldr">0. TL;DR</h2>
+<ul>
+<li>hanimo는 <strong>Modol 라인의 후계자</strong>. ModolAI(Next.js UI)·ModolRAG(Python RAG) 의 철학을 계승하고 코딩 에이전트 DNA를 얹는다.</li>
+<li><strong>5개 서피스</strong>로 단순화: Code / Core / WebUI / RAG / <strong>Community</strong>.</li>
+<li><strong>주력 2개</strong> — ① Code (CLI/TUI) 와 ③ WebUI (Next.js). 나머지는 이 둘을 받치는 엔진·자료원.</li>
+<li><strong>Community = “AI 피트니스 / AI 연대”</strong>: AI 에이전트가 <strong>유저이자 조사관·운영자</strong>, 사람과 섞여 최신 벤치·뉴스·스킬·오픈소스 라이브러리 벤치를 한 곳에 집결.</li>
+<li>제외: <del>techai 패턴 참조</del>, <del>Hub 마켓플레이스</del>, <del>SDK</del>. 필요 시 Phase ∞에서 재검토.</li>
+<li>MVP 8주 (Code + Core + WebUI + RAG) → Community 3단계 점진 오픈.</li>
+</ul>
+<hr />
+<h2 id="modol-계보와-hanimo의-정체성">1. Modol 계보와 hanimo의 정체성</h2>
+<pre><code>  ModolAI (Next.js · shadcn · OCR · AI 앱)
+         ＼
+          → 디자인·UX 계승
+           ＼
+            hanimo ────→ CLI/TUI 에이전트 DNA 추가
+           ／
+          → RAG 엔진 계승
+         ／
+  ModolRAG (Python · FastAPI · Docker · RAG 파이프라인)</code></pre>
+<h3 id="무엇을-계승하는가">1.1 무엇을 계승하는가</h3>
+<table>
+<colgroup>
+<col style="width: 50%"></col>
+<col style="width: 50%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Modol 자산</th>
+<th>hanimo에서의 역할</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ModolAI</strong> 의 Next.js + shadcn + 디자인 시스템 (<code>MODOLAI_PATTERNS.md</code>, <code>DESIGN_SYSTEM.md</code>)</td>
+<td>hanimo WebUI의 디자인 기반</td>
+</tr>
+<tr class="even">
+<td><strong>ModolAI</strong> 의 에이전트 플러그인 시스템 (<code>AGENT_PLUGIN_SYSTEM.md</code>)</td>
+<td>hanimo Core의 도구/스킬 인터페이스 참고</td>
+</tr>
+<tr class="odd">
+<td><strong>ModolRAG</strong> 의 파이프라인·대시보드·compose</td>
+<td>hanimo RAG 서피스의 <strong>본체 그대로 흡수</strong></td>
+</tr>
+<tr class="even">
+<td>Modol 시리즈의 한국어 친화 톤</td>
+<td>hanimo의 clarify-first / intent 감지</td>
+</tr>
+</tbody>
+</table>
+<h3 id="이름이-말해주는-포지셔닝">1.2 이름이 말해주는 포지셔닝</h3>
+<ul>
+<li><strong>hanimo</strong> = “한(ONE/韓) + animo(영혼·마음)” — <strong>한 사람을 위한 AI 정신체</strong>.</li>
+<li>Modol이 “모델의 도구상자”였다면, hanimo는 “<strong>쓰는 사람과 한 몸이 되는 에이전트</strong>”.</li>
+</ul>
+<hr />
+<h2 id="플랫폼-아키텍처-5개-서피스">2. 플랫폼 아키텍처 (5개 서피스)</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     hanimo Platform                            │
+│                                                                 │
+│    ⭐ PRIMARY ⭐                    ⭐ PRIMARY ⭐                 │
+│  ┌─────────────┐                 ┌─────────────────┐           │
+│  │ ① hanimo    │                 │ ③ hanimo WebUI  │           │
+│  │    Code     │                 │   (Next.js 15)  │           │
+│  │   (Go TUI)  │                 │                 │           │
+│  └──────┬──────┘                 └─────────┬───────┘           │
+│         │                                  │                    │
+│         ▼                                  ▼                    │
+│  ╔═══════════════════════════════════════════════════════════╗ │
+│  ║  ② hanimo Core (Go) — shared engine                        ║ │
+│  ║   agents · sessions · tools · mcp · llm providers · repomap║ │
+│  ║       HTTP/SSE + SQLite + Certified Model Tier            ║ │
+│  ╚═════════╤═════════════════════════════════╤════════════════╝ │
+│            │                                 │                  │
+│            ▼                                 ▼                  │
+│  ┌───────────────────┐          ┌──────────────────────────┐    │
+│  │  ④ hanimo RAG     │          │  ⑤ hanimo Community       │    │
+│  │ (ModolRAG 계승)   │          │  (AI 피트니스 / 연대)       │    │
+│  │ Python + FastAPI  │          │ Next.js + DB + Agents    │    │
+│  │ 하이브리드 검색    │          │ Human + Agent 공존        │    │
+│  └───────────────────┘          └──────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>서피스</th>
+<th>스택</th>
+<th>우선순위</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>①</td>
+<td><strong>hanimo Code</strong></td>
+<td>Go + Bubble Tea v2</td>
+<td>🔥 PRIMARY</td>
+</tr>
+<tr class="even">
+<td>②</td>
+<td>hanimo Core</td>
+<td>Go HTTP/SSE 서버</td>
+<td>🟡 Enabler</td>
+</tr>
+<tr class="odd">
+<td>③</td>
+<td><strong>hanimo WebUI</strong></td>
+<td>Next.js 15 + shadcn</td>
+<td>🔥 PRIMARY</td>
+</tr>
+<tr class="even">
+<td>④</td>
+<td>hanimo RAG</td>
+<td>Python (ModolRAG fork)</td>
+<td>🟢 Engine</td>
+</tr>
+<tr class="odd">
+<td>⑤</td>
+<td><strong>hanimo Community</strong></td>
+<td>Next.js + Postgres + Agents</td>
+<td>🟣 Vision</td>
+</tr>
+</tbody>
+</table>
+<h3 id="명시적으로-뺀-것들-v1-대비">2.1 명시적으로 뺀 것들 (v1 대비)</h3>
+<ul>
+<li>❌ <strong>techai 패턴 참조</strong> — 별도 프로젝트로 유지, hanimo는 독립.</li>
+<li>❌ <strong>hanimo Hub</strong> (skill 마켓플레이스) — Community가 사실상 더 큰 역할을 흡수.</li>
+<li>❌ <strong>hanimo SDK</strong> — 공개 라이브러리화는 이르다. 필요 시 Core OpenAPI에서 자동 생성 가능.</li>
+<li>❌ <strong>hanimo Cloud</strong> (독립 서피스) — Community 내부 기능으로 접혀 들어감 (로그인/세션 공유).</li>
+<li>❌ <strong>hanimo Mobile</strong> — 후순위.</li>
+</ul>
+<hr />
+<h2 id="서피스별-상세">3. 서피스별 상세</h2>
+<h3 id="hanimo-code-primary">3.1 ① hanimo Code (PRIMARY)</h3>
+<p><code>docs/MASTER-OVERVIEW-2026-04.md</code> 계승. 플랫폼 맥락의 추가:</p>
+<ul>
+<li><code>hanimo serve</code> — Core 서버 기동 (WebUI와 공유).</li>
+<li><code>hanimo rag up/index/ask</code> — RAG 래퍼.</li>
+<li><code>hanimo community login/post/bench</code> — Community 연동 (②,⑤ 거쳐).</li>
+<li>프로필: <code>solo</code> / <code>community</code> (Community 연동 on/off).</li>
+</ul>
+<h3 id="hanimo-core-공용-엔진">3.2 ② hanimo Core — 공용 엔진</h3>
+<p>WebUI·Community가 같은 엔진을 쓰도록 Go 패키지로 승격.</p>
+<pre><code>hanimo/
+├── cmd/
+│   ├── hanimo/          # CLI (①)
+│   └── hanimo-server/   # Core 단독 바이너리 (②)
+├── internal/            # private
+└── core/                # [신규] public API
+    ├── server.go        # HTTP + SSE
+    ├── stream.go
+    └── openapi.yaml</code></pre>
+<p><strong>엔드포인트 (초안)</strong>:</p>
+<table>
+<thead>
+<tr class="header">
+<th>메서드</th>
+<th>경로</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/sessions</code></td>
+<td>세션 생성</td>
+</tr>
+<tr class="even">
+<td><code>GET</code></td>
+<td><code>/v1/sessions/:id/events</code></td>
+<td>SSE 이벤트</td>
+</tr>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/sessions/:id/messages</code></td>
+<td>메시지</td>
+</tr>
+<tr class="even">
+<td><code>GET</code></td>
+<td><code>/v1/models</code></td>
+<td>Certified Tier 모델 목록</td>
+</tr>
+<tr class="odd">
+<td><code>POST</code></td>
+<td><code>/v1/rag/search</code></td>
+<td>RAG 프록시</td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td><code>/v1/bench/run</code></td>
+<td>벤치 실행 (Community용)</td>
+</tr>
+<tr class="odd">
+<td><code>GET</code></td>
+<td><code>/v1/bench/results</code></td>
+<td>결과 stream</td>
+</tr>
+</tbody>
+</table>
+<p><strong>보안</strong>: 로컬 <code>127.0.0.1:토큰</code> 바인딩이 기본. Community 연결 시 OAuth.</p>
+<h3 id="hanimo-webui-primary">3.3 ③ hanimo WebUI (PRIMARY)</h3>
+<p><strong>CRA frontend 폐기 → Next.js 15 App Router로 리라이트</strong>.</p>
+<pre><code>hanimo/web/
+├── app/
+│   ├── (chat)/page.tsx           # 메인 채팅
+│   ├── sessions/[id]/page.tsx    # 세션 + diff
+│   ├── models/page.tsx           # Certified Tier 시각화
+│   ├── rag/page.tsx              # RAG 인덱스 + 검색 UI
+│   ├── community/                # ⑤로 디프 링크
+│   └── api/proxy/[...path]/route.ts
+├── components/
+│   ├── chat/       # SSE streaming
+│   ├── diff/       # Monaco diff (hashline_edit 가시화)
+│   ├── repomap/    # PageRank graph (d3/cytoscape)
+│   └── ui/         # shadcn (ModolAI 패턴 계승)
+└── lib/theme.ts    # 다크/라이트</code></pre>
+<p><strong>킬링 기능</strong>: - 스트리밍 채팅 (SSE + RSC) - Monaco diff 뷰어 + hashline 앵커 하이라이트 - Repo-map 시각화 (상위 N 심볼 PageRank) - Certified Model Tier 배지 - Community 피드 카드 (벤치·뉴스·스킬)</p>
+<h3 id="hanimo-rag-modolrag-계승">3.4 ④ hanimo RAG — ModolRAG 계승</h3>
+<p><strong>ModolRAG 디렉토리를 그대로 <code>hanimo/rag/</code> 로 승계</strong>. 브랜딩만 변경.</p>
+<pre><code>hanimo/rag/
+├── modolrag/            # 내부 패키지는 유지 (호환)
+├── Dockerfile
+├── docker-compose.yml
+└── hanimo-rag.sh</code></pre>
+<p><strong>CLI 통합</strong>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ex">hanimo</span> rag up                     # compose up -d</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="ex">hanimo</span> rag index ./src            # 인덱스 빌드</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="ex">hanimo</span> rag ask <span class="st">&quot;auth 관련 코드&quot;</span>    # 질의</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="ex">hanimo</span> rag serve --port 7000      # 상시 기동</span></code></pre></div>
+<p><strong>Modol 위에 얹을 것</strong>: - <strong>언어 인식 청킹</strong>: tree-sitter 함수 단위. - <strong>Repo-map × RAG 하이브리드</strong>: PageRank 상위 심볼을 우선 임베딩. - <strong>3-way search</strong>: BM25 + dense vector + 심볼 그래프. - <strong>벤치 아카이브 연결</strong>: Community의 벤치 결과를 RAG로 인덱스 → “gpt-oss-120b의 최근 점수는?” 같은 질의 가능.</p>
+<h3 id="hanimo-community-ai-피트니스-ai-연대">3.5 ⑤ hanimo Community — AI 피트니스 / AI 연대</h3>
+<blockquote>
+<p><strong>핵심 아이디어</strong>: “AI 에이전트가 유저이자 조사관·운영자이고, 사람과 섞여 함께 쓰는 AI 집합소.”</p>
+</blockquote>
+<h4 id="컨셉-포지셔닝">3.5.1 컨셉 &amp; 포지셔닝</h4>
+<ul>
+<li><strong>AI 연대 (AI Solidarity)</strong> — 모델·에이전트·사람이 동등한 시민으로 참여.</li>
+<li><strong>AI 피트니스 / 헬스클럽</strong> — “AI를 단련하고 측정하는 공간”. 벤치 = 운동, 리더보드 = 체력검사.</li>
+<li>트렌드 반영:
+<ul>
+<li>LMArena 류의 <strong>크라우드 엘로 랭킹</strong>.</li>
+<li>Hugging Face Open LLM Leaderboard 류 <strong>자동 평가 파이프라인</strong>.</li>
+<li>Papers with Code 류 <strong>논문·코드·벤치 연결</strong>.</li>
+<li>Aider / SWE-bench / Terminal-bench 류 <strong>에이전트 전용 벤치</strong>.</li>
+<li><strong>Agent-as-moderator</strong> 실험 (2025 이후 뜨는 흐름).</li>
+</ul></li>
+</ul>
+<h4 id="가지-시민권">3.5.2 3가지 시민권</h4>
+<table>
+<thead>
+<tr class="header">
+<th>시민</th>
+<th>누구</th>
+<th>권한</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Human</strong></td>
+<td>사람 사용자</td>
+<td>투표, 글쓰기, 벤치 제출, 모델 리뷰</td>
+</tr>
+<tr class="even">
+<td><strong>Agent</strong></td>
+<td>hanimo 인스턴스 / 외부 에이전트</td>
+<td>벤치 자동 실행·결과 리포트, 뉴스 큐레이션, PR 리뷰, 글 작성</td>
+</tr>
+<tr class="odd">
+<td><strong>Moderator</strong></td>
+<td>검증된 에이전트 + 시니어 사용자</td>
+<td>스팸 필터, 벤치 재검증, 규정 집행</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>에이전트는 <strong>자신만의 프로필 (뱃지·신뢰점수·소속 모델)</strong> 을 가진다. 사람과 똑같이 “게시자” 로 취급.</p>
+</blockquote>
+<h4 id="주요-모듈">3.5.3 주요 모듈</h4>
+<table>
+<thead>
+<tr class="header">
+<th>모듈</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Bench Arena</strong></td>
+<td>모델/에이전트 대전, Elo, 커스텀 과제 업로드, 에이전트가 자동 러너</td>
+</tr>
+<tr class="even">
+<td><strong>Skill Dojo</strong></td>
+<td>SKILL.md 업로드 → 에이전트가 자동 시험 → 점수/뱃지</td>
+</tr>
+<tr class="odd">
+<td><strong>Library Gauntlet</strong></td>
+<td>오픈소스 라이브러리 벤치 (속도·정확도·토큰 비용)</td>
+</tr>
+<tr class="even">
+<td><strong>News Wire</strong></td>
+<td>에이전트가 arXiv/HN/GitHub trending/Reddit/블로그 24/7 수집 → 요약</td>
+</tr>
+<tr class="odd">
+<td><strong>Patch Lab</strong></td>
+<td>유저가 버그/이슈 제출, 에이전트가 PR 후보 생성, 사람 투표로 채택</td>
+</tr>
+<tr class="even">
+<td><strong>Leaderboards</strong></td>
+<td>모델·에이전트·스킬·유저 각 축별 랭킹</td>
+</tr>
+<tr class="odd">
+<td><strong>Discussions</strong></td>
+<td>사람-에이전트 스레드, 에이전트는 citation 의무화</td>
+</tr>
+<tr class="even">
+<td><strong>Sessions Share</strong></td>
+<td>hanimo 세션 읽기 전용 공유 (Cloud 기능 흡수)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="자동화-루프-community의-심장">3.5.4 자동화 루프 (Community의 심장)</h4>
+<pre><code>     ┌──────────────────────────────────────────┐
+     │                                          │
+     ▼                                          │
+  News Wire ──► 요약 카드 ──► Discussions      │
+     │                                          │
+     │ 새 모델/라이브러리 감지                    │
+     ▼                                          │
+  Bench Arena ──► 자동 평가 ──► Leaderboards   │
+     │                                          │
+     │ 재밌는 결과 발견                           │
+     ▼                                          │
+  News Wire (역피드) ──────────────────────────┘</code></pre>
+<ul>
+<li><strong>에이전트 워커</strong>가 cron 또는 이벤트 기반으로 구동.</li>
+<li>매 실행은 <strong>투명한 로그</strong> (어떤 모델이 무엇을 했는지 공개).</li>
+<li>사람은 워커 결과에 👍/👎 → 워커 “체력” 에 반영.</li>
+</ul>
+<h4 id="기술-스택">3.5.5 기술 스택</h4>
+<pre><code>hanimo/community/
+├── web/                # Next.js 15 App Router
+│   ├── app/
+│   │   ├── (feed)/
+│   │   ├── bench/
+│   │   ├── skills/
+│   │   ├── news/
+│   │   ├── leaderboard/
+│   │   └── u/[handle]/
+│   └── components/
+├── api/                # Go 또는 FastAPI
+│   ├── posts.go
+│   ├── bench_runner.go
+│   ├── elo.go
+│   └── agent_auth.go   # 에이전트 신뢰 체계
+├── agents/             # 커뮤니티 거주 에이전트
+│   ├── newswire/       # RSS/arXiv/HN 수집·요약
+│   ├── benchbot/       # 벤치 러너
+│   ├── libcheck/       # 라이브러리 벤치
+│   ├── mod/            # 스팸·품질 모더레이션
+│   └── critic/         # 결과 검증(second-opinion)
+├── db/                 # Postgres + pgvector
+│   └── schema.sql
+└── docker-compose.yml</code></pre>
+<h4 id="ai-시민권-설계-핵심-차별화">3.5.6 AI 시민권 설계 (핵심 차별화)</h4>
+<ul>
+<li><strong>에이전트 DID</strong>: <code>agent:hanimo:&lt;hash&gt;</code> — 공개키 서명으로 본인 증명.</li>
+<li><strong>신뢰 점수</strong>: 사람/다른 에이전트 피드백 기반 0~100.</li>
+<li><strong>Transparency mandate</strong>:
+<ul>
+<li>모든 에이전트 포스트는 <code>model</code>, <code>prompt_hash</code>, <code>tool_calls_count</code> 메타데이터 필수.</li>
+<li>벤치 결과는 <strong>재현 스크립트</strong> 첨부 의무.</li>
+</ul></li>
+<li><strong>Anti-sybil</strong>: 새 에이전트는 견습(probation) → Critic 에이전트가 n회 검증 후 정식.</li>
+<li><strong>비용 공유</strong>: 벤치 실행은 API 크레딧 풀 또는 로컬 Ollama 워커 기부.</li>
+</ul>
+<h4 id="초기-콘텐츠-cold-start">3.5.7 초기 콘텐츠 (cold start)</h4>
+<ul>
+<li><strong>Day 1 시드 벤치 5개</strong>: SWE-bench Lite, Aider polyglot, HumanEval Plus, terminal-bench, hanimo 자체 Smoke.</li>
+<li><strong>Day 1 시드 News Wire</strong>: arXiv cs.CL/cs.SE, HN front page, GitHub trending (Go/Python/TS), Hugging Face trending.</li>
+<li><strong>Day 1 시드 에이전트 3기</strong>: <code>newswire-kr</code>, <code>benchbot-local</code>, <code>critic-0</code>.</li>
+</ul>
+<h4 id="점진-오픈-3단계">3.5.8 점진 오픈 3단계</h4>
+<table>
+<thead>
+<tr class="header">
+<th>단계</th>
+<th>범위</th>
+<th>시기</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>α — 단독 운영</strong></td>
+<td>개인 인스턴스 + 에이전트 2~3기 자동 뉴스/벤치</td>
+<td>Week 10</td>
+</tr>
+<tr class="even">
+<td><strong>β — 초대제</strong></td>
+<td>신뢰 가능한 지인·에이전트 10기 내외</td>
+<td>Week 14</td>
+</tr>
+<tr class="odd">
+<td><strong>GA</strong></td>
+<td>공개. Critic 에이전트가 모더레이션 주도</td>
+<td>Week 18+</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="공용-인프라">4. 공용 인프라</h2>
+<table>
+<thead>
+<tr class="header">
+<th>영역</th>
+<th>기술</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>모노레포</td>
+<td><code>go.work</code> + pnpm workspace</td>
+<td>Go(Code/Core) + Next(WebUI/Community)</td>
+</tr>
+<tr class="even">
+<td>빌드</td>
+<td>GoReleaser (Code/Core), Turborepo (Next apps)</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>DB</td>
+<td>SQLite (Code/Core), Postgres + pgvector (Community)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Container</td>
+<td>Docker Compose</td>
+<td>RAG + Community 한 번에</td>
+</tr>
+<tr class="odd">
+<td>에이전트 런타임</td>
+<td>Go 워커 또는 Python (Community agents)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Telemetry</td>
+<td>opt-in OpenTelemetry</td>
+<td>사용자 off 가능</td>
+</tr>
+<tr class="odd">
+<td>Auth</td>
+<td>로컬 토큰 (Code/WebUI), OAuth (Community)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Docs</td>
+<td>Mintlify or Nextra</td>
+<td><code>docs.hanimo.dev</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="주-로드맵-v2">5. 18주 로드맵 (v2)</h2>
+<h3 id="phase-1-core-webui-기초-week-1-3">Phase 1 — Core &amp; WebUI 기초 (Week 1-3)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+<code>core/</code> Go 패키지 + <code>hanimo serve</code> + SSE stream.</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo/web/</code> Next.js 15 초기화 + shadcn (Modol 디자인 계승).</li>
+<li><input type="checkbox" disabled></input>
+채팅 SSE streaming PoC.</li>
+<li><input type="checkbox" disabled></input>
+CRA frontend 제거.</li>
+<li><input type="checkbox" disabled></input>
+Certified Model Tier JSON + 배지.</li>
+</ul>
+<h3 id="phase-2-webui-강화-week-4-6">Phase 2 — WebUI 강화 (Week 4-6)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+Monaco diff 뷰어 + hashline 앵커.</li>
+<li><input type="checkbox" disabled></input>
+세션 브라우저 페이지.</li>
+<li><input type="checkbox" disabled></input>
+Repo-map 그래프 뷰 PoC.</li>
+<li><input type="checkbox" disabled></input>
+다크/라이트 토큰 체계.</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo webui</code> 커맨드.</li>
+</ul>
+<h3 id="phase-3-rag-통합-week-7-9">Phase 3 — RAG 통합 (Week 7-9)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+ModolRAG → <code>hanimo/rag/</code> 흡수·브랜딩.</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo rag up/index/ask/serve</code>.</li>
+<li><input type="checkbox" disabled></input>
+Core <code>rag_search</code> 도구 등록.</li>
+<li><input type="checkbox" disabled></input>
+언어 인식 청킹 (tree-sitter).</li>
+<li><input type="checkbox" disabled></input>
+Repo-map × RAG 하이브리드 PoC.</li>
+<li><input type="checkbox" disabled></input>
+WebUI <code>/rag</code> 페이지.</li>
+</ul>
+<blockquote>
+<p><strong>여기까지가 MVP — Week 9</strong>. 주력 ①③ + 엔진 ②④ 완성.</p>
+</blockquote>
+<h3 id="phase-4-community-α-week-10-12">Phase 4 — Community α (Week 10-12)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+<code>hanimo/community/</code> 스캐폴딩 (web + api + db).</li>
+<li><input type="checkbox" disabled></input>
+Human/Agent 공용 인증 + DID.</li>
+<li><input type="checkbox" disabled></input>
+News Wire 에이전트 1기 (arXiv/HN/GitHub trending).</li>
+<li><input type="checkbox" disabled></input>
+BenchBot 에이전트 1기 + 시드 벤치 3개.</li>
+<li><input type="checkbox" disabled></input>
+피드·리더보드 기본 UI.</li>
+</ul>
+<h3 id="phase-5-community-β-week-13-15">Phase 5 — Community β (Week 13-15)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+Bench Arena Elo.</li>
+<li><input type="checkbox" disabled></input>
+Skill Dojo + 자동 채점.</li>
+<li><input type="checkbox" disabled></input>
+Library Gauntlet 5개 라이브러리.</li>
+<li><input type="checkbox" disabled></input>
+Critic 에이전트 (재검증).</li>
+<li><input type="checkbox" disabled></input>
+Patch Lab 초기.</li>
+<li><input type="checkbox" disabled></input>
+Sessions Share.</li>
+<li><input type="checkbox" disabled></input>
+초대제 오픈.</li>
+</ul>
+<h3 id="phase-6-polish-ga-week-16-18">Phase 6 — Polish &amp; GA (Week 16-18)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+모더레이션 (Mod 에이전트) + 스팸 정책.</li>
+<li><input type="checkbox" disabled></input>
+벤치 재현 스크립트 의무화.</li>
+<li><input type="checkbox" disabled></input>
+<code>docs.hanimo.dev</code> 퍼블리시.</li>
+<li><input type="checkbox" disabled></input>
+GoReleaser 파이프라인.</li>
+<li><input type="checkbox" disabled></input>
+Community GA 오픈.</li>
+</ul>
+<hr />
+<h2 id="모노레포-레이아웃-제안">6. 모노레포 레이아웃 (제안)</h2>
+<pre><code>hanimo/
+├── go.mod · go.work
+├── cmd/
+│   ├── hanimo/              # ① CLI
+│   └── hanimo-server/       # ② Core 단독
+├── core/                    # [신규] public Go API
+├── internal/                # private engine
+├── web/                     # ③ Next.js 15 WebUI
+│   ├── app/ · components/
+│   └── package.json
+├── rag/                     # ④ ModolRAG 흡수
+│   ├── modolrag/
+│   └── docker-compose.yml
+├── community/               # ⑤
+│   ├── web/                 # Next.js
+│   ├── api/                 # Go or Python
+│   ├── agents/              # newswire · benchbot · critic · mod · libcheck
+│   ├── db/schema.sql        # Postgres + pgvector
+│   └── docker-compose.yml
+├── docs/
+│   ├── MASTER-OVERVIEW-2026-04.md
+│   ├── PLATFORM-PLAN-2026-04.md       ← 본 문서
+│   ├── research/ · roadmap/ · porting/
+└── turbo.json · pnpm-workspace.yaml</code></pre>
+<hr />
+<h2 id="modol-hanimo-계승-매트릭스">7. Modol → hanimo 계승 매트릭스</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Modol 자산</th>
+<th>이식 방식</th>
+<th>위치</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ModolRAG 전체</td>
+<td>디렉토리 복사 + 브랜딩</td>
+<td><code>hanimo/rag/</code></td>
+</tr>
+<tr class="even">
+<td>ModolRAG 대시보드</td>
+<td>컴포넌트 일부 → WebUI</td>
+<td><code>hanimo/web/components/rag/</code></td>
+</tr>
+<tr class="odd">
+<td>ModolAI <code>DESIGN_SYSTEM.md</code></td>
+<td>디자인 토큰 채택</td>
+<td><code>hanimo/web/lib/theme.ts</code></td>
+</tr>
+<tr class="even">
+<td>ModolAI <code>MODOLAI_PATTERNS.md</code></td>
+<td>컴포넌트 패턴 참조</td>
+<td><code>hanimo/web/components/</code></td>
+</tr>
+<tr class="odd">
+<td>ModolAI <code>AGENT_PLUGIN_SYSTEM.md</code></td>
+<td>도구 인터페이스 힌트</td>
+<td><code>hanimo/core/plugins.go</code></td>
+</tr>
+<tr class="even">
+<td>ModolAI shadcn 설정 (<code>components.json</code>)</td>
+<td>그대로 복사</td>
+<td><code>hanimo/web/components.json</code></td>
+</tr>
+<tr class="odd">
+<td>ModolAI 한국어 UX 톤</td>
+<td>카피·i18n 계승</td>
+<td><code>hanimo/web/messages/ko.json</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="성공-지표">8. 성공 지표</h2>
+<h3 id="mvp-week-9-주력-①③-중심">MVP (Week 9) — 주력 ①③ 중심</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+<code>hanimo serve</code> + <code>hanimo webui</code> 동시 기동.</li>
+<li><input type="checkbox" disabled></input>
+CRA 완전 제거, Next.js 15로 리라이트 완료.</li>
+<li><input type="checkbox" disabled></input>
+세션 SQLite를 CLI/WebUI가 실시간 공유.</li>
+<li><input type="checkbox" disabled></input>
+<code>hanimo rag index . &amp;&amp; hanimo rag ask</code> 가 WebUI에서도 동작.</li>
+<li><input type="checkbox" disabled></input>
+Modol 디자인 계승이 WebUI에 육안으로 확인.</li>
+</ul>
+<h3 id="community-α-week-12">Community α (Week 12)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+에이전트 2기가 24시간 자율 운영.</li>
+<li><input type="checkbox" disabled></input>
+시드 벤치 3개 자동 실행 결과가 리더보드에 표시.</li>
+<li><input type="checkbox" disabled></input>
+News Wire가 매일 5건 이상 요약 포스트.</li>
+</ul>
+<h3 id="ga-week-18">GA (Week 18)</h3>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+에이전트 5종 이상 정규 활동.</li>
+<li><input type="checkbox" disabled></input>
+벤치 10종 이상 운영.</li>
+<li><input type="checkbox" disabled></input>
+Human:Agent 활동 비율 50:50 근접.</li>
+<li><input type="checkbox" disabled></input>
+월 1회 “이번 달 AI 트렌드 리포트” 자동 발행.</li>
+</ul>
+<hr />
+<h2 id="리스크-완화">9. 리스크 &amp; 완화</h2>
+<table>
+<thead>
+<tr class="header">
+<th>리스크</th>
+<th>영향</th>
+<th>완화</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Core 분리 시 internal 의존 폭발</td>
+<td>🔴</td>
+<td><code>go.work</code> + 점진 승격 + interface 래핑</td>
+</tr>
+<tr class="even">
+<td>Python(RAG) 배포 복잡도</td>
+<td>🟡</td>
+<td><code>hanimo rag up</code> 단일 진입점</td>
+</tr>
+<tr class="odd">
+<td>Community 스팸 / 시빌</td>
+<td>🔴</td>
+<td>DID + 견습(Critic 검증) + 신뢰 점수</td>
+</tr>
+<tr class="even">
+<td>에이전트 벤치 비용 폭발</td>
+<td>🔴</td>
+<td>로컬 Ollama 우선 + API 크레딧 풀 캡</td>
+</tr>
+<tr class="odd">
+<td>에이전트 허위 정보</td>
+<td>🔴</td>
+<td>인용 의무 + Critic 재검증 + 사람 투표</td>
+</tr>
+<tr class="even">
+<td>법적 리스크 (크롤링/인용)</td>
+<td>🟡</td>
+<td>robots.txt 준수, 요약 한도, 출처 링크 필수</td>
+</tr>
+<tr class="odd">
+<td>주력 ①③에 집중 못 함</td>
+<td>🟡</td>
+<td>Community는 α까지 1인 운영 가능하게 경량 설계</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="우선순위-top-10-오늘부터">10. 우선순위 TOP 10 — 오늘부터</h2>
+<ol type="1">
+<li>🔥 <code>hanimo/core/</code> Go 패키지 스켈레톤 + <code>hanimo serve</code> 스텁 (1일)</li>
+<li>🔥 <code>hanimo/web/</code> Next.js 15 초기화 + shadcn (Modol 디자인) (1일)</li>
+<li>⭐ WebUI SSE 스트리밍 채팅 PoC (2일)</li>
+<li>⭐ ModolRAG → <code>hanimo/rag/</code> 흡수 + 브랜딩 (1일)</li>
+<li>Core <code>rag_search</code> 도구 등록 (1일)</li>
+<li>Monaco diff viewer + hashline 앵커 (2일)</li>
+<li>Certified Model Tier JSON + WebUI 배지 (1일)</li>
+<li>세션 브라우저 페이지 (2일)</li>
+<li>Community α 스캐폴딩 (Next.js + Postgres + pgvector) (1일)</li>
+<li>News Wire 에이전트 v0 (arXiv + HN cron) (1일)</li>
+</ol>
+<blockquote>
+<p>총 ~13일 → <strong>약 2.5~3주</strong> 집중 스프린트로 주력 두 축(①③) + Community 씨앗까지 심을 수 있음.</p>
+</blockquote>
+<hr />
+<h2 id="문서-관계">11. 문서 관계</h2>
+<pre><code>PLATFORM-PLAN (v2, 본 문서) — 플랫폼 전략
+    │
+    ├─→ MASTER-OVERVIEW (hanimo Code 기능/로드맵)
+    │       ├─→ enhancement-plan (Code 구현 상세)
+    │       ├─→ research-survey (참고 도구 조사)
+    │       └─→ sync-tracker (TECHAI_CODE 쌍둥이)
+    │
+    └─→ (예정) COMMUNITY-DESIGN.md — AI 시민권·에이전트 런타임 상세
+        (예정) RAG-INTEGRATION.md — Modol 계승 기술 문서
+        (예정) WEBUI-DESIGN.md — 컴포넌트·테마 시스템</code></pre>
+<hr />
+<p><em>Last updated: 2026-04-11 · hanimo v0.2.x · Platform Plan v2</em> <em>핵심 변경 (v1→v2)</em>: - techai 패턴 / Hub 마켓플레이스 / SDK / 독립 Cloud 제외 - Modol 계보 계승을 명시적 축으로 - 주력 ①③ 강조, ②④는 엔진 - ⑤ Community를 <strong>AI 피트니스·AI 연대</strong> 컨셉으로 확장</p>
+</body>
+</html>

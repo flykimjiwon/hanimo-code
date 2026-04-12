@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>hanimo MASTER OVERVIEW — 2026-04</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <style type="text/css">:root {
+--bg: #ffffff; --fg: #1f2328; --fg-muted: #57606a;
+--border: #d0d7de; --code-bg: #eff1f3; --pre-bg: #f6f8fa;
+--table-alt: #fafbfc; --link: #0969da; --h2: #0969da; --h3: #24292f;
+--blockquote-bg: #f6f8fa;
+}
+[data-theme="dark"] {
+--bg: #0d1117; --fg: #e6edf3; --fg-muted: #9198a1;
+--border: #30363d; --code-bg: #1f242c; --pre-bg: #161b22;
+--table-alt: #151a21; --link: #4493f8; --h2: #4493f8; --h3: #e6edf3;
+--blockquote-bg: #161b22;
+}
+@media (prefers-color-scheme: dark) {
+:root:not([data-theme="light"]) {
+--bg: #0d1117; --fg: #e6edf3; --fg-muted: #9198a1;
+--border: #30363d; --code-bg: #1f242c; --pre-bg: #161b22;
+--table-alt: #151a21; --link: #4493f8; --h2: #4493f8; --h3: #e6edf3;
+--blockquote-bg: #161b22;
+}
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: -apple-system, "Segoe UI", "Noto Sans KR", sans-serif; max-width: 960px; margin: 2em auto; padding: 0 1.5em; line-height: 1.65; }
+h1 { border-bottom: 2px solid var(--border); padding-bottom: .3em; margin-top: 1.8em; }
+h2 { border-bottom: 1px solid var(--border); padding-bottom: .3em; margin-top: 1.6em; color: var(--h2); }
+h3 { margin-top: 1.3em; color: var(--h3); }
+h4 { color: var(--fg-muted); }
+code { background: var(--code-bg); padding: .15em .4em; border-radius: 4px; font-size: 85%; font-family: "SF Mono", Menlo, Consolas, monospace; }
+pre { background: var(--pre-bg); padding: 1em; border-radius: 6px; overflow-x: auto; line-height: 1.45; border: 1px solid var(--border); }
+pre code { background: transparent; padding: 0; }
+table { border-collapse: collapse; margin: 1em 0; width: 100%; font-size: 92%; }
+th, td { border: 1px solid var(--border); padding: .5em .8em; text-align: left; vertical-align: top; }
+th { background: var(--pre-bg); font-weight: 600; }
+tr:nth-child(even) td { background: var(--table-alt); }
+blockquote { border-left: 4px solid var(--link); background: var(--blockquote-bg); margin: 1em 0; padding: .6em 1em; color: var(--fg-muted); }
+hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .2em 0; }
+#theme-toggle {
+position: fixed; top: 1em; right: 1em; z-index: 1000;
+background: var(--pre-bg); color: var(--fg); border: 1px solid var(--border);
+border-radius: 6px; padding: .5em .9em; cursor: pointer; font-size: 14px;
+font-family: inherit; box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+#theme-toggle:hover { background: var(--code-bg); }
+</style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+<script>
+(function(){
+  var saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  updateBtn();
+})();
+function toggleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (!cur) cur = sysDark ? 'dark' : 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateBtn();
+}
+function updateBtn(){
+  var btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  var cur = document.documentElement.getAttribute('data-theme');
+  var sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var isDark = cur === 'dark' || (!cur && sysDark);
+  btn.innerText = isDark ? '☀️ Light' : '🌙 Dark';
+}
+</script>
+<header id="title-block-header">
+<h1 class="title">hanimo MASTER OVERVIEW — 2026-04</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#hanimo-master-overview-2026-04">hanimo MASTER OVERVIEW — 2026-04</a>
+<ul>
+<li><a href="#tldr-30초-요약">0. TL;DR (30초 요약)</a></li>
+<li><a href="#프로젝트-정체성-브랜딩">1. 프로젝트 정체성 &amp; 브랜딩</a></li>
+<li><a href="#현재-구현-상태-v0.2.x-as-is">2. 현재 구현 상태 (v0.2.x as-is)</a></li>
+<li><a href="#참고한-도구들-훔쳐-올-10가지-아이디어">3. 참고한 도구들 — 훔쳐 올 10가지 아이디어</a></li>
+<li><a href="#전략-피벗-certified-model-system">4. 전략 피벗 — Certified Model System</a></li>
+<li><a href="#단계-로드맵-enhancement-plan-2026-04-요약">5. 3단계 로드맵 (enhancement-plan-2026-04 요약)</a></li>
+<li><a href="#immediate-wins-오늘-당장-각-1h">6. Immediate Wins — 오늘 당장 (각 &lt;1h)</a></li>
+<li><a href="#techai_code-와의-관계-sync-tracker-요약">7. TECHAI_CODE 와의 관계 (sync-tracker 요약)</a></li>
+<li><a href="#다음-밀수-next-drop-우선-처리-순서">8. 다음 밀수 (Next Drop — 우선 처리 순서)</a></li>
+<li><a href="#경쟁-도구-비교표-요약">9. 경쟁 도구 비교표 (요약)</a></li>
+<li><a href="#즉시-가치-top-5-투입-대비-효과">10. 즉시 가치 Top 5 (투입 대비 효과)</a></li>
+<li><a href="#파일-패키지-매핑-구현-가이드">11. 파일 / 패키지 매핑 (구현 가이드)</a></li>
+<li><a href="#참고-문서-이-master의-원본">12. 참고 문서 (이 MASTER의 원본)</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="hanimo-master-overview-2026-04">hanimo MASTER OVERVIEW — 2026-04</h1>
+<blockquote>
+<p><strong>한 문서로 보는 hanimo 전체상</strong> 작성일: 2026-04-11 통합 대상: reference-tools-survey / enhancement-plan / sync-tracker / Claude Code 대화 기록 (v0.2.x 브랜딩·Plan·Deep Agent·Certified Model 전략·리서치 디스패치)</p>
+</blockquote>
+<hr />
+<h2 id="tldr-30초-요약">0. TL;DR (30초 요약)</h2>
+<ul>
+<li><strong>hanimo</strong> = Go + Bubble Tea 기반, 한국어 친화 터미널 AI 코딩 에이전트. 현재 <strong>v0.2.x</strong>.</li>
+<li><strong>차별화 자산 3가지</strong>: ① hash-anchored edit(<code>hashline_*</code>), ② 14+ provider 추상화, ③ 한국어 의도 감지 + clarify-first.</li>
+<li><strong>결정적 약점 3가지</strong>: ① Repo-map 없음, ② Skill/Hooks 없음, ③ Subagent(context fork) 없음.</li>
+<li><strong>전략 전환</strong>: “무한 호환(14+ provider)” → “<strong>Certified Model System</strong> (Tier 1/2/3, 10~12개)” 로 피벗.</li>
+<li><strong>페어 프로젝트 TECHAI_CODE</strong>: hanimo가 upstream, TECHAI_CODE는 downstream + 실험 playground. Plan 모드 read-only 깨짐 → 🔥핫픽스 필요.</li>
+<li><strong>다음 밀수</strong>: ①Plan read-only 패치(TECHAI) ②hashline 포팅 ③clarify-first/prompt embed ④doom-loop detector ⑤Repo-map PoC.</li>
+</ul>
+<hr />
+<h2 id="프로젝트-정체성-브랜딩">1. 프로젝트 정체성 &amp; 브랜딩</h2>
+<table>
+<thead>
+<tr class="header">
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>이름</td>
+<td><strong>hanimo</strong> (HANIMO CODE)</td>
+</tr>
+<tr class="even">
+<td>포지셔닝</td>
+<td>한국어 친화, 다중 provider, 로컬 우선, 단일 바이너리 Go agent</td>
+</tr>
+<tr class="odd">
+<td>페어</td>
+<td><strong>TECHAI_CODE</strong> (택가이코드) — downstream/실험판</td>
+</tr>
+<tr class="even">
+<td>TUI</td>
+<td>Bubble Tea v2 + Lip Gloss, 5 테마, i18n(ko/en)</td>
+</tr>
+<tr class="odd">
+<td>라이선스·배포</td>
+<td>단일 Go 바이너리, CGO free 지향</td>
+</tr>
+<tr class="even">
+<td>로고/브랜딩</td>
+<td>Claude Code 대화에서 20종 목업 제작·선정 진행</td>
+</tr>
+<tr class="odd">
+<td>모드 체계</td>
+<td>Super / Plan / Deep Agent (구명: Super/Dev/Plan)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="현재-구현-상태-v0.2.x-as-is">2. 현재 구현 상태 (v0.2.x as-is)</h2>
+<h3 id="core-이미-있는-것">2.1 Core — ✅ 이미 있는 것</h3>
+<table>
+<colgroup>
+<col style="width: 27%"></col>
+<col style="width: 45%"></col>
+<col style="width: 27%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>영역</th>
+<th style="text-align: center;">상태</th>
+<th>근거 파일</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Provider 추상화 (14+: ollama, openai, anthropic, google, openai-compat, novita, openrouter, deepseek, groq, together, fireworks, mistral, vllm, lm studio, custom)</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/llm/providers/</code></td>
+</tr>
+<tr class="even">
+<td><strong>Hash-anchored edit</strong> (<code>hashline_read</code>/<code>hashline_edit</code>)</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/tools/hashline.go</code> ⭐ 업계 드문 자산</td>
+</tr>
+<tr class="odd">
+<td>MCP stdio + SSE transport</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/mcp/</code></td>
+</tr>
+<tr class="even">
+<td>3-stage compaction (snip → micro → LLM summary)</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/llm/compaction.go</code></td>
+</tr>
+<tr class="odd">
+<td>Session SQLite (save/load/fork/search)</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/session/</code></td>
+</tr>
+<tr class="even">
+<td>Knowledge store (extractor + injector)</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/knowledge/</code> (Hermes memory 초기형)</td>
+</tr>
+<tr class="odd">
+<td>Agents (Super/Plan/Auto/Intent/AskUser)</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/agents/</code></td>
+</tr>
+<tr class="even">
+<td>Command palette Ctrl+K</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/ui/palette.go</code></td>
+</tr>
+<tr class="odd">
+<td>i18n (ko/en), 5 themes</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/ui/</code></td>
+</tr>
+<tr class="even">
+<td>Deep Agent 100-iter loop</td>
+<td style="text-align: center;">✅</td>
+<td><code>ModeDev</code></td>
+</tr>
+<tr class="odd">
+<td>한국어 의도 감지 + clarify-first directive</td>
+<td style="text-align: center;">✅</td>
+<td><code>agents/intent.go</code>, prompt.go</td>
+</tr>
+<tr class="even">
+<td>ASK_USER 구조화 질문</td>
+<td style="text-align: center;">✅</td>
+<td><code>agents/askuser.go</code></td>
+</tr>
+<tr class="odd">
+<td>Tool loop detection (기본)</td>
+<td style="text-align: center;">✅ v0.2.1</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Dangerous regex 기본 세트</td>
+<td style="text-align: center;">✅</td>
+<td><code>internal/tools/shell.go</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="v0.2.1-패치-완료-항목">2.2 v0.2.1 패치 완료 항목</h3>
+<ul>
+<li><code>clarifyFirstDirective</code> 프롬프트 도입 — 모호한 요청에 먼저 질문.</li>
+<li>한국어 키워드 동작 개선.</li>
+<li><code>list_files</code> skip 로직 보정.</li>
+<li>Shell 타임아웃 env 부분 반영.</li>
+<li>중복 tool call loop 감지.</li>
+<li>Plan read-only 정책 (hanimo 쪽) 유지.</li>
+</ul>
+<h3 id="아직-없는-것-갭-매트릭스">2.3 ❌ 아직 없는 것 (갭 매트릭스)</h3>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>카테고리</th>
+<th>미구현</th>
+<th>영향</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Context</strong></td>
+<td>Repo-map (tree-sitter+PageRank)</td>
+<td>대형 레포 탐색 비효율</td>
+</tr>
+<tr class="even">
+<td><strong>Context</strong></td>
+<td>Skill 시스템 (SKILL.md)</td>
+<td>반복 작업 자동화 불가</td>
+</tr>
+<tr class="odd">
+<td><strong>Agent</strong></td>
+<td>Subagent (context fork)</td>
+<td>토큰 폭발, 탐색·본작업 분리 불가</td>
+</tr>
+<tr class="even">
+<td><strong>Agent</strong></td>
+<td>Doom loop detector (고도화)</td>
+<td>무한루프 완전 차단 X</td>
+</tr>
+<tr class="odd">
+<td><strong>Agent</strong></td>
+<td>Git Worktree 병렬화</td>
+<td>동시 실험 불가</td>
+</tr>
+<tr class="even">
+<td><strong>Safety</strong></td>
+<td>Permission 5-mode 엔진 + 학습형 rule</td>
+<td>거친 허용/거부만 존재</td>
+</tr>
+<tr class="odd">
+<td><strong>Safety</strong></td>
+<td>Credential scrubbing (output)</td>
+<td>로그 유출 리스크</td>
+</tr>
+<tr class="even">
+<td><strong>Safety</strong></td>
+<td>Sandbox (seatbelt/unshare)</td>
+<td>OS 보호막 없음</td>
+</tr>
+<tr class="odd">
+<td><strong>Ext</strong></td>
+<td>Hooks 시스템 (8~25 events)</td>
+<td>외부 스크립트 연동 X</td>
+</tr>
+<tr class="even">
+<td><strong>Ext</strong></td>
+<td>apply_patch (unified diff)</td>
+<td>다중 hunk 편집 비효율</td>
+</tr>
+<tr class="odd">
+<td><strong>Ext</strong></td>
+<td>LSP 통합 (gopls 등)</td>
+<td>정적 분석 힘 부재</td>
+</tr>
+<tr class="even">
+<td><strong>UX</strong></td>
+<td>Session Browser UI + <code>--resume &lt;id&gt;</code></td>
+<td>세션 재개 검색 빈약</td>
+</tr>
+<tr class="odd">
+<td><strong>UX</strong></td>
+<td>JSON headless 출력</td>
+<td>CI/CD 통합 어려움</td>
+</tr>
+<tr class="even">
+<td><strong>UX</strong></td>
+<td>DECSET 2026 synchronized output</td>
+<td>스트리밍 깜빡임</td>
+</tr>
+<tr class="odd">
+<td><strong>Cost</strong></td>
+<td>Prompt caching (Anthropic cache_control / OpenAI prompt_cache_key)</td>
+<td>최대 90% 입력 비용 낭비</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="참고한-도구들-훔쳐-올-10가지-아이디어">3. 참고한 도구들 — 훔쳐 올 10가지 아이디어</h2>
+<blockquote>
+<p>출처 문서: <code>docs/research/reference-tools-survey-2026-04.md</code></p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>출처</th>
+<th>아이디어</th>
+<th>hanimo로 가져올 형태</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Aider</strong></td>
+<td>Repo-map (tree-sitter + PageRank, 영속 캐시)</td>
+<td><code>internal/repomap/</code> — A1</td>
+</tr>
+<tr class="even">
+<td><strong>Claude Code</strong></td>
+<td>SKILL.md 표준 + lazy load</td>
+<td><code>internal/skills/</code> — A2</td>
+</tr>
+<tr class="odd">
+<td><strong>Claude Code</strong></td>
+<td>Hooks (8~25 events)</td>
+<td><code>internal/hooks/</code> — A3</td>
+</tr>
+<tr class="even">
+<td><strong>Claude Code / Crush</strong></td>
+<td>5-mode permission 엔진 + 학습형 rules</td>
+<td><code>internal/permission/</code> — A4</td>
+</tr>
+<tr class="odd">
+<td><strong>Claude Code</strong></td>
+<td>Subagent (context fork) + 요약 반환</td>
+<td><code>internal/agents/subagent.go</code> — B1</td>
+</tr>
+<tr class="even">
+<td><strong>Codex CLI</strong></td>
+<td><code>apply_patch</code> unified-diff 포맷 + AST 검증</td>
+<td><code>internal/tools/applypatch.go</code> — B4</td>
+</tr>
+<tr class="odd">
+<td><strong>Hermes</strong></td>
+<td>성공 흐름을 learned skill로 자동 추출</td>
+<td><code>skills/extractor.go</code></td>
+</tr>
+<tr class="even">
+<td><strong>Crush / Continue</strong></td>
+<td>LSP 통합 (gopls/tsserver/pyright)</td>
+<td><code>internal/lsp/</code> — C3</td>
+</tr>
+<tr class="odd">
+<td><strong>opencode / Gemini CLI</strong></td>
+<td>JSON headless mode</td>
+<td><code>--output json</code> — C5</td>
+</tr>
+<tr class="even">
+<td><strong>Claude Code</strong></td>
+<td>Prompt caching (ephemeral cache_control)</td>
+<td><code>llm/cache.go</code> — C2</td>
+</tr>
+</tbody>
+</table>
+<h3 id="법적tos-경계-리서치-결론">3.1 법적/ToS 경계 (리서치 결론)</h3>
+<ul>
+<li>❌ <strong>Claude Pro/Max OAuth 재사용</strong>: 2026-04-04 차단, 정책 위배.</li>
+<li>❌ <strong>Codex CLI / Gemini CLI 토큰 재사용</strong>: ToS 위반.</li>
+<li>✅ 공식 API 키 (Anthropic/OpenAI/Google), 오픈 라우터 OpenRouter/Novita/DeepSeek/Groq 등은 합법.</li>
+<li>✅ 로컬 (Ollama, LM Studio, vLLM) 은 자유.</li>
+</ul>
+<hr />
+<h2 id="전략-피벗-certified-model-system">4. 전략 피벗 — Certified Model System</h2>
+<blockquote>
+<p>“14+ provider 모두 동작” ≠ “14+ provider 모두 잘 동작”. 사용자 경험의 급격한 분산을 막기 위한 피벗.</p>
+</blockquote>
+<h3 id="tier-구조">4.1 Tier 구조</h3>
+<table>
+<colgroup>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tier</th>
+<th>의미</th>
+<th>예시 후보</th>
+<th>보증 수준</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Tier 1 — Certified</strong></td>
+<td>매 릴리스 회귀 테스트 통과</td>
+<td>Claude Sonnet 4.x, GPT-5(공식), Gemini 2.5 Pro, qwen3-coder-30b, gpt-oss-120b</td>
+<td>공식 지원 / doom-loop 방지 / 프롬프트 튜닝 적용</td>
+</tr>
+<tr class="even">
+<td><strong>Tier 2 — Supported</strong></td>
+<td>동작 확인, 일부 feature 제한</td>
+<td>Groq llama-3.3-70b, DeepSeek V3, Mistral Large, Gemma 4 31B</td>
+<td>동작 보장 + 알려진 제한 문서화</td>
+</tr>
+<tr class="odd">
+<td><strong>Tier 3 — Experimental</strong></td>
+<td><code>--experimental</code> 플래그 필요</td>
+<td>Novita 신규 모델, 커스텀 endpoint, &lt;7B 로컬</td>
+<td>No SLA, 사용자 책임</td>
+</tr>
+</tbody>
+</table>
+<h3 id="이-전략이-만드는-변화">4.2 이 전략이 만드는 변화</h3>
+<ul>
+<li>릴리스 체크리스트에 <strong>모델별 eval 행렬</strong> 도입 (Intent / Plan / Edit / Shell / Compaction).</li>
+<li>Tier 1 모델에만 <strong>전용 system prompt 튜닝</strong> (negative-example, tool description override).</li>
+<li>Novita 429 쏟아짐 같은 문제는 <strong>Tier 2/3 전략으로 격리</strong> → Tier 1 경험 지킴.</li>
+<li><code>hanimo models</code> 명령으로 사용자에게 Tier 시각화.</li>
+</ul>
+<h3 id="layer-defense-architecture">4.3 3-Layer Defense Architecture</h3>
+<ol type="1">
+<li><strong>Pre-send</strong>: dangerous regex 확장, credential scrubbing, tool call loop hash.</li>
+<li><strong>Post-receive</strong>: 모델 출력에서 secret leak 정규식, over-long tool args 차단, JSON 파싱 실패 시 retry-or-ask.</li>
+<li><strong>Loop</strong>: doom-loop detector (최근 3회 동일 tool hash → abort), iteration cap env.</li>
+</ol>
+<hr />
+<h2 id="단계-로드맵-enhancement-plan-2026-04-요약">5. 3단계 로드맵 (enhancement-plan-2026-04 요약)</h2>
+<h3 id="phase-a-foundation-upgrade-23주">Phase A — Foundation Upgrade (2~3주)</h3>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>코드</th>
+<th>항목</th>
+<th>산출</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>A1</strong></td>
+<td>Repo-map (tree-sitter + PageRank + SQLite cache)</td>
+<td><code>internal/repomap/</code> — cold &lt;300ms / warm &lt;80ms (10K files)</td>
+</tr>
+<tr class="even">
+<td><strong>A2</strong></td>
+<td>Skill 시스템 (SKILL.md lazy load, <code>$ARGUMENTS</code>, inline <code>!shell</code>, learned skills)</td>
+<td><code>internal/skills/</code></td>
+</tr>
+<tr class="odd">
+<td><strong>A3</strong></td>
+<td>Hooks (8 events: SessionStart/End, Pre/PostToolUse, PermissionRequest, PostCompact, TaskComplete, PostToolUseFailure)</td>
+<td><code>internal/hooks/</code> + <code>.hanimo/hooks.yaml</code></td>
+</tr>
+<tr class="even">
+<td><strong>A4</strong></td>
+<td>Permission 5-mode + rule 엔진 + 학습형 yaml append</td>
+<td><code>internal/permission/</code> + Shift+Tab 순환</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-b-agent-orchestration-23주">Phase B — Agent Orchestration (2~3주)</h3>
+<table>
+<thead>
+<tr class="header">
+<th>코드</th>
+<th>항목</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>B1</strong></td>
+<td>Subagent (context fork, depth≤2, concurrent≤3, 500-token 요약 반환)</td>
+</tr>
+<tr class="even">
+<td><strong>B2</strong></td>
+<td>Git Worktree 병렬 실행 <code>/parallel</code> (go-git, CGO-free)</td>
+</tr>
+<tr class="odd">
+<td><strong>B3</strong></td>
+<td>Plan ↔︎ Build 권한 분리 + <code>plan.json</code> → <code>/execute</code></td>
+</tr>
+<tr class="even">
+<td><strong>B4</strong></td>
+<td><code>apply_patch</code> (unified diff, multi-hunk, AST 검증 rollback)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-c-polish-scale-2주">Phase C — Polish &amp; Scale (2주)</h3>
+<table>
+<thead>
+<tr class="header">
+<th>코드</th>
+<th>항목</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>C1</strong></td>
+<td>Session Browser UI + <code>--resume &lt;id\|-N&gt;</code></td>
+</tr>
+<tr class="even">
+<td><strong>C2</strong></td>
+<td>Prompt caching (Anthropic <code>cache_control</code> / OpenAI <code>prompt_cache_key</code>)</td>
+</tr>
+<tr class="odd">
+<td><strong>C3</strong></td>
+<td>LSP 통합 (gopls 우선)</td>
+</tr>
+<tr class="even">
+<td><strong>C4</strong></td>
+<td>Synchronized output mode (DECSET 2026)</td>
+</tr>
+<tr class="odd">
+<td><strong>C5</strong></td>
+<td>JSON / headless 출력</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-a-성공-지표">Phase A 성공 지표</h3>
+<ul>
+<li>10K 파일 레포 cold start ≤ 300ms, warm ≤ 80ms.</li>
+<li>기본 skill 5개: <code>review-pr</code>, <code>write-tests</code>, <code>refactor</code>, <code>deploy</code>, <code>debug</code>.</li>
+<li>예제 hook 3개 동작: gofmt-on-save, block-dangerous, summarize-on-compact.</li>
+<li>Permission 학습 경험 1회 이상 (yaml auto-append).</li>
+<li><code>hashline_edit</code> + <code>apply_patch</code> 공존.</li>
+<li>doom-loop detector가 실제 1회 이상 차단.</li>
+</ul>
+<hr />
+<h2 id="immediate-wins-오늘-당장-각-1h">6. Immediate Wins — 오늘 당장 (각 &lt;1h)</h2>
+<ol type="1">
+<li><strong>System prompt 계층화</strong>: <code>prompts/{core,super,dev,plan}.md</code> 분리, <code>//go:embed</code>.</li>
+<li><strong>Tool description에 negative example</strong>: <code>file_edit: DO NOT use for new files</code>, <code>shell_exec: DO NOT use for search</code>, <code>hashline_edit: &quot;3#e4d9&quot;</code> 예시.</li>
+<li><strong>Doom loop detector</strong>: 최근 3 iteration tool hash 동일 시 abort.</li>
+<li><strong>Dangerous regex 확장</strong>: <code>export\s+(AWS|OPENAI|ANTHROPIC|GITHUB)_.*KEY</code>, <code>curl -H &#39;Authorization</code>, <code>dd if= of=/dev/</code>, fork bomb.</li>
+<li><strong><code>.hanimo.md</code> 상위 디렉토리 탐색</strong> 2단계.</li>
+<li><strong>Read-before-write 강제</strong>: 세션 local set, 미조회 파일 편집 시 경고.</li>
+</ol>
+<hr />
+<h2 id="techai_code-와의-관계-sync-tracker-요약">7. TECHAI_CODE 와의 관계 (sync-tracker 요약)</h2>
+<h3 id="방향성">7.1 방향성</h3>
+<ul>
+<li><strong>기본 단방향</strong>: hanimo → TECHAI_CODE (catch-up).</li>
+<li><strong>역방향 PoC</strong>: Skills / Repo-map / Hooks / apply_patch 은 TECHAI_CODE 에서 먼저 실험 → hanimo로 흡수.</li>
+</ul>
+<h3 id="sync-상태-하이라이트">7.2 Sync 상태 하이라이트</h3>
+<table>
+<thead>
+<tr class="header">
+<th>항목</th>
+<th style="text-align: center;">hanimo</th>
+<th style="text-align: center;">TECHAI</th>
+<th>방향</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>hashline tools</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">📋</td>
+<td>→TECHAI (T1-1 ⭐)</td>
+</tr>
+<tr class="even">
+<td>Plan 실제 read-only</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️ 🔥</td>
+<td>→TECHAI (T1-2 핫픽스)</td>
+</tr>
+<tr class="odd">
+<td>다중 provider 추상화</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">📋</td>
+<td>→TECHAI (T1-5)</td>
+</tr>
+<tr class="even">
+<td>git/diagnostics tools</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">📋</td>
+<td>→TECHAI (T1-3,4)</td>
+</tr>
+<tr class="odd">
+<td>MCP stdio/SSE</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">📋/❌</td>
+<td>→TECHAI (T1-6)</td>
+</tr>
+<tr class="even">
+<td>Command palette / i18n / themes</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">📋</td>
+<td>→TECHAI (T3)</td>
+</tr>
+<tr class="odd">
+<td>Repo-map / Skill / Hooks / apply_patch</td>
+<td style="text-align: center;">📋</td>
+<td style="text-align: center;">📋</td>
+<td>TECHAI에서 PoC 먼저</td>
+</tr>
+</tbody>
+</table>
+<h3 id="커밋-컨벤션">7.3 커밋 컨벤션</h3>
+<ul>
+<li><code>port(hashline): from hanimo@&lt;sha&gt;</code> — 포팅</li>
+<li><code>poc(skill): initial loader</code> — TECHAI 쪽 실험</li>
+<li><code>sync(docs): update sync-tracker</code> — 본 문서/트래커 갱신</li>
+</ul>
+<h3 id="보안-이슈-techai_code-plan-모드">7.4 🔥 보안 이슈 — TECHAI_CODE Plan 모드</h3>
+<ul>
+<li><code>internal/llm/models.go</code> 의 Plan <code>Tools</code> 목록에 <code>file_write</code>, <code>file_edit</code> 포함 → 실제로 파일 수정 가능.</li>
+<li><strong>조치</strong>: read-only 화이트리스트로 축소. <code>ReadOnlyTools()</code> 헬퍼 도입 후 Plan에서 이것만 반환.</li>
+<li>우선순위 <strong>IW-1 / T1-2 (최우선)</strong>.</li>
+</ul>
+<hr />
+<h2 id="다음-밀수-next-drop-우선-처리-순서">8. 다음 밀수 (Next Drop — 우선 처리 순서)</h2>
+<ol type="1">
+<li>🔥 <strong>IW-1</strong>: TECHAI_CODE Plan read-only 핫픽스.</li>
+<li>⭐ <strong>T1-1</strong>: hashline 포팅 (TECHAI 업그레이드의 상징).</li>
+<li><strong>IW-2,3</strong>: prompt embed 분리 + clarifyFirstDirective (양쪽 동시).</li>
+<li><strong>T1-3,4</strong>: git/diagnostics 도구 포팅.</li>
+<li><strong>Doom-loop detector</strong> — 양쪽 동시.</li>
+<li><strong>Repo-map PoC</strong> — TECHAI_CODE에서.</li>
+<li><strong>Skill PoC</strong> — TECHAI_CODE에서.</li>
+<li><strong>hanimo A1 — Repo-map 풀 구현</strong>.</li>
+<li><strong>hanimo A2 — Skill 풀 구현</strong>.</li>
+<li><strong>hanimo A3 — Hooks</strong>.</li>
+</ol>
+<hr />
+<h2 id="경쟁-도구-비교표-요약">9. 경쟁 도구 비교표 (요약)</h2>
+<table>
+<thead>
+<tr class="header">
+<th>기능</th>
+<th style="text-align: center;">hanimo</th>
+<th style="text-align: center;">Claude Code</th>
+<th style="text-align: center;">Aider</th>
+<th style="text-align: center;">Crush</th>
+<th style="text-align: center;">Codex CLI</th>
+<th style="text-align: center;">opencode</th>
+<th style="text-align: center;">Gemini CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Multi-provider</td>
+<td style="text-align: center;">✅(14+)</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="even">
+<td>Hash-anchored edit</td>
+<td style="text-align: center;">✅⭐</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="odd">
+<td>Repo-map (tree-sitter)</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+</tr>
+<tr class="even">
+<td>Skill system</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="odd">
+<td>Hooks</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="even">
+<td>Subagent / context fork</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="odd">
+<td>apply_patch unified-diff</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+</tr>
+<tr class="even">
+<td>MCP</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+</tr>
+<tr class="odd">
+<td>한국어 intent/clarify</td>
+<td style="text-align: center;">✅⭐</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+</tr>
+<tr class="even">
+<td>TUI 품질 (Bubble Tea)</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+</tr>
+<tr class="odd">
+<td>Permission 5-mode</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="even">
+<td>LSP 통합</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr class="odd">
+<td>Prompt caching</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+<td style="text-align: center;">⚠️</td>
+</tr>
+</tbody>
+</table>
+<p><strong>결론</strong>: hanimo의 유일무이한 자산은 <strong>hashline_edit + 한국어 친화</strong> 둘. Repo-map/Skill/Hooks/Subagent 4 종 세트를 잡으면 상위 티어 진입.</p>
+<hr />
+<h2 id="즉시-가치-top-5-투입-대비-효과">10. 즉시 가치 Top 5 (투입 대비 효과)</h2>
+<ol type="1">
+<li><strong>Repo-map (A1)</strong> — 대형 레포 UX 결정적, 비용 절감, 한 번 해두면 모든 세션 이득.</li>
+<li><strong>Skill 시스템 (A2)</strong> — 사용자 락인, 반복 작업 자동화, Claude Code 표준 호환.</li>
+<li><strong>Hooks (A3)</strong> — 에이전트를 조직 워크플로에 결합, gofmt/test/lint 자동 연동.</li>
+<li><strong>Subagent (B1)</strong> — 토큰 폭발 억제, Deep Agent 품질 2배.</li>
+<li><strong>Prompt caching (C2)</strong> — 비용 90% 절감, 1일 안에 구현 가능.</li>
+</ol>
+<hr />
+<h2 id="파일-패키지-매핑-구현-가이드">11. 파일 / 패키지 매핑 (구현 가이드)</h2>
+<pre><code>hanimo/internal/
+├── repomap/       [A1] parser.go graph.go rank.go cache.go inject.go
+├── skills/        [A2] loader.go frontmatter.go registry.go invoke.go extractor.go
+├── hooks/         [A3] events.go loader.go executor.go handlers/{command,http,prompt,skill}.go
+├── permission/    [A4] engine.go rules.go modes.go
+├── agents/
+│   ├── subagent.go    [B1]
+│   └── summarizer.go
+├── worktree/      [B2] manager.go
+├── tools/
+│   └── applypatch.go  [B4]
+└── lsp/           [C3] client.go gopls.go</code></pre>
+<h3 id="기존-파일-수정-지점">기존 파일 수정 지점</h3>
+<table>
+<colgroup>
+<col style="width: 50%"></col>
+<col style="width: 50%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>파일</th>
+<th>수정</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>internal/app/app.go</code></td>
+<td>hook 훅 5곳, subagent spawn 라우팅, permission 주입</td>
+</tr>
+<tr class="even">
+<td><code>internal/llm/prompt.go</code></td>
+<td>embed 분리, repo-map/skill description 주입</td>
+</tr>
+<tr class="odd">
+<td><code>internal/llm/compaction.go</code></td>
+<td>PostCompact hook + cache breakpoint</td>
+</tr>
+<tr class="even">
+<td><code>internal/tools/registry.go</code></td>
+<td>새 도구 등록 (repomap_*, spawn_subagent, apply_patch)</td>
+</tr>
+<tr class="odd">
+<td><code>internal/tools/shell.go</code></td>
+<td>dangerous regex 확장 + credential scrub</td>
+</tr>
+<tr class="even">
+<td><code>internal/tools/file.go</code></td>
+<td>read-before-write 강제</td>
+</tr>
+<tr class="odd">
+<td><code>internal/session/store.go</code></td>
+<td>fork, worktree 링크</td>
+</tr>
+<tr class="even">
+<td><code>internal/config/config.go</code></td>
+<td>hooks / permissions / skills_dir / repomap 섹션</td>
+</tr>
+<tr class="odd">
+<td><code>internal/ui/palette.go</code></td>
+<td>skill / hook / session browser 엔트리</td>
+</tr>
+<tr class="even">
+<td><code>cmd/hanimo/main.go</code></td>
+<td><code>--resume</code>, <code>--output json</code>, <code>--permission</code> 플래그</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="참고-문서-이-master의-원본">12. 참고 문서 (이 MASTER의 원본)</h2>
+<ul>
+<li><code>docs/research/reference-tools-survey-2026-04.md</code> — 10개 도구 상세 조사 + 출처.</li>
+<li><code>docs/roadmap/enhancement-plan-2026-04.md</code> — Phase A/B/C 풀 플랜.</li>
+<li><code>docs/porting/sync-tracker-2026-04.md</code> — hanimo ↔︎ TECHAI_CODE 1:1 매핑.</li>
+<li>(TECHAI_CODE 쪽) <code>TECHAI_CODE/docs/roadmap/enhancement-plan-2026-04.md</code> — Track 1 catch-up / Track 2 PoC / Track 3 UX parity.</li>
+</ul>
+<hr />
+<p><em>Last updated: 2026-04-11 · hanimo v0.2.x 기준</em></p>
+</body>
+</html>

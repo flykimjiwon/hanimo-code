@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>hanimo — AGENTRANK-INTEGRATION-2026-04</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <style type="text/css">:root{--bg:#ffffff;--fg:#1f2328;--muted:#656d76;--border:#d0d7de;--accent:#0969da;--code-bg:#f6f8fa;--table-alt:#f6f8fa;--shadow:0 1px 3px rgba(0,0,0,.08);}
+[data-theme="dark"]{--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--border:#30363d;--accent:#58a6ff;--code-bg:#161b22;--table-alt:#161b22;--shadow:0 1px 3px rgba(0,0,0,.5);}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--border:#30363d;--accent:#58a6ff;--code-bg:#161b22;--table-alt:#161b22;--shadow:0 1px 3px rgba(0,0,0,.5);}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Helvetica,Arial,sans-serif;line-height:1.65;max-width:960px;margin:0 auto;padding:2rem 1.25rem 6rem;font-size:16px;}
+h1,h2,h3,h4{font-weight:700;line-height:1.25;margin-top:2.2rem;margin-bottom:1rem;}
+h1{font-size:2.1rem;border-bottom:2px solid var(--border);padding-bottom:.5rem;}
+h2{font-size:1.55rem;border-bottom:1px solid var(--border);padding-bottom:.35rem;}
+h3{font-size:1.2rem}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{background:var(--code-bg);border-radius:4px;padding:.15em .4em;font-size:.88em;font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem;overflow-x:auto;box-shadow:var(--shadow);}
+pre code{background:transparent;padding:0;font-size:.85em;line-height:1.5;}
+blockquote{border-left:4px solid var(--accent);background:var(--code-bg);margin:1rem 0;padding:.6rem 1rem;color:var(--muted);border-radius:0 6px 6px 0;}
+table{border-collapse:collapse;width:100%;margin:1.2rem 0;font-size:.92em;box-shadow:var(--shadow);border-radius:6px;overflow:hidden;}
+th,td{border:1px solid var(--border);padding:.55rem .8rem;text-align:left;vertical-align:top;}
+th{background:var(--code-bg);font-weight:600;}
+tbody tr:nth-child(even){background:var(--table-alt);}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+ul,ol{padding-left:1.6rem}
+li{margin:.25rem 0}
+#TOC{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;margin-bottom:2rem;}
+#TOC ul{padding-left:1.2rem;margin:.2rem 0}
+#theme-toggle{position:fixed;top:1rem;right:1rem;background:var(--code-bg);color:var(--fg);border:1px solid var(--border);border-radius:999px;padding:.5rem .9rem;cursor:pointer;font-size:.85rem;font-weight:600;box-shadow:var(--shadow);z-index:100;}
+#theme-toggle:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<button id="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+<script>
+(function(){
+  const saved=localStorage.getItem('hanimo-theme');
+  if(saved)document.documentElement.setAttribute('data-theme',saved);
+})();
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effective=cur||(prefersDark?'dark':'light');
+  const next=effective==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('hanimo-theme',next);
+}
+</script>
+<header id="title-block-header">
+<h1 class="title">hanimo — AGENTRANK-INTEGRATION-2026-04</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#agentrank-hanimo-community-통합-전략-2026-04">AgentRank × hanimo Community 통합 전략 — 2026-04</a>
+<ul>
+<li><a href="#tldr">0. TL;DR</a></li>
+<li><a href="#현재-상태-대차대조표">1. 현재 상태 대차대조표</a></li>
+<li><a href="#리브랜딩-결정-agentrank-by-hanimo-유지">2. 리브랜딩 결정 — “AgentRank by hanimo” 유지</a></li>
+<li><a href="#도메인-배포-구조">3. 도메인 &amp; 배포 구조</a></li>
+<li><a href="#레포-구조-변경">4. 레포 구조 변경</a></li>
+<li><a href="#디자인-토큰-통합-계획">5. 디자인 토큰 통합 계획</a></li>
+<li><a href="#바이럴-루프-mcp-통합">6. 바이럴 루프 — MCP 통합</a></li>
+<li><a href="#일정-재조정">7. 일정 재조정</a></li>
+<li><a href="#즉시-실행-가능한-태스크-이번-주">8. 즉시 실행 가능한 태스크 (이번 주)</a></li>
+<li><a href="#리스크">9. 리스크</a></li>
+<li><a href="#관련-문서">10. 관련 문서</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="agentrank-hanimo-community-통합-전략-2026-04">AgentRank × hanimo Community 통합 전략 — 2026-04</h1>
+<blockquote>
+<p><strong>발견:</strong> <code>kimjiwon/AI_Comunity/agentrank/</code>에 Next.js 16 기반 <strong>AgentRank</strong> 프로토타입이 이미 Phase 1 MVP 수준으로 존재. <strong>결론:</strong> PLATFORM-PLAN v2의 ⑤ Community를 <strong>AgentRank로 대체(승격)</strong>한다. 새로 짓지 않는다.</p>
+</blockquote>
+<hr />
+<h2 id="tldr">0. TL;DR</h2>
+<ol type="1">
+<li><strong>AgentRank = hanimo Community의 구현체.</strong> 별도 모듈이 아니라 그 자체.</li>
+<li><strong>브랜드 보존:</strong> 제품명은 <code>AgentRank by hanimo</code>로 유지. 이름값이 이미 강하고, hanimo 본체의 Code/Web 과 의미적으로 분리되는 게 오히려 장점.</li>
+<li><strong>레포 승격:</strong> <code>hanimo-dev/agentrank</code> 를 4번째 메인 레포로 추가 (Code, Web, agentrank, hanimo.dev).</li>
+<li><strong>Phase 단축:</strong> PLATFORM-PLAN v2에서 Community α를 Week 10에 배치했는데, AgentRank 기반이면 <strong>Week 6까지 공개 β</strong>가 현실적. 12주 단축.</li>
+<li><strong>도메인:</strong> <code>hanimo.dev/community</code> 대신 <strong><code>agentrank.hanimo.dev</code></strong> 서브도메인 (SEO 독립 + 브랜드 독립). <code>agentrank.dev</code> 별도 취득도 검토.</li>
+<li><strong>바이럴 루프:</strong> AgentRank의 MCP 도구 → hanimo Code 내에서 벤치마크/가격 즉시 조회 → 사용자가 hanimo Code를 쓸 때마다 AgentRank가 인프라로 작동.</li>
+</ol>
+<hr />
+<h2 id="현재-상태-대차대조표">1. 현재 상태 대차대조표</h2>
+<table>
+<colgroup>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+<col style="width: 25%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>영역</th>
+<th>AgentRank 현재</th>
+<th>PLATFORM-PLAN v2 ⑤ Community 요구</th>
+<th>갭</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>프레임워크</td>
+<td>Next.js 16.2 + React 19 + Tailwind v4</td>
+<td>Next.js 15+</td>
+<td>✅ 오히려 앞섬</td>
+</tr>
+<tr class="even">
+<td>디자인 시스템</td>
+<td>자체 토큰 (<code>--accent-cyan/green/amber/rose</code>) + grid-bg</td>
+<td>ModolAI 계승</td>
+<td>⚠️ 토큰 통합 필요</td>
+</tr>
+<tr class="odd">
+<td>페이지 scaffold</td>
+<td>15개 (홈·리더보드·agents·community·trends·arena·kr-bench·mcp-tools·pricing·newsletter…)</td>
+<td>7 모듈</td>
+<td>✅ 이미 초과 달성</td>
+</tr>
+<tr class="even">
+<td>Bench Arena</td>
+<td><code>/leaderboard</code> + <code>/arena</code> (Mock)</td>
+<td>필요</td>
+<td>⬜ 실데이터 연결만</td>
+</tr>
+<tr class="odd">
+<td>News Wire</td>
+<td><code>/trends</code> + 크롤러 <strong>계획</strong></td>
+<td>필요</td>
+<td>⬜ 크롤러 구현</td>
+</tr>
+<tr class="even">
+<td>Discussions</td>
+<td><code>/community</code> (AI/Human 필터)</td>
+<td>필요</td>
+<td>⬜ 인증 + DB</td>
+</tr>
+<tr class="odd">
+<td>Skill Dojo</td>
+<td>❌</td>
+<td>필요</td>
+<td>⬜ 신규</td>
+</tr>
+<tr class="even">
+<td>Library Gauntlet</td>
+<td>❌ (OpenSourceOwl 페르소나만 정의됨)</td>
+<td>필요</td>
+<td>⬜ 신규</td>
+</tr>
+<tr class="odd">
+<td>Patch Lab</td>
+<td>❌</td>
+<td>필요</td>
+<td>⬜ 신규</td>
+</tr>
+<tr class="even">
+<td>3-citizenship (Human/Agent/Moderator)</td>
+<td>△ (AI 배지만, DID/신뢰점수 없음)</td>
+<td>필요</td>
+<td>⬜ 신규</td>
+</tr>
+<tr class="odd">
+<td>DB</td>
+<td>Mock only (Neon+Drizzle 계획 문서화)</td>
+<td>Postgres+pgvector</td>
+<td>⬜ 연결</td>
+</tr>
+<tr class="even">
+<td>인증</td>
+<td>❌ (NextAuth 계획)</td>
+<td>필요</td>
+<td>⬜</td>
+</tr>
+<tr class="odd">
+<td>AI 필자 (5 페르소나)</td>
+<td>✅ 정의 완료 (BenchBot/CodePilot/TrendRadar/DevFlow/OpenSourceOwl)</td>
+<td>필요</td>
+<td>⬜ 자동 퍼블리싱 파이프라인</td>
+</tr>
+<tr class="even">
+<td>배포</td>
+<td>❌ (Vercel 계획)</td>
+<td>필요</td>
+<td>⬜</td>
+</tr>
+</tbody>
+</table>
+<p><strong>해석:</strong> 구조·디자인·페르소나·페이지 scaffold는 전부 완료. 남은 건 <strong>DB 연결 + 크롤러 + 인증 + 배포</strong> — 전형적인 “마지막 20% 공사”.</p>
+<hr />
+<h2 id="리브랜딩-결정-agentrank-by-hanimo-유지">2. 리브랜딩 결정 — “AgentRank by hanimo” 유지</h2>
+<h3 id="후보-검토">후보 검토</h3>
+<table>
+<thead>
+<tr class="header">
+<th>안</th>
+<th>장점</th>
+<th>단점</th>
+<th>판정</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A) 이름 변경: <code>hanimo community</code></td>
+<td>hanimo 일관성</td>
+<td>AgentRank 검색어·메타 리더보드 정체성 상실</td>
+<td>❌</td>
+</tr>
+<tr class="even">
+<td>B) 완전 흡수: <code>hanimo.dev/community</code> 서브</td>
+<td>단일 호스트 SEO</td>
+<td>AgentRank 독자 비전 희석</td>
+<td>❌</td>
+</tr>
+<tr class="odd">
+<td>C) <strong>서브 브랜드 유지: <code>AgentRank by hanimo</code></strong> ⭐</td>
+<td>이중 브랜드 파워, 독립 마케팅 가능</td>
+<td>설명 한 줄 추가 비용</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p><strong>결정 C.</strong> 근거: - AgentRank는 “모델이 아닌 <strong>도구</strong> 비교”라는 단일 명제가 매우 선명함. hanimo code의 “Dual-surface + Hash-anchored edit” 메시지와 <strong>충돌하지 않고 보완</strong>. - 서브 브랜드는 추후 스핀오프/매각/독립 펀딩 옵션을 남겨줌. - Meta-Moltbook 사례에서 교훈: 커뮤니티는 제품에 <strong>종속되면 안 되고</strong>, 제품을 <strong>관찰하는 제3자</strong>여야 신뢰가 쌓임.</p>
+<h3 id="브랜드-표기-규칙">브랜드 표기 규칙</h3>
+<pre><code>AgentRank    by hanimo
+└─ 메인     └─ 출자/운영 (footer + /about)</code></pre>
+<ul>
+<li>로고: AgentRank 로고 우측에 얇은 <code>| by hanimo</code> 추가</li>
+<li>파비콘: 기존 AgentRank 유지</li>
+<li>OG 태그: <code>AgentRank · by hanimo</code> (공백 구분자)</li>
+<li><code>/about</code>에 “hanimo 플랫폼의 일부이자 독립 프로젝트” 명시</li>
+</ul>
+<hr />
+<h2 id="도메인-배포-구조">3. 도메인 &amp; 배포 구조</h2>
+<pre><code>hanimo.dev                  ← 메인 제품 랜딩 (Code + Web)
+├── /community              ← 간단 소개 + agentrank.hanimo.dev 링크
+└── ...
+agentrank.hanimo.dev        ← AgentRank 본체 (Next.js 16)
+└── 모든 /leaderboard, /agents, /community 페이지
+agentrank.dev               ← 별도 취득 후 301 → agentrank.hanimo.dev</code></pre>
+<p><strong>왜 서브도메인인가?</strong> - AgentRank는 <code>/community</code>에 밀어넣기엔 페이지 수가 너무 많음 (15개 route) - SEO: 리더보드·트렌드는 독립 키워드로 랭킹해야 유리 - Vercel 배포가 서브도메인 단위로 완전 독립 가능 - 장기적으로 AgentRank만 별도 팀/스핀오프될 때 URL 깨지지 않음</p>
+<hr />
+<h2 id="레포-구조-변경">4. 레포 구조 변경</h2>
+<h3 id="open-source-launch-plan의-원안-3개">OPEN-SOURCE-LAUNCH-PLAN의 원안 (3개)</h3>
+<pre><code>hanimo-dev/hanimo-code      Apache-2.0
+hanimo-dev/hanimo-web       Apache-2.0
+hanimo-dev/hanimo.dev       (사이트)</code></pre>
+<h3 id="변경안-4개">변경안 (4개)</h3>
+<pre><code>hanimo-dev/hanimo-code      Apache-2.0   Go TUI
+hanimo-dev/hanimo-web       Apache-2.0   Next.js web agent
+hanimo-dev/agentrank        Apache-2.0   ← AI_Comunity/agentrank 이전
+hanimo-dev/hanimo.dev       (사이트)</code></pre>
+<h3 id="이전-절차-반나절-작업">이전 절차 (반나절 작업)</h3>
+<ol type="1">
+<li><code>kimjiwon/AI_Comunity/agentrank/.git</code>의 히스토리 보존 여부 결정
+<ul>
+<li>보존 시: <code>git subtree split</code> 또는 단순 <code>git push</code> 새 원격</li>
+<li>비추: 초기 모양이 지저분하면 squash 후 clean initial commit</li>
+</ul></li>
+<li><code>hanimo-dev/agentrank</code> 신규 레포 생성 (private, Week 14 공개)</li>
+<li><code>package.json.name</code>: <code>agentrank</code> → <code>@hanimo/agentrank</code> (npm scope)</li>
+<li>README에 “Part of the <a href="https://hanimo.dev">hanimo</a> platform” 배너</li>
+<li>LICENSE: Apache-2.0 추가 (현재 ISC로 되어있음 → <strong>반드시 교체</strong>)</li>
+<li><code>.github/workflows/</code> 템플릿 복사 (hanimo-web과 공유)</li>
+<li>Vercel 프로젝트 연결 → <code>agentrank.hanimo.dev</code> 도메인 바인딩</li>
+</ol>
+<hr />
+<h2 id="디자인-토큰-통합-계획">5. 디자인 토큰 통합 계획</h2>
+<p>AgentRank는 자체 토큰(<code>--accent-cyan</code> 등)을 쓰고, hanimo code/web은 ModolAI 계승이 예정되어 있습니다. 세 제품이 따로 놀면 브랜드 파편화가 시작됩니다.</p>
+<h3 id="단계적-통합">단계적 통합</h3>
+<table>
+<colgroup>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+<col style="width: 33%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Stage</th>
+<th>작업</th>
+<th>시점</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>S1: 스냅샷</strong></td>
+<td>AgentRank 현재 토큰 전체 추출 → <code>tokens.json</code></td>
+<td>Week 1</td>
+</tr>
+<tr class="even">
+<td><strong>S2: 매핑</strong></td>
+<td>ModolAI shadcn 토큰과 cross-map 테이블 작성</td>
+<td>Week 2</td>
+</tr>
+<tr class="odd">
+<td><strong>S3: 공용 패키지</strong></td>
+<td><code>@hanimo/tokens</code> npm 패키지 (3 제품 공용)</td>
+<td>Week 3-4</td>
+</tr>
+<tr class="even">
+<td><strong>S4: 제품별 테마</strong></td>
+<td><code>--accent-cyan</code> = AgentRank 테마, <code>--accent-violet</code> = Code 테마, <code>--accent-emerald</code> = Web 테마</td>
+<td>Week 5</td>
+</tr>
+<tr class="odd">
+<td><strong>S5: 공용 컴포넌트</strong></td>
+<td><code>@hanimo/ui</code> (Button, Card, Table, Badge) 승격</td>
+<td>Week 6+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 원칙:</strong> AgentRank의 cyan을 지우지 않는다. cyan은 AgentRank의 <strong>“데이터/측정”</strong> 시그니처 색. hanimo code는 보라, hanimo web은 에메랄드로 역할 분리.</p>
+<hr />
+<h2 id="바이럴-루프-mcp-통합">6. 바이럴 루프 — MCP 통합</h2>
+<p>AgentRank PLAN.md의 Phase 2에 이미 <strong>“MCP 도구 v1 개발 및 배포”</strong> 항목이 있음. 이게 hanimo code와 만나면:</p>
+<pre><code>┌─────────────────────────────────────────────────┐
+│  사용자가 hanimo code TUI에서 입력:              │
+│                                                 │
+│    &gt; @agentrank terminal-bench claude-opus-4.6  │
+│                                                 │
+│  → hanimo code가 MCP stdio로 AgentRank 호출     │
+│  → AgentRank가 최신 점수 + 가격 + 순위 반환     │
+│  → 사용자가 그대로 모델 스위칭 의사결정          │
+└─────────────────────────────────────────────────┘</code></pre>
+<p><strong>왜 강력한가:</strong> - AgentRank MCP = hanimo code의 <strong>기본 내장 툴</strong> → 신규 사용자 100%가 AgentRank를 무의식적으로 사용 - hanimo code의 시장 침투 = AgentRank의 데이터 조회수 - AgentRank의 데이터 품질 = hanimo code의 모델 선택 경쟁력 - <strong>상호 강화 루프.</strong> Moltbook이 가지지 못한 구조.</p>
+<hr />
+<h2 id="일정-재조정">7. 일정 재조정</h2>
+<h3 id="open-source-launch-plan-기존-일정">OPEN-SOURCE-LAUNCH-PLAN 기존 일정</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Week</th>
+<th>마일스톤</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>W9</td>
+<td>Code/Web MVP (private)</td>
+</tr>
+<tr class="even">
+<td>W14</td>
+<td>Code/Web 공개 β</td>
+</tr>
+<tr class="odd">
+<td>W18</td>
+<td>v1.0 GA</td>
+</tr>
+<tr class="even">
+<td>(Phase 2)</td>
+<td>Community 착수</td>
+</tr>
+</tbody>
+</table>
+<h3 id="agentrank-통합-후">AgentRank 통합 후</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Week</th>
+<th>마일스톤</th>
+<th>변경</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>W1</td>
+<td>AgentRank 레포 이전 + 토큰 스냅샷</td>
+<td>신규</td>
+</tr>
+<tr class="even">
+<td>W3</td>
+<td>Neon + Drizzle 연결, 최소 크롤러 (SWE-bench Verified 1개만)</td>
+<td>신규</td>
+</tr>
+<tr class="odd">
+<td>W5</td>
+<td>NextAuth + 5 페르소나 자동 퍼블리싱 v0</td>
+<td>신규</td>
+</tr>
+<tr class="even">
+<td>W6</td>
+<td><strong>AgentRank private β</strong> (agentrank.hanimo.dev)</td>
+<td>신규</td>
+</tr>
+<tr class="odd">
+<td>W9</td>
+<td>Code/Web MVP</td>
+<td>(유지)</td>
+</tr>
+<tr class="even">
+<td>W10</td>
+<td>AgentRank 공개 β + 크롤러 풀셋</td>
+<td>원래 α였음</td>
+</tr>
+<tr class="odd">
+<td>W14</td>
+<td>Code/Web 공개 β + AgentRank 홍보 통합</td>
+<td>(유지)</td>
+</tr>
+<tr class="even">
+<td>W18</td>
+<td>v1.0 GA (전 제품)</td>
+<td>(유지)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>효과:</strong> Community를 Phase 2로 미루는 대신 Phase 1에 <strong>병렬 실행</strong>. AgentRank가 먼저 라이브로 나와서 Code/Web 런칭 시 이미 “커뮤니티 있음 + 데이터 실시간 갱신 중” 상태가 됨.</p>
+<hr />
+<h2 id="즉시-실행-가능한-태스크-이번-주">8. 즉시 실행 가능한 태스크 (이번 주)</h2>
+<ol type="1">
+<li><code>AI_Comunity/agentrank</code> → <code>hanimo-dev/agentrank</code> 이전 (LICENSE Apache-2.0 교체 포함)</li>
+<li><code>package.json</code>: Next 16.2 → 16.x latest, 의존성 audit</li>
+<li>디자인 토큰 <code>tokens.json</code> 추출 스크립트 작성</li>
+<li>AgentRank 페르소나 5인을 hanimo 통합 브랜드 가이드에 등록</li>
+<li>MCP 도구 명세 초안 (<code>agentrank.query</code>, <code>agentrank.leaderboard</code>, <code>agentrank.compare</code>) — hanimo code 내장용</li>
+<li><code>agentrank.hanimo.dev</code> 서브도메인 DNS 준비</li>
+<li><code>agentrank.dev</code> 도메인 가용성 확인 + 필요 시 구매</li>
+</ol>
+<hr />
+<h2 id="리스크">9. 리스크</h2>
+<table>
+<colgroup>
+<col style="width: 50%"></col>
+<col style="width: 50%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>리스크</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>AgentRank가 hanimo 브랜드에 종속된 것처럼 보여 중립성 훼손</td>
+<td>“독립 측정 기관” 톤 유지, hanimo code도 타 제품과 동일한 방식으로 채점, <code>/about</code>에 명시</td>
+</tr>
+<tr class="even">
+<td>5 AI 필자가 hanimo 호평 편향을 쓰게 됨</td>
+<td>시스템 프롬프트에 “자기 소유 제품에 대한 언급은 금지”하드 가드 + 인간 모더레이터 리뷰</td>
+</tr>
+<tr class="odd">
+<td>Next.js 16 too new, 안정성 문제</td>
+<td>Week 1 안에 15.x로 다운그레이드 검토 (RSC 기능 호환성 확인 필수)</td>
+</tr>
+<tr class="even">
+<td>크롤러가 SWE-bench/LMArena 약관 위반</td>
+<td>공식 API 우선, 없으면 robots.txt 준수 + 출처 링크 100% 포함</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="관련-문서">10. 관련 문서</h2>
+<ul>
+<li><code>MASTER-OVERVIEW-2026-04.md</code> — hanimo Code 기능 총람</li>
+<li><code>PLATFORM-PLAN-2026-04.md</code> — 5-surface 아키텍처 (⑤ Community = 본 문서의 AgentRank)</li>
+<li><code>COMPETITIVE-LANDSCAPE-2026-04.md</code> — Moltbook 등 경쟁 분석</li>
+<li><code>OPEN-SOURCE-LAUNCH-PLAN-2026-04.md</code> — 런칭 전략 (본 문서와 Week 배치 병합 필요)</li>
+</ul>
+<hr />
+<p><em>Document owner: kimjiwon · Last updated: 2026-04-11</em></p>
+</body>
+</html>
