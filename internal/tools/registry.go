@@ -10,6 +10,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/flykimjiwon/hanimo/internal/config"
+	"github.com/flykimjiwon/hanimo/internal/knowledge"
 )
 
 type paramSchema struct {
@@ -145,6 +146,21 @@ func AllTools() []openai.Tool {
 						"path":    {Type: "string", Description: "Base directory to search in (default: current directory)"},
 					},
 					Required: []string{"pattern"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "knowledge_search",
+				Description: "Search the user's knowledge base (.hanimo/knowledge/) for docs on a topic. Returns excerpts from matching md/txt files. Use when the question touches a framework, convention, or concept that may be in the knowledge folder. DO NOT guess — search first.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"query":       {Type: "string", Description: "Search query (keywords)"},
+						"max_results": {Type: "string", Description: "Max results (default: 3)"},
+					},
+					Required: []string{"query"},
 				},
 			},
 		},
@@ -695,6 +711,25 @@ func executeInner(name string, argsJSON string) string {
 			return fmt.Sprintf("Error: %v", err)
 		}
 		return result
+
+	case "knowledge_search":
+		query, _ := args["query"].(string)
+		if query == "" {
+			return "Error: query is required"
+		}
+		maxR := 3
+		if s, ok := args["max_results"].(string); ok && s != "" {
+			var n int
+			if _, err := fmt.Sscanf(s, "%d", &n); err == nil && n > 0 {
+				maxR = n
+			}
+		}
+		idx := knowledge.GlobalIndex
+		if idx == nil || idx.Count() == 0 {
+			return "knowledge 폴더가 비어있거나 없습니다. .hanimo/knowledge/ 에 md/txt 파일을 넣어주세요."
+		}
+		results := idx.Search(query, maxR)
+		return knowledge.FormatSearchResults(results, query)
 
 	case "diagnostics":
 		dir, _ := args["dir"].(string)

@@ -198,13 +198,22 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 	}
 	projectCtx += llm.GatherSystemContext()
 
-	// Initialize knowledge store
+	// Initialize knowledge store (built-in embedded docs)
 	var knowledgeInj *knowledge.Injector
 	if knowledgeStore, err := knowledge.NewStore(hanimo.KnowledgeFS); err == nil {
 		knowledgeInj = knowledge.NewInjector(knowledgeStore, 8192)
 		config.DebugLog("[KNOWLEDGE] loaded %d documents", knowledgeStore.DocCount())
 	} else {
 		config.DebugLog("[KNOWLEDGE] failed to load: %v", err)
+	}
+
+	// Scan user knowledge folder (.hanimo/knowledge/) for md/txt docs.
+	// Inject a table-of-contents into the system prompt so the LLM
+	// knows what's available and can call knowledge_search when needed.
+	knowledge.GlobalIndex = knowledge.ScanUserDocs()
+	if knowledge.GlobalIndex.Count() > 0 {
+		projectCtx += knowledge.GlobalIndex.TableOfContents()
+		config.DebugLog("[USER-KNOWLEDGE] indexed %d docs from %s", knowledge.GlobalIndex.Count(), knowledge.GlobalIndex.Root())
 	}
 
 	m := Model{
@@ -1211,6 +1220,42 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		m.msgs = append(m.msgs, ui.Message{
 			Role: ui.RoleSystem, Content: result, Timestamp: time.Now(),
 		})
+		m.updateViewport()
+		return true, nil
+
+	case "/knowledge":
+		switch arg {
+		case "reload":
+			knowledge.GlobalIndex = knowledge.ScanUserDocs()
+			cnt := knowledge.GlobalIndex.Count()
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  Knowledge 재색인 완료: %d 문서", cnt), Timestamp: time.Now(),
+			})
+		case "list", "":
+			idx := knowledge.GlobalIndex
+			if idx == nil || idx.Count() == 0 {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  .hanimo/knowledge/ 에 md/txt 파일이 없습니다.", Timestamp: time.Now(),
+				})
+			} else {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: idx.TableOfContents(), Timestamp: time.Now(),
+				})
+			}
+		default:
+			query := strings.TrimPrefix(arg, "search ")
+			idx := knowledge.GlobalIndex
+			if idx == nil || idx.Count() == 0 {
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: "  .hanimo/knowledge/ 에 md/txt 파일이 없습니다.", Timestamp: time.Now(),
+				})
+			} else {
+				results := idx.Search(query, 3)
+				m.msgs = append(m.msgs, ui.Message{
+					Role: ui.RoleSystem, Content: knowledge.FormatSearchResults(results, query), Timestamp: time.Now(),
+				})
+			}
+		}
 		m.updateViewport()
 		return true, nil
 
