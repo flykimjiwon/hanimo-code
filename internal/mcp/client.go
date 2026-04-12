@@ -131,7 +131,7 @@ func (c *Client) notify(method string, params interface{}) error {
 // Initialize performs the MCP initialization handshake.
 func (c *Client) Initialize(ctx context.Context) error {
 	initParams := map[string]interface{}{
-		"protocolVersion": "2024-11-05",
+		"protocolVersion": "2025-06-18",
 		"capabilities":    map[string]interface{}{},
 		"clientInfo": map[string]interface{}{
 			"name":    "hanimo",
