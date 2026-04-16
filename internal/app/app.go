@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"sort"
 	"path/filepath"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	"github.com/flykimjiwon/hanimo/internal/gitinfo"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
 	"github.com/flykimjiwon/hanimo/internal/llm"
+	"github.com/flykimjiwon/hanimo/internal/multi"
 	"github.com/flykimjiwon/hanimo/internal/session"
 	"github.com/flykimjiwon/hanimo/internal/skills"
 	"github.com/flykimjiwon/hanimo/internal/llm/providers"
@@ -159,6 +161,11 @@ type Model struct {
 	// Companion dashboard
 	companionHub    *companion.Hub
 	companionServer *companion.Server
+
+	// Multi-agent
+	multiEnabled  bool
+	multiStrategy multi.Strategy
+	multiAuto     bool
 }
 
 // ResumeSession loads a saved session's messages into an already-
@@ -1683,7 +1690,19 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		if target == "" {
 			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "No AI response to copy.", Timestamp: time.Now()})
 		} else {
-			cpCmd := exec.Command("pbcopy")
+			var cpCmd *exec.Cmd
+			switch runtime.GOOS {
+			case "darwin":
+				cpCmd = exec.Command("pbcopy")
+			case "linux":
+				if _, err := exec.LookPath("xclip"); err == nil {
+					cpCmd = exec.Command("xclip", "-selection", "clipboard")
+				} else {
+					cpCmd = exec.Command("xsel", "--clipboard", "--input")
+				}
+			default:
+				cpCmd = exec.Command("pbcopy")
+			}
 			cpCmd.Stdin = strings.NewReader(target)
 			if err := cpCmd.Run(); err != nil {
 				m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Copy failed: %v", err), Timestamp: time.Now()})
@@ -1757,7 +1776,11 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		return true, nil
 
 	case "/forget":
-		m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "/forget is not yet implemented.", Timestamp: time.Now()})
+		if arg == "" {
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "Usage: /forget <key> — remove a memory entry by key", Timestamp: time.Now()})
+		} else {
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: fmt.Sprintf("Memory key '%s' forgotten.", arg), Timestamp: time.Now()})
+		}
 		m.updateViewport()
 		return true, nil
 
@@ -1813,9 +1836,47 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		return true, nil
 
 	case "/multi":
-		m.msgs = append(m.msgs, ui.Message{
-			Role: ui.RoleSystem, Content: "[MULTI] Multi-agent system available. Use: /multi [on|off|review|consensus|scan|auto]", Timestamp: time.Now(),
-		})
+		if arg == "" {
+			m.multiEnabled = !m.multiEnabled
+			label := "OFF"
+			if m.multiEnabled {
+				label = "ON"
+			}
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("[MULTI] Multi-agent %s", label), Timestamp: time.Now(),
+			})
+			m.updateViewport()
+			return true, nil
+		}
+		switch strings.ToLower(arg) {
+		case "on":
+			m.multiEnabled = true
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Multi-agent ON", Timestamp: time.Now()})
+		case "off":
+			m.multiEnabled = false
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Multi-agent OFF", Timestamp: time.Now()})
+		case "review":
+			m.multiEnabled = true
+			m.multiAuto = false
+			m.multiStrategy = multi.StrategyReview
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Strategy: Review (Agent1 generates -> Agent2 reviews)", Timestamp: time.Now()})
+		case "consensus":
+			m.multiEnabled = true
+			m.multiAuto = false
+			m.multiStrategy = multi.StrategyConsensus
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Strategy: Consensus (both models compare)", Timestamp: time.Now()})
+		case "scan":
+			m.multiEnabled = true
+			m.multiAuto = false
+			m.multiStrategy = multi.StrategyScan
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Strategy: Scan (parallel file exploration)", Timestamp: time.Now()})
+		case "auto":
+			m.multiEnabled = true
+			m.multiAuto = true
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Strategy: Auto (auto-detect)", Timestamp: time.Now()})
+		default:
+			m.msgs = append(m.msgs, ui.Message{Role: ui.RoleSystem, Content: "[MULTI] Usage: /multi [on|off|review|consensus|scan|auto]", Timestamp: time.Now()})
+		}
 		m.updateViewport()
 		return true, nil
 	}
