@@ -29,7 +29,21 @@ type StreamChunk struct {
 	Content   string
 	Done      bool
 	Err       error
-	ToolCalls []ToolCallInfo // non-nil when AI wants to call tools
+	ToolCalls []ToolCallInfo  // non-nil when AI wants to call tools
+	Usage     *openai.Usage   // non-nil on the final chunk when the provider returns token counts
+}
+
+// tokenCountFromUsage extracts a total token count from a Usage struct.
+// Returns 0 for nil input. Falls back to PromptTokens+CompletionTokens when
+// TotalTokens is 0 (some providers omit it).
+func tokenCountFromUsage(u *openai.Usage) int {
+	if u == nil {
+		return 0
+	}
+	if u.TotalTokens != 0 {
+		return u.TotalTokens
+	}
+	return u.PromptTokens + u.CompletionTokens
 }
 
 type Client struct {

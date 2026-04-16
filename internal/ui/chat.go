@@ -173,6 +173,33 @@ func RenderStatusBar(model string, tokens int, elapsed time.Duration, mode int, 
 		}
 	}
 
+	// extras[2]: gitLabel (string) — branch name + dirty indicator
+	if len(extras) > 2 {
+		if gitLabel, ok := extras[2].(string); ok && gitLabel != "" {
+			gitStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#A78BFA"))
+			left += gitStyle.Render("  "+gitLabel)
+		}
+	}
+
+	// extras[3]: contextPercent (int) — context window usage %
+	if len(extras) > 3 {
+		if ctxPct, ok := extras[3].(int); ok && ctxPct > 0 {
+			ctxColor := lipgloss.Color("#6B7280") // gray (normal)
+			level := ContextLevel(ctxPct)
+			if level == ContextWarn {
+				ctxColor = lipgloss.Color("#FBBF24") // yellow
+			} else if level == ContextCritical {
+				ctxColor = lipgloss.Color("#F87171") // red
+			}
+			ctxStyle := lipgloss.NewStyle().Foreground(ctxColor)
+			label := fmt.Sprintf("ctx:%d%%", ctxPct)
+			if ctxPct < 1 {
+				label = "ctx:<1%"
+			}
+			left += ctxStyle.Render("  "+label)
+		}
+	}
+
 	if tokens > 0 {
 		left += Subtle.Render(fmt.Sprintf("  %dtok", tokens))
 	}

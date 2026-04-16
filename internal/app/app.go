@@ -20,7 +20,9 @@ import (
 
 	hanimo "github.com/flykimjiwon/hanimo"
 	"github.com/flykimjiwon/hanimo/internal/agents"
+	"github.com/flykimjiwon/hanimo/internal/companion"
 	"github.com/flykimjiwon/hanimo/internal/config"
+	"github.com/flykimjiwon/hanimo/internal/gitinfo"
 	"github.com/flykimjiwon/hanimo/internal/knowledge"
 	"github.com/flykimjiwon/hanimo/internal/llm"
 	"github.com/flykimjiwon/hanimo/internal/session"
@@ -145,6 +147,17 @@ type Model struct {
 	width  int
 	height int
 	ready  bool
+
+	// Git HUD
+	gitInfo    gitinfo.Info
+
+	// Input history
+	inputHistory    []string
+	inputHistoryIdx int
+
+	// Companion dashboard
+	companionHub    *companion.Hub
+	companionServer *companion.Server
 }
 
 // ResumeSession loads a saved session's messages into an already-
@@ -279,6 +292,8 @@ func NewModel(cfg config.Config, initialMode int, needsSetup bool) Model {
 		setupCfg:     config.DefaultConfig(),
 		setupInput:   setupTa,
 	}
+
+	m.gitInfo = gitinfo.Fetch(".")
 
 	if needsSetup {
 		m.setupInput.Focus()
@@ -498,6 +513,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.updateViewport()
 			return m, nil
 
+		case "ctrl+p":
+			// Input history: cycle backwards
+			if len(m.inputHistory) > 0 {
+				if m.inputHistoryIdx > 0 {
+					m.inputHistoryIdx--
+				}
+				m.textarea.Reset()
+				m.textarea.InsertString(m.inputHistory[m.inputHistoryIdx])
+			}
+			return m, nil
+
+		case "ctrl+n":
+			// Input history: cycle forwards
+			if len(m.inputHistory) > 0 {
+				if m.inputHistoryIdx < len(m.inputHistory)-1 {
+					m.inputHistoryIdx++
+					m.textarea.Reset()
+					m.textarea.InsertString(m.inputHistory[m.inputHistoryIdx])
+				} else {
+					m.inputHistoryIdx = len(m.inputHistory)
+					m.textarea.Reset()
+				}
+			}
+			return m, nil
+
 		case "tab":
 			// If an intent hint is active, accept it by jumping directly
 			// to the recommended tab instead of cycling.
@@ -529,6 +569,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Enter = send message
 			input := strings.TrimSpace(m.textarea.Value())
 			if input != "" {
+				// Append to input history
+				m.inputHistory = append(m.inputHistory, input)
+				if len(m.inputHistory) > 100 {
+					m.inputHistory = m.inputHistory[1:]
+				}
+				m.inputHistoryIdx = len(m.inputHistory)
+
 				m.textarea.Reset()
 				m.textarea.SetHeight(1)
 				m.recalcLayout()
@@ -1540,6 +1587,26 @@ func (m *Model) handleSlashCommand(input string) (bool, tea.Cmd) {
 		}
 		m.updateViewport()
 		return true, nil
+
+	case "/companion":
+		if m.companionHub == nil {
+			m.companionHub = companion.NewHub()
+		}
+		if m.companionServer == nil {
+			port := 8420
+			m.companionServer = companion.NewServer(m.companionHub, nil, port)
+			m.companionServer.Start()
+			_ = companion.OpenBrowser(fmt.Sprintf("http://localhost:%d", port))
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: fmt.Sprintf("  Companion dashboard started at http://localhost:%d", port), Timestamp: time.Now(),
+			})
+		} else {
+			m.msgs = append(m.msgs, ui.Message{
+				Role: ui.RoleSystem, Content: "  Companion dashboard already running", Timestamp: time.Now(),
+			})
+		}
+		m.updateViewport()
+		return true, nil
 	}
 
 	return false, nil
@@ -1622,7 +1689,7 @@ func (m Model) View() tea.View {
 		if m.activePlan != nil && (m.activePlan.Status == "executing" || m.activePlan.Status == "draft") {
 			planProgress = m.activePlan.Progress()
 		}
-		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress)
+		statusBar := ui.RenderStatusBar(displayModel, m.tokenCount, elapsed, m.activeTab, m.cwd, m.width, config.IsDebug(), len(tools.ToolsForMode(m.activeTab)), m.autoMode, planProgress, m.gitInfo.Label(), ui.ContextPercent(m.tokenCount, 262144))
 
 		// Build the stack of anchor blocks rendered directly above the input.
 		// Order (top → bottom):
@@ -1871,6 +1938,8 @@ func (m *Model) startStream() tea.Cmd {
 }
 
 func (m *Model) sendMessage(input string) tea.Cmd {
+	m.gitInfo = gitinfo.Fetch(".")
+
 	m.msgs = append(m.msgs, ui.Message{
 		Role: ui.RoleUser, Content: input, Timestamp: time.Now(),
 	})
