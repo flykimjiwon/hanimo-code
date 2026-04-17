@@ -300,6 +300,307 @@ hanimo indexes and searches these docs when relevant to your query.
 
 ---
 
+## Internal Process Flow (시각화)
+
+hanimo의 전체 동작을 레이어별로 뜯어놓은 다이어그램입니다. "이 부분 고쳐" 할 때 참고하세요.
+
+### Layer 1: 전체 아키텍처 오버뷰
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    사용자 (터미널)                         │
+│  키보드 입력 → [textarea] → Enter/Tab/Esc/Ctrl+K        │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              Bubble Tea 이벤트 루프                       │
+│                                                         │
+│  Init() → Update(msg) → View() → 화면 렌더링 → 반복     │
+│                                                         │
+│  msg 종류:                                               │
+│  ├─ tea.KeyPressMsg    (키보드)                          │
+│  ├─ tea.PasteMsg       (붙여넣기)                        │
+│  ├─ tea.WindowSizeMsg  (창 크기)                         │
+│  ├─ tea.MouseWheelMsg  (마우스 스크롤)                   │
+│  ├─ streamTickMsg      (150ms 스피너)                    │
+│  ├─ streamChunkMsg     (LLM 응답 조각)                   │
+│  └─ toolResultMsg      (도구 실행 결과)                   │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+     [키 처리]    [스트림 처리]  [View 렌더링]
+```
+
+### Layer 2: 키 입력 → 메시지 전송 파이프라인
+
+```
+사용자 키 입력
+      │
+      ▼
+┌─ 오버레이 체크 ──────────────────────────────────┐
+│                                                   │
+│  m.inSetup?        → viewSetup() (API 키 입력)   │
+│  m.showPalette?    → updatePalette() (Ctrl+K)    │
+│  m.showMenu?       → updateMenu() (Esc 메뉴)     │
+│  m.askQuestion?    → handleAskUserKey() (선택지)  │
+│  m.dangerCmd?      → handleDangerKey() (확인)     │
+│                                                   │
+│  ※ 오버레이가 활성이면 일반 키 처리 스킵           │
+└──────────────────────┬───────────────────────────┘
+                       │ (오버레이 없음)
+                       ▼
+┌─ 스트리밍 중? ───────────────────────────────────┐
+│                                                   │
+│  YES (m.streaming == true):                       │
+│  ├─ Ctrl+C/Esc    → cancelStream()               │
+│  ├─ PgUp/PgDn     → viewport 스크롤              │
+│  ├─ Enter          → pendingQueue에 큐잉          │
+│  └─ 그 외          → 무시                         │
+│                                                   │
+│  NO (idle):                                       │
+│  ├─ Enter          → ①로 이동                     │
+│  ├─ Tab            → 모드 전환 (Super/Dev/Plan)   │
+│  ├─ ↑/↓            → 입력 히스토리 탐색            │
+│  ├─ Ctrl+K         → 커맨드 팔레트 열기            │
+│  ├─ Ctrl+B         → 마우스 모드 토글              │
+│  ├─ Ctrl+L         → 화면 초기화                   │
+│  ├─ Shift+Enter    → 줄바꿈                       │
+│  └─ Esc            → 메뉴 열기                    │
+└──────────────────────┬───────────────────────────┘
+                       │ ① Enter 눌림
+                       ▼
+┌─ 입력 분기 ──────────────────────────────────────┐
+│                                                   │
+│  input = textarea.Value()                         │
+│                                                   │
+│  "/" 으로 시작?                                    │
+│  ├─ YES → handleSlashCommand(input)               │
+│  │        ├─ /auto, /plan, /multi, /git, /copy... │
+│  │        ├─ /commands 에 매칭?                    │
+│  │        │   → 커스텀 명령 템플릿을 sendMessage() │
+│  │        └─ return (m, nil)                      │
+│  │                                                │
+│  └─ NO  → sendMessage(input)  ← ②로 이동         │
+│                                                   │
+│  ※ 입력 히스토리에 저장 (최대 100개)               │
+│  ※ textarea 초기화                                │
+└──────────────────────┬───────────────────────────┘
+                       │ ② sendMessage(input)
+                       ▼
+```
+
+### Layer 3: LLM 스트리밍 + 도구 실행 루프
+
+```
+sendMessage(input)
+      │
+      ├─ gitInfo 갱신: gitinfo.Fetch(".")
+      ├─ UI 메시지 추가: m.msgs ← user message
+      ├─ Intent 감지: agents.DetectIntentLocal(input)
+      ├─ Knowledge 주입: knowledgeInj.Inject(mode, input)
+      ├─ 시스템 프롬프트 재구성: SystemPrompt + projectCtx + knowledgeCtx
+      ├─ history에 user 메시지 추가
+      ├─ Compact(history): 40개 넘으면 오래된 도구 결과 스닙
+      ├─ 상태 초기화: streaming=true, toolIter=0, tokenCount=0
+      │
+      └─ startStream() ───────────────────────────────────┐
+                                                           │
+      ┌────────────────────────────────────────────────────┘
+      │
+      ▼
+┌─ StreamChat (goroutine) ─────────────────────────┐
+│                                                   │
+│  client.StreamChat(ctx, model, history, tools)    │
+│  → OpenAI-compatible SSE stream                   │
+│  → chunk별로 streamCh 채널에 전송                  │
+│                                                   │
+│  동시에: streamTickCmd() → 150ms마다 UI 갱신      │
+└──────────────────────┬───────────────────────────┘
+                       │ streamChunkMsg 수신
+                       ▼
+┌─ streamChunkMsg 처리 ────────────────────────────┐
+│                                                   │
+│  에러?          → 에러 메시지 표시, 스트림 종료    │
+│                                                   │
+│  done == false? → streamBuf에 텍스트 누적         │
+│                   tokenCount 증가                 │
+│                   waitForNextChunk() (다음 조각)   │
+│                                                   │
+│  done == true?  → 분기:                           │
+│                                                   │
+│  ┌─ toolCalls 있음? ─────────────────────────┐   │
+│  │                                            │   │
+│  │  history ← assistant msg (with toolCalls)  │   │
+│  │                                            │   │
+│  │  위험 명령 감지?                            │   │
+│  │  ├─ YES → dangerCmd 오버레이 (사용자 확인) │   │
+│  │  └─ NO  → 도구 실행 ③으로                  │   │
+│  │                                            │   │
+│  └────────────────────────────────────────────┘   │
+│                                                   │
+│  ┌─ toolCalls 없음 (일반 완료) ──────────────┐   │
+│  │                                            │   │
+│  │  history ← assistant msg                   │   │
+│  │  m.msgs ← AI 응답 표시                     │   │
+│  │  streaming = false                         │   │
+│  │                                            │   │
+│  │  autoMode?  → 자동 재전송 (최대 200회)     │   │
+│  │  planMode?  → executeNextPlanStep()        │   │
+│  │  ASK_USER?  → askQuestion 오버레이         │   │
+│  │                                            │   │
+│  └────────────────────────────────────────────┘   │
+└──────────────────────┬───────────────────────────┘
+                       │ ③ 도구 실행
+                       ▼
+┌─ 도구 실행 루프 ─────────────────────────────────┐
+│                                                   │
+│  for each toolCall:                               │
+│  ├─ 반복 감지: 같은 name+args 3회 이상 → 차단    │
+│  ├─ 드리프트 감지: 같은 name 5회 연속 → 차단     │
+│  ├─ tools.Execute(name, argsJSON)                 │
+│  │   ├─ ripgrep 사용 가능? → RipgrepSearch 우선   │
+│  │   ├─ file_write? → CheckSensitiveFile          │
+│  │   │               → CheckSecrets               │
+│  │   │               → CreateSnapshot             │
+│  │   │               → os.WriteFile               │
+│  │   ├─ file_edit?  → wasRead 확인                │
+│  │   │               → CreateSnapshot             │
+│  │   │               → strings.Replace            │
+│  │   ├─ shell_exec? → 위험 명령 차단              │
+│  │   │               → 30초 타임아웃 실행          │
+│  │   └─ 기타 23+ 도구...                          │
+│  │                                                │
+│  ├─ history ← tool result                         │
+│  ├─ m.msgs ← 도구 결과 표시                       │
+│  └─ toolIter++ (최대 20회, /auto는 200회)         │
+│                                                   │
+│  toolIter >= 20?                                  │
+│  ├─ YES → "Tool iteration limit" 메시지, 종료     │
+│  └─ NO  → continueAfterTools()                    │
+│           → startStream() (LLM에게 결과 전달)     │
+│           → ④ 다시 streamChunkMsg 루프로           │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 4: View() 렌더링 스택
+
+```
+View() 호출 (매 Update 후)
+      │
+      ▼
+┌─ 화면 구성 (위에서 아래로) ──────────────────────┐
+│                                                   │
+│  ┌───────────────────────────────────────────┐   │
+│  │  viewport (스크롤 가능한 대화 영역)        │   │
+│  │  ├─ [SYSTEM] 로고 + 모드 정보              │   │
+│  │  ├─ [USER]   사용자 메시지 (파란 블록)     │   │
+│  │  ├─ [AI]     AI 응답 (마크다운 렌더링)     │   │
+│  │  ├─ [TOOL]   도구 호출 (회색, 접힘)        │   │
+│  │  ├─ [SYSTEM] 시스템 메시지 (노란색)        │   │
+│  │  └─ ...반복...                             │   │
+│  └───────────────────────────────────────────┘   │
+│                                                   │
+│  ┌───────────────────────────────────────────┐   │
+│  │  intent hint (Super 모드, 노란 이탤릭)    │   │
+│  │  "Looks like a refactoring request..."     │   │
+│  └───────────────────────────────────────────┘   │
+│                                                   │
+│  ┌───────────────────────────────────────────┐   │
+│  │  ASK_USER 블록 (선택지 있을 때만)          │   │
+│  │  ├─ 질문 텍스트                            │   │
+│  │  └─ [1] 옵션A  [2] 옵션B  [3] 옵션C      │   │
+│  └───────────────────────────────────────────┘   │
+│                                                   │
+│  ┌───────────────────────────────────────────┐   │
+│  │  입력 상자 (textarea, 둥근 테두리)         │   │
+│  │  │ 여기에 입력하세요...                  │ │   │
+│  └───────────────────────────────────────────┘   │
+│                                                   │
+│  ┌───────────────────────────────────────────┐   │
+│  │  상태바 (하단 고정)                        │   │
+│  │  Super  gpt-4o  ./myproj  main*           │   │
+│  │  ON(16)  [AUTO]  ctx:42%  1234tok  3.2s   │   │
+│  │                    Enter  Esc Menu  ^C     │   │
+│  └───────────────────────────────────────────┘   │
+│                                                   │
+│  ┌─ 오버레이 (위에 덮어씌움) ────────────────┐   │
+│  │  위험 명령 확인: "rm -rf build/"           │   │
+│  │  [Allow]  [Deny]                           │   │
+│  ├────────────────────────────────────────────┤   │
+│  │  메뉴 오버레이 (Esc):                      │   │
+│  │  > Sessions / New / Multi / Git / Help     │   │
+│  ├────────────────────────────────────────────┤   │
+│  │  커맨드 팔레트 (Ctrl+K):                   │   │
+│  │  > /au_  → /auto  /approve                 │   │
+│  └───────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 5: 파일별 책임 맵
+
+```
+"이 부분 고쳐" 할 때 찾아갈 파일:
+
+입력/이벤트 처리  → internal/app/app.go        Update()
+슬래시 명령       → internal/app/app.go        handleSlashCommand()
+화면 렌더링       → internal/app/app.go        View()
+상태바            → internal/ui/chat.go        RenderStatusBar()
+메시지 블록       → internal/ui/chat.go        RenderMessages()
+테마/색상         → internal/ui/styles.go
+커맨드 팔레트     → internal/ui/palette.go     FuzzyFilter()
+메뉴 오버레이     → internal/ui/menu.go
+다국어            → internal/ui/i18n.go        T()
+컨텍스트 %        → internal/ui/context.go     ContextPercent()
+
+LLM 스트리밍      → internal/llm/client.go     StreamChat()
+모델 목록         → internal/llm/models.go
+프로바이더 선택   → internal/llm/providers/     registry.go
+컨텍스트 압축     → internal/llm/compaction.go  Compact()
+시스템 프롬프트   → internal/llm/prompt.go      SystemPrompt()
+모델 능력치       → internal/llm/capabilities.go GetCapability()
+프롬프트 캐싱     → internal/llm/cache.go
+
+도구 정의         → internal/tools/registry.go  AllTools(), executeInner()
+파일 읽기/쓰기    → internal/tools/file.go      FileRead/Write/Edit()
+셸 실행           → internal/tools/shell.go     ShellExec()
+검색 (grep/glob)  → internal/tools/search.go    GrepSearch(), GlobSearch()
+심볼 검색         → internal/tools/symbols.go   SymbolSearch()
+ripgrep 폴백      → internal/tools/ripgrep.go   RipgrepSearch()
+Git 도구          → internal/tools/git.go       GitStatus/Diff/Log/Commit()
+해시라인 편집     → internal/tools/hashline.go  HashlineRead/Edit()
+프로젝트 감지     → internal/tools/project.go   DetectProject()
+프로젝트 프로파일 → internal/tools/init.go      GenerateProjectProfile()
+시크릿 탐지       → internal/tools/secrets.go   CheckSecrets()
+스냅샷/undo       → internal/tools/snapshot.go  CreateSnapshot(), UndoLast()
+.gitignore 파서   → internal/tools/gitignore.go LoadGitIgnore()
+커스텀 명령       → internal/tools/commands.go  LoadCustomCommands()
+diff 생성         → internal/tools/diff.go      GenerateUnifiedDiff()
+진단              → internal/tools/diagnostics.go RunDiagnostics()
+
+자율 모드         → internal/agents/auto.go     CheckAutoMarkers()
+플랜 모드         → internal/agents/plan.go     ParsePlan()
+인텐트 감지       → internal/agents/intent.go   DetectIntentLocal()
+ASK_USER          → internal/agents/askuser.go
+
+멀티에이전트      → internal/multi/orchestrator.go
+전략 선택         → internal/multi/strategy.go
+결과 합성         → internal/multi/merge.go
+
+Git HUD           → internal/gitinfo/gitinfo.go Fetch(), Label()
+세션 저장         → internal/session/store.go
+스킬 로더         → internal/skills/loader.go
+MCP 클라이언트    → internal/mcp/client.go
+설정              → internal/config/config.go
+
+컴패니언 서버     → internal/companion/server.go
+이벤트 브로드캐스트 → internal/companion/hub.go
+SSE 이벤트 타입   → internal/companion/events.go
+```
+
+---
+
 ## Architecture
 
 ```
