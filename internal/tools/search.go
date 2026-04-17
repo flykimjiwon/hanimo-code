@@ -43,6 +43,35 @@ const (
 	maxLineChars   = 2000
 )
 
+// isBinaryFile checks if a file is binary by sampling the first 4096 bytes.
+// Returns true if null bytes found or >30% non-printable characters.
+func isBinaryFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	buf := make([]byte, 4096)
+	n, err := f.Read(buf)
+	if n == 0 {
+		return false
+	}
+	buf = buf[:n]
+
+	nonPrintable := 0
+	for _, b := range buf {
+		if b == 0x00 {
+			return true // null byte → binary
+		}
+		if b < 0x20 && b != '\n' && b != '\r' && b != '\t' {
+			nonPrintable++
+		}
+	}
+
+	return float64(nonPrintable)/float64(n) > 0.3
+}
+
 func truncateLine(line string) string {
 	runes := []rune(line)
 	if len(runes) > maxLineChars {
@@ -98,9 +127,12 @@ func GrepSearch(pattern, basePath, glob string, ignoreCase bool, contextLines in
 			return nil
 		}
 
-		// Skip binary files
+		// Skip binary files (extension check + byte sampling)
 		ext := strings.ToLower(filepath.Ext(d.Name()))
 		if binaryExts[ext] {
+			return nil
+		}
+		if isBinaryFile(path) {
 			return nil
 		}
 

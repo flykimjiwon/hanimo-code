@@ -436,6 +436,22 @@ func AllTools() []openai.Tool {
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
+				Name:        "smart_context",
+				Description: "Given a target file, find the most relevant related files using import graph, git history, and directory proximity. Returns top N files with their first 30 lines (signatures/exports).",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"file":      {Type: "string", Description: "Target file path (relative to cwd or absolute)"},
+						"path":      {Type: "string", Description: "Base directory to scan (default: current directory)"},
+						"max_files": {Type: "string", Description: "Maximum number of related files to return (default: 5)"},
+					},
+					Required: []string{"file"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
 				Name:        "find_references",
 				Description: "Find all files that reference (call or use) a given symbol name. Shows definition location and all usage sites grouped by file.",
 				Parameters: paramSchema{
@@ -1053,6 +1069,31 @@ func executeInner(name string, argsJSON string) string {
 			return fmt.Sprintf("Error: %v", err)
 		}
 		return result
+
+	case "smart_context":
+		file, _ := args["file"].(string)
+		if file == "" {
+			return "Error: file is required"
+		}
+		scPath, _ := args["path"].(string)
+		if scPath == "" {
+			scPath = "."
+		}
+		scMax := 5
+		if s, ok := args["max_files"].(string); ok && s != "" {
+			var n int
+			if _, err := fmt.Sscanf(s, "%d", &n); err == nil && n > 0 {
+				scMax = n
+			}
+		}
+		if f, ok := args["max_files"].(float64); ok && f > 0 {
+			scMax = int(f)
+		}
+		scResult, scErr := SmartContext(file, scPath, scMax)
+		if scErr != nil {
+			return fmt.Sprintf("Error: %v", scErr)
+		}
+		return scResult
 
 	case "find_references":
 		symbol, _ := args["symbol"].(string)

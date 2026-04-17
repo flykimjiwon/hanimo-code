@@ -108,14 +108,23 @@ func FileEdit(path, oldStr, newStr string) (int, error) {
 	CreateSnapshot(absPath)
 	count := strings.Count(content, oldStr)
 	if count == 0 {
-		// Show a snippet of the file for context. Slice by rune so
-		// Korean/CJK filenames or file contents don't produce garbled
-		// mid-codepoint bytes in the error message.
-		preview := content
-		if pr := []rune(preview); len(pr) > 500 {
-			preview = string(pr[:500]) + "..."
+		// Exact match failed — try smart replacement strategies
+		newContent, strategy, smartErr := SmartReplace(content, oldStr, newStr)
+		if smartErr != nil {
+			// Show a snippet of the file for context. Slice by rune so
+			// Korean/CJK filenames or file contents don't produce garbled
+			// mid-codepoint bytes in the error message.
+			preview := content
+			if pr := []rune(preview); len(pr) > 500 {
+				preview = string(pr[:500]) + "..."
+			}
+			return 0, fmt.Errorf("old_string not found in %s. File preview:\n%s", path, preview)
 		}
-		return 0, fmt.Errorf("old_string not found in %s. File preview:\n%s", path, preview)
+		config.DebugLog("[FILE-EDIT] exact match failed, used strategy %q for %s", strategy, path)
+		if err := os.WriteFile(absPath, []byte(newContent), 0644); err != nil {
+			return 0, fmt.Errorf("write failed: %w", err)
+		}
+		return 1, nil
 	}
 	newContent := strings.Replace(content, oldStr, newStr, 1)
 	if err := os.WriteFile(absPath, []byte(newContent), 0644); err != nil {
