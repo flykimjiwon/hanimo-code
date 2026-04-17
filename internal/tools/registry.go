@@ -464,6 +464,21 @@ func AllTools() []openai.Tool {
 				},
 			},
 		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "fuzzy_search",
+				Description: "Fuzzy file search by name. Finds files even with typos or partial names. Use when you know roughly what file you're looking for but not the exact name.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"query": {Type: "string", Description: "Fuzzy search query (partial file name)"},
+						"path":  {Type: "string", Description: "Directory to search (default: current directory)"},
+					},
+					Required: []string{"query"},
+				},
+			},
+		},
 	}
 }
 
@@ -1102,6 +1117,22 @@ func executeInner(name string, argsJSON string) string {
 		}
 		path, _ := args["path"].(string)
 		result, err := FindReferences(symbol, path)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "fuzzy_search":
+		query, _ := args["query"].(string)
+		if query == "" {
+			return "Error: query is required"
+		}
+		searchPath, _ := args["path"].(string)
+		maxR := 20
+		if m, ok := args["max_results"].(float64); ok && m > 0 {
+			maxR = int(m)
+		}
+		result, err := FuzzyFileSearch(query, searchPath, maxR)
 		if err != nil {
 			return fmt.Sprintf("Error: %v", err)
 		}

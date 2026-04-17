@@ -26,14 +26,40 @@ var skipDirs = map[string]bool{
 
 // Binary file extensions to skip.
 var binaryExts = map[string]bool{
-	".exe": true, ".dll": true, ".so": true, ".dylib": true,
-	".bin": true, ".o": true, ".a": true,
-	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".bmp": true, ".ico": true,
-	".zip": true, ".tar": true, ".gz": true, ".7z": true, ".rar": true,
-	".pdf": true, ".doc": true, ".docx": true,
-	".woff": true, ".woff2": true, ".ttf": true, ".eot": true,
-	".mp3": true, ".mp4": true, ".avi": true, ".mov": true,
-	".wasm": true,
+	// Executables & Libraries
+	".exe": true, ".dll": true, ".so": true, ".dylib": true, ".a": true,
+	".lib": true, ".obj": true, ".o": true, ".ko": true, ".elf": true,
+	".bin": true, ".out": true, ".app": true, ".deb": true, ".rpm": true,
+	".msi": true, ".dmg": true, ".pkg": true, ".snap": true, ".flatpak": true,
+	// Archives
+	".zip": true, ".tar": true, ".gz": true, ".bz2": true, ".xz": true,
+	".7z": true, ".rar": true, ".zst": true, ".lz4": true, ".lzma": true,
+	".tgz": true, ".tbz2": true, ".war": true, ".ear": true, ".jar": true,
+	// Images
+	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".bmp": true,
+	".ico": true, ".webp": true, ".avif": true, ".tiff": true, ".tif": true,
+	// .svg is intentionally excluded — SVG is text/XML
+	".psd": true, ".ai": true, ".eps": true, ".raw": true, ".cr2": true,
+	".nef": true, ".heic": true, ".heif": true,
+	// Audio
+	".mp3": true, ".wav": true, ".flac": true, ".aac": true, ".ogg": true,
+	".wma": true, ".m4a": true, ".opus": true,
+	// Video
+	".mp4": true, ".avi": true, ".mkv": true, ".mov": true, ".wmv": true,
+	".flv": true, ".webm": true, ".m4v": true, ".3gp": true,
+	// Fonts
+	".ttf": true, ".otf": true, ".woff": true, ".woff2": true, ".eot": true,
+	// Documents
+	".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
+	".ppt": true, ".pptx": true, ".odt": true, ".ods": true, ".odp": true,
+	// Data
+	".db": true, ".sqlite": true, ".sqlite3": true, ".mdb": true,
+	".dat": true, ".sav": true, ".bak": true,
+	// Compiled/Bytecode
+	".pyc": true, ".pyo": true, ".class": true, ".wasm": true,
+	// Other
+	".iso": true, ".img": true, ".vmdk": true, ".qcow2": true,
+	".DS_Store": true, ".lock": true,
 }
 
 const (
