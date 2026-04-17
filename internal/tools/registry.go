@@ -314,6 +314,140 @@ func AllTools() []openai.Tool {
 				},
 			},
 		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "import_graph",
+				Description: "Build and display the import/dependency graph for a directory. Shows which files import which, detects circular dependencies. Supports Go, JS/TS, Python.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "Directory to scan (default: current directory)"},
+					},
+					Required: []string{"path"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "reverse_imports",
+				Description: "Find all files that import a given file. Useful for understanding who depends on a module.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "Directory to scan (default: current directory)"},
+						"file": {Type: "string", Description: "Target file (relative to path) to find importers of"},
+					},
+					Required: []string{"path", "file"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "change_impact",
+				Description: "Show all files transitively depending on the target file. Helps assess blast radius of a change.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "Directory to scan (default: current directory)"},
+						"file": {Type: "string", Description: "Target file (relative to path) to analyze impact for"},
+					},
+					Required: []string{"path", "file"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "test_coverage_gaps",
+				Description: "Find source files that are missing test counterparts. Supports Go, JS/TS, and Python. Returns files sorted by most recently modified (highest risk first).",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path": {Type: "string", Description: "Directory to scan (default: current directory)"},
+					},
+					Required: []string{},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "code_quality_scan",
+				Description: "Run rule-based quality checks: TODO/FIXME/HACK markers, large functions (>50 lines), deep nesting (>5 levels). Pass checks='all' or comma-separated subset: 'todo,large_functions,deep_nesting'.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"path":   {Type: "string", Description: "Directory to scan (default: current directory)"},
+						"checks": {Type: "string", Description: "Comma-separated checks or 'all' (default: all)"},
+					},
+					Required: []string{},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_blame",
+				Description: "Show who wrote each line of a file, grouping consecutive lines by the same author.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir":  {Type: "string", Description: "Git repository directory"},
+						"file": {Type: "string", Description: "File path (relative to the repo root)"},
+					},
+					Required: []string{"dir", "file"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_hot_files",
+				Description: "Return the most frequently changed files in the last N days, sorted by change count.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir":  {Type: "string", Description: "Git repository directory"},
+						"days": {Type: "string", Description: "Number of days to look back (default: 30)"},
+					},
+					Required: []string{"dir"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "git_file_history",
+				Description: "Show the commit history for a specific file.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"dir":   {Type: "string", Description: "Git repository directory"},
+						"file":  {Type: "string", Description: "File path to get history for"},
+						"count": {Type: "string", Description: "Number of commits to show (default: 10)"},
+					},
+					Required: []string{"dir", "file"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "find_references",
+				Description: "Find all files that reference (call or use) a given symbol name. Shows definition location and all usage sites grouped by file.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"symbol": {Type: "string", Description: "Symbol name to search for"},
+						"path":   {Type: "string", Description: "Directory to search in (default: current directory)"},
+					},
+					Required: []string{"symbol"},
+				},
+			},
+		},
 	}
 }
 
@@ -809,6 +943,128 @@ func executeInner(name string, argsJSON string) string {
 		}
 		results := idx.Search(query, maxR)
 		return knowledge.FormatSearchResults(results, query)
+
+	case "import_graph":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		graph := ImportGraph(path)
+		return FormatImportGraph(graph)
+
+	case "reverse_imports":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		file, _ := args["file"].(string)
+		if file == "" {
+			return "Error: file is required"
+		}
+		graph := ImportGraph(path)
+		importers := ReverseImports(graph, file)
+		if len(importers) == 0 {
+			return fmt.Sprintf("No files import %s", file)
+		}
+		return fmt.Sprintf("Files that import %s:\n%s", file, strings.Join(importers, "\n"))
+
+	case "change_impact":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		file, _ := args["file"].(string)
+		if file == "" {
+			return "Error: file is required"
+		}
+		graph := ImportGraph(path)
+		impacted := ChangeImpact(graph, file)
+		if len(impacted) == 0 {
+			return fmt.Sprintf("No files are transitively affected by changes to %s", file)
+		}
+		return fmt.Sprintf("Files affected by changes to %s (%d):\n%s", file, len(impacted), strings.Join(impacted, "\n"))
+
+	case "test_coverage_gaps":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		return TestCoverageGaps(path)
+
+	case "code_quality_scan":
+		path, _ := args["path"].(string)
+		if path == "" {
+			path = "."
+		}
+		checks, _ := args["checks"].(string)
+		return CodeQualityScan(path, checks)
+
+	case "git_blame":
+		dir, _ := args["dir"].(string)
+		file, _ := args["file"].(string)
+		if dir == "" {
+			return "Error: dir is required"
+		}
+		if file == "" {
+			return "Error: file is required"
+		}
+		result, err := GitBlame(dir, file)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "git_hot_files":
+		dir, _ := args["dir"].(string)
+		if dir == "" {
+			return "Error: dir is required"
+		}
+		days := 30
+		if d, ok := args["days"].(string); ok && d != "" {
+			fmt.Sscanf(d, "%d", &days)
+		}
+		if d, ok := args["days"].(float64); ok {
+			days = int(d)
+		}
+		result, err := GitHotFiles(dir, days)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "git_file_history":
+		dir, _ := args["dir"].(string)
+		file, _ := args["file"].(string)
+		if dir == "" {
+			return "Error: dir is required"
+		}
+		if file == "" {
+			return "Error: file is required"
+		}
+		n := 10
+		if c, ok := args["count"].(string); ok && c != "" {
+			fmt.Sscanf(c, "%d", &n)
+		}
+		if c, ok := args["count"].(float64); ok {
+			n = int(c)
+		}
+		result, err := GitFileHistory(dir, file, n)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "find_references":
+		symbol, _ := args["symbol"].(string)
+		if symbol == "" {
+			return "Error: symbol is required"
+		}
+		path, _ := args["path"].(string)
+		result, err := FindReferences(symbol, path)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
 
 	case "diagnostics":
 		dir, _ := args["dir"].(string)

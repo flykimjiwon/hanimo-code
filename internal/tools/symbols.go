@@ -204,6 +204,102 @@ func extractSymbols(absPath, relPath string, patterns []*regexp.Regexp, queryLow
 	return symbols
 }
 
+// FindReferences finds files that reference (call/use) a given symbol name.
+// Uses SymbolSearch to find the definition, then GrepSearch for all usages,
+// excluding the definition line itself.
+func FindReferences(symbolName, basePath string) (string, error) {
+	if symbolName == "" {
+		return "", fmt.Errorf("symbolName is required")
+	}
+	if basePath == "" {
+		basePath = "."
+	}
+
+	// Find definition location first
+	defResult, err := SymbolSearch(symbolName, basePath)
+	if err != nil {
+		return "", fmt.Errorf("symbol search failed: %w", err)
+	}
+
+	// Parse definition file:line from first exact-match result
+	defFile := ""
+	defLine := 0
+	if defResult != "No symbols found." {
+		for _, line := range strings.Split(defResult, "\n") {
+			if line == "" {
+				continue
+			}
+			// Format: "file:line [kind] preview"
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				defFile = parts[0]
+				fmt.Sscanf(parts[1], "%d", &defLine)
+				break
+			}
+		}
+	}
+
+	// Grep for all occurrences using word-boundary pattern
+	pattern := `\b` + regexp.QuoteMeta(symbolName) + `\b`
+	raw, err := GrepSearch(pattern, basePath, "", false, 0)
+	if err != nil {
+		return "", fmt.Errorf("grep failed: %w", err)
+	}
+
+	if raw == "" || strings.HasPrefix(raw, "No matches") {
+		return fmt.Sprintf("No references found for %q", symbolName), nil
+	}
+
+	// Group by file, exclude definition line
+	fileLines := map[string][]string{}
+	var fileOrder []string
+	seen := map[string]bool{}
+
+	for _, line := range strings.Split(raw, "\n") {
+		if line == "" {
+			continue
+		}
+		// format: file:line:content
+		parts := strings.SplitN(line, ":", 3)
+		if len(parts) < 3 {
+			continue
+		}
+		f, lnStr := parts[0], parts[1]
+		var ln int
+		fmt.Sscanf(lnStr, "%d", &ln)
+
+		// Exclude definition line
+		if f == defFile && ln == defLine {
+			continue
+		}
+
+		if !seen[f] {
+			seen[f] = true
+			fileOrder = append(fileOrder, f)
+		}
+		fileLines[f] = append(fileLines[f], fmt.Sprintf("  L%s: %s", lnStr, strings.TrimSpace(parts[2])))
+	}
+
+	sort.Strings(fileOrder)
+
+	if len(fileOrder) == 0 {
+		return fmt.Sprintf("No references found for %q (only definition)", symbolName), nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("References to %q:\n", symbolName))
+	if defFile != "" {
+		sb.WriteString(fmt.Sprintf("  Definition: %s:%d\n\n", defFile, defLine))
+	}
+	for _, f := range fileOrder {
+		sb.WriteString(fmt.Sprintf("%s:\n", f))
+		for _, l := range fileLines[f] {
+			sb.WriteString(l + "\n")
+		}
+	}
+	return strings.TrimRight(sb.String(), "\n"), nil
+}
+
 func detectKind(line string) string {
 	lower := strings.TrimSpace(strings.ToLower(line))
 	switch {
