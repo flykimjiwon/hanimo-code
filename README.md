@@ -599,6 +599,337 @@ MCP 클라이언트    → internal/mcp/client.go
 SSE 이벤트 타입   → internal/companion/events.go
 ```
 
+### Layer 6: Auto 모드 루프 (자율 실행)
+
+```
+/auto "테스트 코드 작성해"
+      │
+      ├─ m.autoMode = true
+      ├─ m.autoTask = "테스트 코드 작성해"
+      ├─ 시스템 프롬프트에 AutoPromptSuffix 주입:
+      │   "작업 완료 시 [AUTO_COMPLETE], 사용자 입력 필요 시 [AUTO_PAUSE]"
+      │
+      └─ sendMessage(autoTask) ──→ LLM 스트림 시작
+                                        │
+      ┌─────────────────────────────────┘
+      │
+      ▼
+┌─ 스트림 완료 후 Auto 체크 ───────────────────────┐
+│                                                   │
+│  agents.CheckAutoMarkers(streamBuf):              │
+│                                                   │
+│  [AUTO_COMPLETE] 감지?                            │
+│  ├─ YES → autoMode=false, 시스템 프롬프트 복원    │
+│  │        "작업 완료" 메시지 표시                  │
+│  │        → 종료 (사용자 입력 대기)               │
+│  │                                                │
+│  [AUTO_PAUSE] 감지?                               │
+│  ├─ YES → autoMode=false                          │
+│  │        "일시정지 — 사용자 입력 필요" 표시       │
+│  │        → 종료 (사용자 입력 대기)               │
+│  │                                                │
+│  [TASK_COMPLETE] 감지? (Deep Agent)               │
+│  ├─ YES → autoMode=false                          │
+│  │        → 종료                                  │
+│  │                                                │
+│  마커 없음?                                       │
+│  └─ toolIter < MaxAutoIterations (200)?           │
+│     ├─ YES → continueAfterTools()                 │
+│     │        → 다시 LLM 스트림 (자동 반복)        │
+│     └─ NO  → "tool loop limit" 메시지, 강제 종료  │
+│                                                   │
+│  ※ pendingQueue에 메시지가 있으면 다음 자동 전송  │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 7: Plan 모드 (계획 → 승인 → 단계별 실행)
+
+```
+/plan "API 엔드포인트 리팩토링"
+      │
+      ├─ planAwaitingApproval = true
+      ├─ 시스템 프롬프트에 PlanPromptPrefix 주입:
+      │   "JSON 형식으로 단계별 계획을 출력하세요"
+      │
+      └─ sendMessage(planPrompt) ──→ LLM이 JSON 계획 생성
+                                        │
+      ┌─────────────────────────────────┘
+      │
+      ▼
+┌─ 계획 파싱 ──────────────────────────────────────┐
+│                                                   │
+│  agents.ParsePlan(streamBuf):                     │
+│  ├─ JSON 추출 (```json ... ``` 펜스 제거)         │
+│  ├─ Plan { Task, Goal, Steps[] } 구조 파싱        │
+│  │                                                │
+│  성공?                                            │
+│  ├─ YES → m.activePlan = plan                     │
+│  │        plan.Render() → 단계 목록 표시          │
+│  │        "/approve 로 승인 · /reject 로 거부"    │
+│  │        → 사용자 입력 대기                      │
+│  └─ NO  → "계획 파싱 실패" 에러                   │
+└──────────────────────┬───────────────────────────┘
+                       │
+      /approve 입력    │    /reject 입력
+      ┌────────────────┼────────────────┐
+      │                                 │
+      ▼                                 ▼
+┌─ 실행 시작 ──────┐          계획 폐기, 재작성 가능
+│                   │
+│  planExecuting    │
+│  = true           │
+│                   │
+│  executeNext      │
+│  PlanStep() ──────┼──→ Step N 실행
+│                   │         │
+│  ┌────────────────┘         ▼
+│  │
+│  │  step.Status = "in_progress"
+│  │  ExecutePromptPrefix로 LLM에 지시:
+│  │  "전체 계획 중 Step N/M: {title}"
+│  │
+│  │  sendMessage(prompt) → LLM 스트림
+│  │         │
+│  │         ▼
+│  │  agents.CheckPlanMarkers(streamBuf):
+│  │  ├─ [STEP_COMPLETE] → step.Status="completed"
+│  │  │                    current++
+│  │  │                    → executeNextPlanStep() (다음 단계)
+│  │  ├─ [STEP_FAILED]  → step.Status="failed"
+│  │  │                    plan.Status="failed"
+│  │  │                    → 실행 중단
+│  │  └─ [PLAN_REVISE]  → 계획 재파싱 + 처음부터 재실행
+│  │
+│  │  모든 단계 완료?
+│  │  └─ plan.Status="completed", "모든 단계 완료"
+│  │
+└──┘
+```
+
+### Layer 8: Compaction 3단계 (컨텍스트 압축)
+
+```
+llm.Compact(history) — sendMessage()마다 자동 호출
+      │
+      ▼
+┌─ Stage 1: Snip (대량 메시지) ────────────────────┐
+│                                                   │
+│  조건: len(history) >= 40                         │
+│                                                   │
+│  최근 10개 메시지 보존 (마지막 대화 보호)         │
+│  나머지 중 role=tool && len(content) > 200자:     │
+│  → "[snipped: N lines]"로 교체                    │
+│                                                   │
+│  효과: 오래된 도구 결과 제거, 대화 흐름 유지      │
+└──────────────────────┬───────────────────────────┘
+                       │
+                       ▼
+┌─ Stage 2: Micro (개별 메시지 절단) ──────────────┐
+│                                                   │
+│  조건: 개별 메시지 > 4000자                       │
+│                                                   │
+│  처리: 앞 2000자 + "[truncated]" + 뒤 2000자     │
+│                                                   │
+│  효과: 초대형 코드 블록, 로그 출력 축소           │
+└──────────────────────┬───────────────────────────┘
+                       │
+                       ▼
+┌─ Stage 3: LLM 요약 (자동 트리거) ────────────────┐
+│                                                   │
+│  조건: ui.ShouldAutoCompact(ctx%) → ctx >= 90%    │
+│  또는: /compact 수동 호출                         │
+│                                                   │
+│  처리: LLM에게 전체 대화 요약 요청                │
+│  → 원래 history를 [system + summary + recent]로   │
+│     대폭 축소                                     │
+│                                                   │
+│  효과: 장기 세션 크래시 방지                      │
+│                                                   │
+│  Context % 임계값:                                │
+│  ├─ < 70%   → Normal (회색)                       │
+│  ├─ 70-79%  → Warn (노란색) — 사용자 반응 시간   │
+│  ├─ 80-89%  → Critical (빨간색) — 압축 권장      │
+│  └─ >= 90%  → Auto-compact 트리거                 │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 9: Knowledge 주입 파이프라인
+
+```
+sendMessage(input) 중 knowledge 주입
+      │
+      ▼
+┌─ knowledgeInj.Inject(mode, input) ───────────────┐
+│                                                   │
+│  1단계: 키워드 매칭                               │
+│  ├─ 입력에서 키워드 추출                          │
+│  ├─ knowledge/index.json의 keywords와 비교        │
+│  └─ 매칭 문서 후보 선정                           │
+│                                                   │
+│  2단계: BM25 스코어링                             │
+│  ├─ 후보 문서들의 관련도 점수 계산                │
+│  └─ 상위 N개 선택                                 │
+│                                                   │
+│  3단계: 토큰 예산 내 선택                         │
+│  ├─ maxTokenBudget = 8192                         │
+│  ├─ 높은 점수 순으로 예산 내에서 포함             │
+│  └─ Tier 우선순위: Tier0 > Tier1 > Tier2 > Tier3 │
+│                                                   │
+│  소스 (3곳 병합):                                 │
+│  ├─ knowledge/docs/  — 62개 내장 문서 (embed.FS)  │
+│  │   react/, spring/, sql/, terminal/, css/...    │
+│  ├─ .hanimo/knowledge/ — 프로젝트 로컬 문서       │
+│  └─ ~/.hanimo/knowledge/ — 글로벌 사용자 문서     │
+│                                                   │
+│  결과: knowledgeCtx 문자열                        │
+│  → 시스템 프롬프트에 주입:                        │
+│    SystemPrompt(mode) + projectCtx + knowledgeCtx │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 10: 위험 명령 확인 플로우
+
+```
+LLM이 shell_exec("rm -rf build/") 도구 호출
+      │
+      ▼
+┌─ streamChunkMsg (done=true, toolCalls 있음) ─────┐
+│                                                   │
+│  for each toolCall:                               │
+│    if tc.Name == "shell_exec":                    │
+│      tools.IsDangerous(cmdStr)?                   │
+│                                                   │
+│  IsDangerous 패턴:                                │
+│  ├─ rm -rf, rm -r (파일 삭제)                     │
+│  ├─ sudo (권한 상승)                              │
+│  ├─ git push --force (히스토리 파괴)              │
+│  ├─ git reset --hard (변경 폐기)                  │
+│  ├─ dd if= (디스크 덮어쓰기)                      │
+│  ├─ chmod 777 (과도한 권한)                       │
+│  ├─ curl.*| sh (원격 스크립트 실행)               │
+│  └─ 기타 위험 패턴...                             │
+│                                                   │
+│  위험 감지됨?                                     │
+│  ├─ YES:                                          │
+│  │  m.dangerCmd = "rm -rf build/"                 │
+│  │  m.dangerReason = "recursive delete"           │
+│  │  m.dangerSelected = 1 (기본: Deny)             │
+│  │                                                │
+│  │  모든 toolCall에 DEFERRED 결과 삽입            │
+│  │  → 위험 확인 오버레이 표시                     │
+│  │                                                │
+│  │  ┌─────────────────────────────┐               │
+│  │  │  ⚠ Dangerous command:      │               │
+│  │  │  rm -rf build/              │               │
+│  │  │  Reason: recursive delete   │               │
+│  │  │                             │               │
+│  │  │  [Allow]    [Deny]          │               │
+│  │  └─────────────────────────────┘               │
+│  │                                                │
+│  │  사용자 선택:                                  │
+│  │  ├─ Allow → resolveDanger(true)                │
+│  │  │   실제 도구 실행 → history에 결과 추가      │
+│  │  │   → continueAfterTools() (LLM 재개)        │
+│  │  └─ Deny  → resolveDanger(false)               │
+│  │     "사용자가 거부" 메시지 → LLM에 전달        │
+│  │     → continueAfterTools() (LLM이 대안 모색)  │
+│  │                                                │
+│  └─ NO: 바로 도구 실행 (Layer 3의 ③)             │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 11: 세션 영속화 타이밍
+
+```
+┌─ SQLite 저장 시점 ───────────────────────────────┐
+│                                                   │
+│  앱 시작:                                         │
+│  ├─ session.InitDB() → ~/.hanimo/sessions.db      │
+│  ├─ session.CreateSession() → 새 세션 ID 발급     │
+│  └─ system prompt 저장                            │
+│                                                   │
+│  메시지 전송 시:                                  │
+│  ├─ user 메시지 → session.SaveMessage()           │
+│  ├─ assistant 응답 → session.SaveMessage()        │
+│  └─ tool 결과 → session.SaveMessage()             │
+│                                                   │
+│  /save [name]:                                    │
+│  └─ session.UpdateSessionName() → 이름 지정 저장  │
+│                                                   │
+│  /load [prefix]:                                  │
+│  └─ session.LoadSession() → 전체 대화 복원        │
+│                                                   │
+│  /search [keyword]:                               │
+│  └─ session.SearchSessions() → 전문검색           │
+│                                                   │
+│  DB 스키마 (db/schema.sql):                       │
+│  ├─ sessions: id, name, project_dir, provider,    │
+│  │            model, mode, created_at, updated_at │
+│  ├─ messages: session_id, role, content,          │
+│  │            tool_calls, tool_result, tokens     │
+│  ├─ memories: project_dir, key, value, source     │
+│  ├─ usage_log: session_id, provider, model,       │
+│  │             tokens_in, tokens_out, cost_usd    │
+│  └─ mcp_servers: name, transport, command, url    │
+└──────────────────────────────────────────────────┘
+```
+
+### Layer 12: Multi-Agent 오케스트레이션
+
+```
+/multi review  (또는 consensus, scan, auto)
+      │
+      ▼
+┌─ 전략 선택 ──────────────────────────────────────┐
+│                                                   │
+│  /multi auto 일 때:                               │
+│  ├─ strategy.go: DetectStrategy(input)            │
+│  ├─ 리뷰 키워드? → StrategyReview                 │
+│  ├─ 비교 키워드? → StrategyConsensus              │
+│  ├─ 대량 파일?   → StrategyScan                   │
+│  └─ 기본        → StrategyReview                  │
+│                                                   │
+│  사용 모델:                                       │
+│  ├─ Agent1 (Super model) — 주 실행, 쓰기 권한     │
+│  └─ Agent2 (Dev model)   — 보조, 읽기 전용        │
+└──────────────────────┬───────────────────────────┘
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+     [Review]    [Consensus]    [Scan]
+
+┌─ Review 전략 ────────────────────────────────────┐
+│  Agent1: 코드 생성/수정 (전체 도구 접근)          │
+│       ↓ 결과                                      │
+│  Agent2: 읽기 전용 리뷰 (검토 의견 생성)          │
+│       ↓                                           │
+│  merge.go: 두 결과 합성 (LLM 기반)               │
+└──────────────────────────────────────────────────┘
+
+┌─ Consensus 전략 ─────────────────────────────────┐
+│  Agent1: 독립 실행 ──┐                            │
+│                       ├─→ merge.go: LLM 합성      │
+│  Agent2: 독립 실행 ──┘   "두 응답을 비교 분석"    │
+│                                                   │
+│  ※ 병렬 실행 (goroutine)                         │
+│  ※ 실시간 AgentProgress 이벤트 전송              │
+└──────────────────────────────────────────────────┘
+
+┌─ Scan 전략 ──────────────────────────────────────┐
+│  파일/함수 단위 파티셔닝:                         │
+│  ├─ Agent1: src/api/ + src/models/ 담당           │
+│  └─ Agent2: src/handlers/ + src/utils/ 담당       │
+│                                                   │
+│  ※ 각 에이전트에 "당신은 AgentN, 이 영역 담당"   │
+│     힌트 주입                                     │
+│  ※ 결과 합산 후 LLM 합성                         │
+└──────────────────────────────────────────────────┘
+
+공통: 각 에이전트 최대 20 tool iterations
+      실시간 progress → companion SSE로 전송
+      합성 실패 시 Agent1 결과만 사용 (graceful)
+```
+
 ---
 
 ## Architecture
