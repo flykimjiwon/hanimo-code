@@ -1,9 +1,9 @@
-# techai-ide → hanimo-ide 포팅 플랜
+# techai-ide → hanimo-code-desktop 포팅 플랜
 
 > **생성일**: 2026-04-23  
 > **구현 예정**: 2026-04-24  
 > **소스**: `택가이코드/techai-ide/` (Wails v2 + React + CodeMirror 6)  
-> **대상**: `hanimo/hanimo-ide/` (독립 Go 모듈)  
+> **대상**: `hanimo-code/hanimo-code-desktop/` (독립 Go 모듈)  
 > **핵심**: 폐쇄망 IDE → 외부망 IDE 변환 + hanimo 기존 LSP 활용
 
 ---
@@ -33,7 +33,7 @@
 
 ### Phase A — Go 백엔드 포팅 (8개 파일)
 
-| # | 소스 (techai-ide/) | 대상 (hanimo-ide/) | 변경 사항 |
+| # | 소스 (techai-ide/) | 대상 (hanimo-code-desktop/) | 변경 사항 |
 |---|-------|-------|-----------|
 | A1 | `main.go` (140L) | `main.go` | 브랜딩 `택가이코드 IDE` → `hanimo IDE`, ClientInfo 변경 |
 | A2 | `app.go` (322L) | `app.go` | `.techai.md` → `.hanimo.md` 프로젝트 파일 경로 |
@@ -71,9 +71,9 @@
 
 | # | 파일 | 변경 사항 |
 |---|------|-----------|
-| C1 | `go.mod` | `module techai-ide` → `module hanimo-ide` |
-| C2 | `wails.json` | `name: techai-ide` → `name: hanimo-ide`, OutputFilename 변경 |
-| C3 | `package.json` | `name: techai-ide-frontend` → `name: hanimo-ide-frontend` |
+| C1 | `go.mod` | `module techai-ide` → `module hanimo-code-desktop` |
+| C2 | `wails.json` | `name: techai-ide` → `name: hanimo-code-desktop`, OutputFilename 변경 |
+| C3 | `package.json` | `name: techai-ide-frontend` → `name: hanimo-code-desktop-frontend` |
 | C4 | `FEATURES.md` | hanimo 기준으로 재작성 |
 
 ---
@@ -89,9 +89,9 @@ cfg := openai.DefaultConfig(apiKey)
 cfg.BaseURL = baseURL // 하나만
 ```
 
-hanimo-ide는 프로바이더 선택 가능:
+hanimo-code-desktop는 프로바이더 선택 가능:
 ```go
-// hanimo-ide 목표
+// hanimo-code-desktop 목표
 // 14+ 프로바이더: openai, anthropic, google, ollama, novita, deepseek, groq, ...
 // DefaultBaseURLs 맵에서 자동 URL 설정
 // /provider 슬래시 커맨드로 런타임 전환
@@ -101,7 +101,7 @@ hanimo-ide는 프로바이더 선택 가능:
 
 ### 2. 설정 경로 통합
 
-| 항목 | techai-ide | hanimo-ide |
+| 항목 | techai-ide | hanimo-code-desktop |
 |------|-----------|------------|
 | 설정 디렉토리 | `~/.tgc/` 또는 `~/.tgc-onprem/` | `~/.hanimo/` |
 | 설정 파일 | `config.yaml` | `config.yaml` (동일 포맷) |
@@ -121,7 +121,7 @@ techai-ide의 74개 → hanimo의 62개로 교체:
 
 ```
 s/택가이코드 IDE/hanimo IDE/g
-s/techai-ide/hanimo-ide/g
+s/techai-ide/hanimo-code-desktop/g
 s/techai/hanimo/g
 s/TECHAI/HANIMO/g
 s/\.tgc/\.hanimo/g
@@ -131,7 +131,7 @@ s/tgc-onprem/삭제/
 
 ---
 
-## 외부망 추가 기능 (hanimo-ide 전용)
+## 외부망 추가 기능 (hanimo-code-desktop 전용)
 
 techai-ide에는 없지만, hanimo가 외부망이므로 추가 가능한 기능:
 
@@ -151,11 +151,11 @@ techai-ide에는 없지만, hanimo가 외부망이므로 추가 가능한 기능
 
 ```bash
 # 1. 전체 복사
-cp -r 택가이코드/techai-ide hanimo/hanimo-ide
+cp -r 택가이코드/techai-ide hanimo-code/hanimo-code-desktop
 
 # 2. Go 파일 import 경로 + 브랜딩 치환
-find hanimo/hanimo-ide -name "*.go" -exec sed -i '' \
-  -e 's/techai-ide/hanimo-ide/g' \
+find hanimo-code/hanimo-code-desktop -name "*.go" -exec sed -i '' \
+  -e 's/techai-ide/hanimo-code-desktop/g' \
   -e 's/techai/hanimo/g' \
   -e 's/택가이코드/hanimo/g' \
   -e 's/\.tgc-onprem/\.hanimo/g' \
@@ -163,16 +163,16 @@ find hanimo/hanimo-ide -name "*.go" -exec sed -i '' \
   -e 's/TGC_/HANIMO_/g' {} \;
 
 # 3. 프론트엔드 치환
-find hanimo/hanimo-ide/frontend -name "*.tsx" -o -name "*.ts" -o -name "*.json" | \
+find hanimo-code/hanimo-code-desktop/frontend -name "*.tsx" -o -name "*.ts" -o -name "*.json" | \
   xargs sed -i '' \
-  -e 's/techai-ide/hanimo-ide/g' \
+  -e 's/techai-ide/hanimo-code-desktop/g' \
   -e 's/techai/hanimo/g' \
   -e 's/택가이코드/hanimo/g' \
   -e 's/\.tgc/\.hanimo/g'
 
 # 4. 설정 파일 치환
-sed -i '' 's/techai-ide/hanimo-ide/g' hanimo/hanimo-ide/wails.json
-sed -i '' 's/techai-ide/hanimo-ide/g' hanimo/hanimo-ide/go.mod
+sed -i '' 's/techai-ide/hanimo-code-desktop/g' hanimo-code/hanimo-code-desktop/wails.json
+sed -i '' 's/techai-ide/hanimo-code-desktop/g' hanimo-code/hanimo-code-desktop/go.mod
 ```
 
 ### Step 2 — Go 백엔드 적응 (1시간)
@@ -192,23 +192,23 @@ sed -i '' 's/techai-ide/hanimo-ide/g' hanimo/hanimo-ide/go.mod
 ### Step 4 — 빌드 + 검증 (30분)
 
 ```bash
-cd hanimo/hanimo-ide
+cd hanimo-code/hanimo-code-desktop
 go mod tidy
 cd frontend && npm install && cd ..
 wails build
-# → hanimo-ide.app / hanimo-ide.exe
+# → hanimo-code-desktop.app / hanimo-code-desktop.exe
 ```
 
 ### Step 5 — LSP 통합 (선택, v1.1)
 
-hanimo에 이미 있는 `internal/lsp/` 패키지를 hanimo-ide에서 활용:
+hanimo에 이미 있는 `internal/lsp/` 패키지를 hanimo-code-desktop에서 활용:
 - `lsp_definition` → 에디터에서 Cmd+클릭으로 정의 이동
 - `lsp_hover` → 에디터에서 마우스 호버로 타입 정보
 - `lsp_symbols` → 아웃라인 뷰 (파일 내 심볼 목록)
 - `lsp_references` → 참조 찾기
 
-이 단계는 hanimo-ide의 go.mod에서 hanimo의 lsp 패키지를 참조하거나,
-`internal/lsp/`를 hanimo-ide에 복사하여 사용.
+이 단계는 hanimo-code-desktop의 go.mod에서 hanimo의 lsp 패키지를 참조하거나,
+`internal/lsp/`를 hanimo-code-desktop에 복사하여 사용.
 
 ---
 
@@ -229,7 +229,7 @@ hanimo에 이미 있는 `internal/lsp/` 패키지를 hanimo-ide에서 활용:
 ```
 hanimo/
 ├── cmd/hanimo/          ← 기존 TUI
-├── hanimo-ide/          ← 새로운 데스크톱 IDE
+├── hanimo-code-desktop/          ← 새로운 데스크톱 IDE
 │   ├── main.go
 │   ├── app.go
 │   ├── chat.go          ← 멀티 프로바이더 지원
@@ -239,7 +239,7 @@ hanimo/
 │   ├── settings.go
 │   ├── knowledge.go     ← 62개 지식팩 (bxm 제외)
 │   ├── toolparse.go
-│   ├── go.mod           ← module hanimo-ide
+│   ├── go.mod           ← module hanimo-code-desktop
 │   ├── wails.json
 │   └── frontend/
 │       ├── src/
