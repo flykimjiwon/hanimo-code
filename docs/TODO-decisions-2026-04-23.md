@@ -62,7 +62,19 @@
 
 ---
 
-## 4. 세컨더리 TODO
+## 4. 디자인 결정 대기 (5건) — `hanimo-code-desktop`
+
+관련 문서: `docs/porting/HANIMO-DESKTOP-DESIGN-PLAN-2026-04-23.md` · mock: `designs/hanimo-desktop-v1.html`
+
+| # | 질문 | 옵션 | 영향 |
+|:-:|---|---|---|
+| D1 | 아이콘 라이브러리 | A) Lucide (현재 v1 mock) · B) Phosphor (꿀벌 메타포 친화) · C) 자체 SVG (오리지널) | 브랜드 독창성 vs 개발 속도 |
+| D2 | 코드 에디터 엔진 | A) CodeMirror 6 (techai-ide 기본) · B) Monaco (VSCode 엔진) · C) Shiki 정적 | 번들 크기 vs 언어 지원 |
+| D3 | 폰트 | A) Geist + JetBrains Mono (현재) · B) Pretendard + D2 Coding (한국어 최적) | 한국어 가독성 |
+| D4 | Theme 개수 | A) 8개 (현재) · B) 5개만 (Honey/Slate/Ocean/Claude/Paper) · C) 사용자 커스텀 JSON | 번들 크기 |
+| D5 | 꿀벌 로고 아이콘 | 현재 `hexagon` lucide 사용 · 오리지널 꿀벌 SVG 제작 필요? | 브랜드 기억도 |
+
+## 5. 세컨더리 TODO
 
 - [ ] obsidian 내부 폴더명 rename: `obsidian/projects/modolai/` → `hanimo-webui/`, `modolrag/` → `hanimo-rag/` (리브랜드 문서 §6)
 - [ ] hanimo-webui DB 식별자(`modol`, `modol_dev`) 변경 여부 검토 (마이그레이션 필수)

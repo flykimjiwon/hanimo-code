@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hanimo Desktop — Design v1 (Honey)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    /* ── Honey (hanimo Default) ── */
+    --bg-base: #1a1410;
+    --bg-activity: #14100d;
+    --bg-sidebar: #1f1813;
+    --bg-editor: #1a1410;
+    --bg-panel: #221a14;
+    --bg-terminal: #14100d;
+    --bg-hover: rgba(245,166,35,0.06);
+    --bg-active: rgba(245,166,35,0.1);
+    --bg-input: #1a1410;
+    --border: rgba(245,166,35,0.1);
+    --border-focus: #f5a623;
+    --fg-primary: #f4ecd8;
+    --fg-secondary: #c9b890;
+    --fg-muted: #8a7858;
+    --fg-dim: #554532;
+    --accent: #f5a623;
+    --accent-glow: rgba(245,166,35,0.22);
+    --accent-text: #1a1410;
+    --success: #6cae75;
+    --warning: #e8a317;
+    --error: #e06666;
+    --syn-kw: #e8a317;
+    --syn-fn: #c9b890;
+    --syn-str: #98c379;
+    --syn-num: #e4a65e;
+    --syn-cmt: #6e5d42;
+    --syn-typ: #f5c76e;
+    --syn-op: #c9b890;
+    --status-bg: #f5a623;
+    --status-fg: #1a1410;
+    --bubble-user-bg: rgba(245,166,35,0.08);
+    --bubble-ai-bg: rgba(255,255,255,0.02);
+    --bubble-ai-border: rgba(245,166,35,0.12);
+    --font-ui: 'Geist', 'Pretendard', -apple-system, system-ui, sans-serif;
+    --font-code: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  }
+
+  /* ── Slate ── */
+  body.t-slate {
+    --bg-base:#0a0a0c;--bg-activity:#08080a;--bg-sidebar:#0e0e11;--bg-editor:#0d0d10;
+    --bg-panel:#111115;--bg-terminal:#08080a;--border:rgba(255,255,255,0.07);
+    --border-focus:#3b82f6;--accent:#3b82f6;--accent-glow:rgba(59,130,246,0.25);--accent-text:#fff;
+    --status-bg:#3b82f6;--status-fg:#fff;
+    --fg-primary:#e4e4e7;--fg-secondary:#a1a1aa;--fg-muted:#71717a;--fg-dim:#3f3f46;
+    --syn-kw:#c678dd;--syn-fn:#61afef;--syn-str:#98c379;--syn-num:#d19a66;--syn-cmt:#5c6370;--syn-typ:#e5c07b;
+    --bubble-user-bg:rgba(255,255,255,0.06);--bubble-ai-bg:rgba(255,255,255,0.02);--bubble-ai-border:rgba(255,255,255,0.08);
+    --bg-hover:rgba(255,255,255,0.04);--bg-active:rgba(255,255,255,0.07);
+  }
+  /* ── Ocean ── */
+  body.t-ocean {
+    --bg-base:#0c1520;--bg-activity:#080f18;--bg-panel:#11202f;--bg-sidebar:#0e1a26;--bg-editor:#0c1520;
+    --bg-terminal:#080f18;--border:rgba(100,180,240,0.1);--border-focus:#38bdf8;
+    --accent:#38bdf8;--accent-glow:rgba(56,189,248,0.25);--status-bg:#0284c7;--status-fg:#fff;
+    --syn-kw:#38bdf8;--syn-fn:#7dd3fc;--syn-str:#86efac;--syn-typ:#c4b5fd;
+    --fg-primary:#e0f2fe;--fg-secondary:#bae6fd;
+  }
+  /* ── Dracula ── */
+  body.t-dracula {
+    --bg-base:#282a36;--bg-activity:#21222c;--bg-sidebar:#282a36;--bg-editor:#282a36;
+    --bg-panel:#343746;--bg-terminal:#1e1f29;--border:rgba(98,114,164,0.3);
+    --accent:#bd93f9;--accent-glow:rgba(189,147,249,0.2);--border-focus:#bd93f9;
+    --status-bg:#6272a4;--status-fg:#fff;--syn-kw:#ff79c6;--syn-fn:#50fa7b;--syn-str:#f1fa8c;--syn-typ:#8be9fd;--syn-num:#bd93f9;
+    --fg-primary:#f8f8f2;--fg-secondary:#bfbfbf;
+  }
+  /* ── Nord ── */
+  body.t-nord {
+    --bg-base:#2e3440;--bg-activity:#272c36;--bg-sidebar:#2e3440;--bg-editor:#2e3440;
+    --bg-panel:#3b4252;--bg-terminal:#272c36;--border:rgba(76,86,106,0.5);
+    --accent:#88c0d0;--accent-glow:rgba(136,192,208,0.2);--border-focus:#88c0d0;
+    --status-bg:#5e81ac;--status-fg:#fff;--syn-kw:#81a1c1;--syn-fn:#88c0d0;--syn-str:#a3be8c;--syn-typ:#8fbcbb;--syn-num:#b48ead;
+    --fg-primary:#eceff4;--fg-secondary:#d8dee9;
+  }
+  /* ── Forest ── */
+  body.t-forest {
+    --bg-base:#141f14;--bg-activity:#0f180f;--bg-sidebar:#1a2b1a;--bg-editor:#141f14;
+    --bg-panel:#1e2f1e;--bg-terminal:#0f180f;--border:rgba(110,190,110,0.1);
+    --accent:#86efac;--accent-glow:rgba(134,239,172,0.2);--border-focus:#86efac;
+    --status-bg:#4a8759;--status-fg:#fff;
+    --syn-kw:#86efac;--syn-fn:#bbf7d0;--syn-str:#fde68a;--syn-typ:#a7f3d0;
+    --fg-primary:#ecfdf5;--fg-secondary:#a7f3d0;
+  }
+  /* ── GitHub Dark ── */
+  body.t-github {
+    --bg-base:#0d1117;--bg-activity:#010409;--bg-sidebar:#0d1117;--bg-editor:#0d1117;
+    --bg-panel:#161b22;--bg-terminal:#010409;--border:rgba(48,54,61,0.8);
+    --accent:#58a6ff;--accent-glow:rgba(88,166,255,0.2);--border-focus:#58a6ff;
+    --status-bg:#1f6feb;--status-fg:#fff;--syn-kw:#ff7b72;--syn-fn:#d2a8ff;--syn-str:#a5d6ff;--syn-typ:#79c0ff;--syn-num:#d29922;
+    --fg-primary:#e6edf3;--fg-secondary:#a8b3c0;
+  }
+  /* ── Claude (Light) ── */
+  body.t-claude {
+    --bg-base:#faf9f5;--bg-activity:#efeee6;--bg-sidebar:#f5f4ed;--bg-editor:#faf9f5;
+    --bg-panel:#f0efe7;--bg-terminal:#efeee6;--bg-input:#faf9f5;
+    --border:rgba(0,0,0,0.08);--border-focus:#c96442;
+    --fg-primary:#141413;--fg-secondary:#4d4c48;--fg-muted:#5e5d59;--fg-dim:#b0aea5;
+    --accent:#c96442;--accent-glow:rgba(201,100,66,0.2);--accent-text:#fff;
+    --success:#2d7a4f;--warning:#a67c37;--error:#b53333;
+    --status-bg:#c96442;--status-fg:#fff;
+    --syn-kw:#7928ca;--syn-fn:#c96442;--syn-str:#2d7a4f;--syn-typ:#3a6ea5;--syn-num:#a67c37;--syn-cmt:#87867f;
+    --bubble-user-bg:rgba(0,0,0,0.04);--bubble-ai-bg:rgba(0,0,0,0.02);--bubble-ai-border:rgba(0,0,0,0.06);
+    --bg-hover:rgba(0,0,0,0.04);--bg-active:rgba(0,0,0,0.07);
+  }
+  /* ── Paper (Light) ── */
+  body.t-paper {
+    --bg-base:#fffdf7;--bg-activity:#f5f2e8;--bg-sidebar:#faf7ef;--bg-editor:#fffdf7;
+    --bg-panel:#f5f2e8;--bg-terminal:#f5f2e8;--bg-input:#fffdf7;
+    --border:rgba(0,0,0,0.08);--border-focus:#b8860b;
+    --fg-primary:#2d2416;--fg-secondary:#5e4e30;--fg-muted:#8a7858;--fg-dim:#c9b890;
+    --accent:#b8860b;--accent-glow:rgba(184,134,11,0.2);--accent-text:#fff;
+    --status-bg:#b8860b;--status-fg:#fff;
+    --syn-kw:#7928ca;--syn-fn:#b8860b;--syn-str:#2d7a4f;--syn-typ:#3a6ea5;--syn-num:#a67c37;--syn-cmt:#8a7858;
+    --bubble-user-bg:rgba(184,134,11,0.06);--bubble-ai-bg:rgba(0,0,0,0.02);--bubble-ai-border:rgba(0,0,0,0.08);
+    --bg-hover:rgba(0,0,0,0.04);--bg-active:rgba(184,134,11,0.08);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font-ui); background:var(--bg-base); color:var(--fg-primary);
+    height:100vh; display:flex; flex-direction:column; overflow:hidden; -webkit-font-smoothing:antialiased; }
+
+  /* ── Top Ribbon: Theme + Mode + Provider ── */
+  .ribbon { display:flex; align-items:center; background:var(--bg-activity); border-bottom:1px solid var(--border); min-height:38px; padding:0 8px; gap:8px; }
+  .brand { display:flex; align-items:center; gap:6px; padding:0 8px; font-weight:700; font-size:13px; letter-spacing:-.01em; }
+  .brand .hex { color:var(--accent); width:16px; height:16px; }
+  .brand small { font-size:10.5px; color:var(--fg-muted); font-weight:500; letter-spacing:.04em; }
+  .divider { width:1px; height:18px; background:var(--border); }
+
+  /* Mode switcher (Super / Deep / Plan) */
+  .modes { display:flex; background:var(--bg-base); border-radius:6px; padding:2px; border:1px solid var(--border); }
+  .mode { padding:3px 10px; font-size:11px; font-weight:600; cursor:pointer; border-radius:4px; color:var(--fg-muted); transition:all .15s; display:flex; align-items:center; gap:4px; }
+  .mode:hover { color:var(--fg-secondary); }
+  .mode.on { background:var(--accent); color:var(--accent-text); }
+  .mode i { width:11px; height:11px; }
+
+  /* Theme picker */
+  .theme-bar { display:flex; gap:0; flex:1; overflow-x:auto; padding:0 4px; }
+  .tb { padding:4px 8px; font-size:10.5px; font-weight:500; cursor:pointer; color:var(--fg-muted);
+    background:transparent; border:none; border-radius:4px; display:flex; align-items:center; gap:5px;
+    transition:all .15s; white-space:nowrap; }
+  .tb:hover { color:var(--fg-secondary); background:var(--bg-hover); }
+  .tb.on { color:var(--fg-primary); background:var(--bg-active); }
+  .tb .d { width:7px; height:7px; border-radius:50%; }
+
+  /* Provider chip */
+  .provider-chip { display:flex; align-items:center; gap:6px; padding:4px 10px; background:var(--bg-base);
+    border:1px solid var(--border); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; }
+  .provider-chip:hover { border-color:var(--accent); }
+  .provider-chip .tier { background:var(--accent-glow); color:var(--accent); padding:1px 5px; border-radius:3px; font-size:9px; font-weight:700; }
+  .provider-chip i { width:11px; height:11px; color:var(--fg-muted); }
+
+  /* ── App Container ── */
+  .app { display:flex; flex:1; overflow:hidden; position:relative; }
+
+  /* ── Activity Bar ── */
+  .act { width:48px; background:var(--bg-activity); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:center; padding:10px 0; gap:2px; }
+  .ai { color:var(--fg-muted); cursor:pointer; padding:10px; border-radius:8px; position:relative; transition:all .15s; }
+  .ai:hover { color:var(--fg-primary); background:var(--bg-hover); }
+  .ai.on { color:var(--accent); }
+  .ai.on::before { content:''; position:absolute; left:0; top:10px; bottom:10px; width:2px; background:var(--accent); border-radius:0 2px 2px 0; }
+  .ai i { width:20px; height:20px; }
+  .ai .dot { position:absolute; top:8px; right:8px; width:6px; height:6px; background:var(--success); border-radius:50%; }
+  .ai .num { position:absolute; top:4px; right:4px; font-size:8px; font-weight:700; background:var(--accent); color:var(--accent-text); padding:1px 3px; border-radius:4px; min-width:12px; text-align:center; }
+  .act-spacer { flex:1; }
+
+  /* ── Sidebar ── */
+  .side { width:240px; background:var(--bg-sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .sh { padding:10px 14px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    color:var(--fg-muted); display:flex; justify-content:space-between; align-items:center; }
+  .sh .actions { display:flex; gap:4px; }
+  .sh .actions i { width:13px; height:13px; cursor:pointer; color:var(--fg-muted); }
+  .sh .actions i:hover { color:var(--fg-primary); }
+  .tl { flex:1; overflow-y:auto; padding:2px 0; }
+  .ti { padding:3px 14px; font-size:12.5px; display:flex; align-items:center; gap:6px;
+    cursor:pointer; color:var(--fg-secondary); transition:all .1s; }
+  .ti:hover { background:var(--bg-hover); color:var(--fg-primary); }
+  .ti.on { background:var(--bg-active); color:var(--fg-primary); }
+  .ti i { width:15px; height:15px; flex-shrink:0; }
+  .ti.dir i:first-of-type { color:var(--fg-dim); }
+  .ti.dir i:nth-of-type(2) { color:var(--accent); }
+  .ti .gb { margin-left:auto; font-size:10px; font-weight:700; }
+  .gb-m { color:var(--warning); } .gb-a { color:var(--success); }
+  .tind { width:12px; border-left:1px solid var(--border); margin-left:6px; height:22px; flex-shrink:0; }
+
+  /* ── Center ── */
+  .center { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .tabs { height:36px; background:var(--bg-activity); display:flex; border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab { padding:0 14px; display:flex; align-items:center; gap:7px; font-size:12.5px;
+    color:var(--fg-muted); border-right:1px solid var(--border); cursor:pointer; min-width:110px; position:relative; }
+  .tab:hover { color:var(--fg-secondary); }
+  .tab.on { background:var(--bg-editor); color:var(--fg-primary); }
+  .tab.on::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--accent); }
+  .tab i { width:14px; height:14px; flex-shrink:0; }
+  .tab .x { margin-left:auto; opacity:0; cursor:pointer; transition:opacity .1s; }
+  .tab .x i { width:12px; height:12px; }
+  .tab:hover .x { opacity:.6; }
+
+  .editor-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-editor); }
+  .editor { flex:1; display:flex; overflow:hidden; }
+  .gutter { width:54px; padding-top:14px; text-align:right; padding-right:10px;
+    font-family:var(--font-code); font-size:12px; line-height:1.65; color:var(--fg-dim);
+    border-right:1px solid var(--border); user-select:none; overflow:hidden; position:relative; }
+  .gutter .anchor { position:absolute; left:4px; font-size:9px; color:var(--accent); }
+  .code { flex:1; padding:14px 16px; font-family:var(--font-code); font-size:13px;
+    line-height:1.65; white-space:pre; overflow:auto; tab-size:4; position:relative; }
+  .hl { display:block; background:rgba(245,166,35,0.05); margin:0 -16px; padding:0 16px; border-left:2px solid var(--accent); margin-left:-18px; padding-left:14px; }
+  .kw{color:var(--syn-kw)} .fn{color:var(--syn-fn)} .str{color:var(--syn-str)}
+  .cmt{color:var(--syn-cmt);font-style:italic} .typ{color:var(--syn-typ)} .num{color:var(--syn-num)} .op{color:var(--syn-op)}
+
+  /* LSP squiggle */
+  .sq { text-decoration:underline wavy var(--warning); text-underline-offset:3px; }
+
+  /* Problems strip (LSP) */
+  .problems { background:var(--bg-activity); border-top:1px solid var(--border); padding:4px 14px;
+    display:flex; gap:14px; font-size:11px; color:var(--fg-muted); align-items:center; }
+  .problems .pi { display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .problems .pi i { width:12px; height:12px; }
+  .problems .pi:hover { color:var(--fg-primary); }
+  .problems .pi.w { color:var(--warning); }
+  .problems .pi.e { color:var(--error); }
+
+  /* ── Terminal ── */
+  .term { height:160px; border-top:1px solid var(--border); display:flex; flex-direction:column; background:var(--bg-terminal); }
+  .termc { flex:1; padding:8px 14px; font-family:var(--font-code); font-size:12px; line-height:1.7; overflow-y:auto; }
+  .tp { color:var(--success); } .tc { color:var(--accent); } .to { color:var(--fg-muted); } .te { color:var(--error); }
+  .tcur { display:inline-block; width:7px; height:14px; background:var(--fg-muted); vertical-align:text-bottom; animation:blink 1s step-end infinite; }
+  @keyframes blink { 50%{opacity:0} }
+
+  /* ── Right Panel ── */
+  .right { width:380px; background:var(--bg-panel); border-left:1px solid var(--border);
+    display:flex; flex-direction:column; box-shadow:-8px 0 24px rgba(0,0,0,0.15); }
+  .rh { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .rh .brand-mini { display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; }
+  .rh .brand-mini i { color:var(--accent); width:16px; height:16px; }
+  .badge { background:var(--accent-glow); color:var(--accent); padding:1px 6px; border-radius:4px;
+    font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .badge.lang { background:rgba(108,174,117,0.18); color:var(--success); cursor:pointer; }
+
+  .metrics { display:flex; gap:12px; padding:8px 14px; border-bottom:1px solid var(--border); font-size:10px; color:var(--fg-muted); }
+  .metric { display:flex; flex-direction:column; gap:1px; }
+  .metric b { color:var(--fg-primary); font-size:12px; font-weight:600; }
+  .metric .up { color:var(--success); font-size:9px; }
+  .metric .cache { color:var(--accent); font-size:9px; }
+
+  .chat { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .bub { max-width:88%; padding:10px 13px; border-radius:12px; font-size:13px; line-height:1.55; }
+  .bub.u { align-self:flex-end; background:var(--bubble-user-bg); border-bottom-right-radius:3px; }
+  .bub.a { align-self:flex-start; background:var(--bubble-ai-bg); border:1px solid var(--bubble-ai-border); border-bottom-left-radius:3px; color:var(--fg-secondary); }
+  .bub code { font-family:var(--font-code); font-size:11.5px; background:var(--bg-active); padding:1px 5px; border-radius:3px; color:var(--accent); }
+  .bub .cb { font-family:var(--font-code); font-size:11.5px; background:var(--bg-base); padding:8px 10px; border-radius:6px; margin:6px 0; white-space:pre; overflow-x:auto; border:1px solid var(--border); }
+  .bub .ask { background:rgba(245,166,35,0.08); border-left:3px solid var(--accent); padding:8px 10px; border-radius:4px; margin:6px 0; font-size:12px; }
+  .bub-tool { font-family:var(--font-code); font-size:11px; color:var(--fg-muted); padding:2px 14px; display:flex; align-items:center; gap:4px; }
+  .bub-tool i { width:11px; height:11px; }
+  .bub-tool.hash { color:var(--accent); }
+
+  .cinput { padding:12px 14px; border-top:1px solid var(--border); }
+  .cibox { background:var(--bg-input); border:1px solid var(--border); border-radius:8px; padding:8px 12px; transition:all .2s; }
+  .cibox:focus-within { border-color:var(--border-focus); box-shadow:0 0 0 2px var(--accent-glow); }
+  .cibox textarea { width:100%; background:transparent; border:none; color:var(--fg-primary); resize:none;
+    font-family:var(--font-ui); font-size:12.5px; outline:none; min-height:48px; }
+  .cibox textarea::placeholder { color:var(--fg-dim); }
+  .cifooter { display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:6px; }
+  .cifooter .actions { display:flex; gap:6px; align-items:center; }
+  .cifooter .actions .chip { font-size:10px; color:var(--fg-muted); background:var(--bg-active); padding:2px 6px; border-radius:3px; cursor:pointer; display:flex; align-items:center; gap:3px; }
+  .cifooter .actions .chip:hover { color:var(--fg-primary); }
+  .cifooter .actions .chip i { width:10px; height:10px; }
+  .cifooter i.send { width:16px; height:16px; color:var(--accent); cursor:pointer; }
+
+  /* ── Tools Log ── */
+  .tools { border-top:1px solid var(--border); max-height:140px; overflow-y:auto; }
+  .tentry { padding:3px 14px; display:flex; gap:8px; font-family:var(--font-code); font-size:11px; color:var(--fg-secondary); align-items:center; }
+  .ttime { color:var(--fg-dim); min-width:38px; } .tname { color:var(--accent); } .tok { color:var(--success); }
+  .tentry .undo { margin-left:auto; font-size:10px; color:var(--fg-muted); cursor:pointer; }
+  .tentry .undo:hover { color:var(--warning); }
+
+  /* ── Status Bar ── */
+  .sbar { height:24px; background:var(--status-bg); color:var(--status-fg);
+    display:flex; align-items:center; padding:0 12px; font-size:11px; font-weight:500; justify-content:space-between; }
+  .sg { display:flex; align-items:center; gap:12px; }
+  .si { display:flex; align-items:center; gap:4px; cursor:pointer; padding:0 4px; border-radius:2px; }
+  .si:hover { background:rgba(255,255,255,0.15); }
+  .si i { width:12px; height:12px; }
+  .si .ctx-bar { width:40px; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; overflow:hidden; }
+  .si .ctx-bar span { display:block; height:100%; background:currentColor; }
+
+  /* ── Command Palette (Ctrl+K hint overlay preview) ── */
+  .palette-hint { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:var(--bg-panel); border:1px solid var(--accent); border-radius:10px; padding:16px 22px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.6); display:none; z-index:100; width:420px; }
+  .palette-hint.on { display:block; }
+  .palette-hint .ph-title { font-size:12px; color:var(--fg-muted); margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .palette-hint input { width:100%; background:var(--bg-base); border:1px solid var(--border); color:var(--fg-primary);
+    padding:8px 10px; border-radius:6px; font-family:var(--font-ui); font-size:13px; outline:none; }
+  .palette-hint input:focus { border-color:var(--accent); }
+  .palette-hint .items { margin-top:10px; display:flex; flex-direction:column; gap:2px; max-height:240px; overflow-y:auto; }
+  .palette-hint .pitem { padding:6px 10px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--fg-secondary); }
+  .palette-hint .pitem.on, .palette-hint .pitem:hover { background:var(--bg-active); color:var(--fg-primary); }
+  .palette-hint .pitem i { width:13px; height:13px; color:var(--accent); }
+  .palette-hint .pitem .kbd { margin-left:auto; font-size:9.5px; color:var(--fg-muted); font-family:var(--font-code); }
+
+  ::-webkit-scrollbar { width:7px; height:7px; }
+  ::-webkit-scrollbar-thumb { background:var(--bg-active); border-radius:4px; border:1px solid transparent; background-clip:content-box; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--fg-dim); }
+</style>
+</head>
+<body>
+
+<!-- Top Ribbon -->
+<div class="ribbon">
+  <div class="brand">
+    <i data-lucide="hexagon" class="hex"></i>
+    <span>hanimo</span>
+    <small>desktop · v0.3.0-dev</small>
+  </div>
+  <div class="divider"></div>
+
+  <!-- Mode Switcher -->
+  <div class="modes">
+    <div class="mode on"><i data-lucide="sparkles"></i>Super</div>
+    <div class="mode"><i data-lucide="brain-circuit"></i>Deep</div>
+    <div class="mode"><i data-lucide="lock"></i>Plan</div>
+  </div>
+  <div class="divider"></div>
+
+  <!-- Theme picker -->
+  <div class="theme-bar">
+    <button class="tb on" onclick="T('',this)"><span class="d" style="background:linear-gradient(135deg,#f5a623,#e8a317)"></span>Honey</button>
+    <button class="tb" onclick="T('t-slate',this)"><span class="d" style="background:#3b82f6"></span>Slate</button>
+    <button class="tb" onclick="T('t-ocean',this)"><span class="d" style="background:#38bdf8"></span>Ocean</button>
+    <button class="tb" onclick="T('t-dracula',this)"><span class="d" style="background:#bd93f9"></span>Dracula</button>
+    <button class="tb" onclick="T('t-nord',this)"><span class="d" style="background:#88c0d0"></span>Nord</button>
+    <button class="tb" onclick="T('t-forest',this)"><span class="d" style="background:#86efac"></span>Forest</button>
+    <button class="tb" onclick="T('t-github',this)"><span class="d" style="background:#58a6ff"></span>GitHub</button>
+    <button class="tb" onclick="T('t-claude',this)"><span class="d" style="background:#c96442"></span>Claude</button>
+    <button class="tb" onclick="T('t-paper',this)"><span class="d" style="background:linear-gradient(135deg,#fff,#b8860b)"></span>Paper</button>
+  </div>
+
+  <!-- Provider chip -->
+  <div class="provider-chip" title="Click to switch provider">
+    <i data-lucide="cpu"></i>
+    <span>Claude Sonnet 4.6</span>
+    <span class="tier">T1</span>
+    <i data-lucide="chevron-down"></i>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Activity Bar -->
+  <aside class="act">
+    <div class="ai on" title="Explorer"><i data-lucide="files"></i></div>
+    <div class="ai" title="Search"><i data-lucide="search"></i></div>
+    <div class="ai" title="Git"><i data-lucide="git-branch"></i><span class="dot"></span></div>
+    <div class="ai" title="Run / Debug"><i data-lucide="play"></i></div>
+    <div class="ai" title="LSP Problems"><i data-lucide="triangle-alert"></i><span class="num">3</span></div>
+    <div class="ai" title="Knowledge Packs"><i data-lucide="book-open"></i></div>
+    <div class="ai" title="Skills"><i data-lucide="sparkle"></i></div>
+    <div class="ai" title="MCP Servers"><i data-lucide="plug-zap"></i><span class="dot"></span></div>
+    <div class="ai" title="Subagents"><i data-lucide="share-2"></i></div>
+    <div class="ai" title="Sessions"><i data-lucide="history"></i></div>
+    <div class="ai" title="Web Preview"><i data-lucide="monitor"></i></div>
+    <div class="act-spacer"></div>
+    <div class="ai" title="Permissions"><i data-lucide="shield-check"></i></div>
+    <div class="ai" title="Profile"><i data-lucide="user"></i></div>
+    <div class="ai" title="Settings"><i data-lucide="settings"></i></div>
+  </aside>
+
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="sh">
+      Explorer
+      <div class="actions">
+        <i data-lucide="refresh-cw" title="Refresh"></i>
+        <i data-lucide="file-plus" title="New File"></i>
+        <i data-lucide="folder-plus" title="New Folder"></i>
+      </div>
+    </div>
+    <div class="tl" id="tree"></div>
+  </aside>
+
+  <!-- Center -->
+  <main class="center">
+    <div class="tabs">
+      <div class="tab on"><i data-lucide="file-code" style="color:var(--syn-fn)"></i>client.go<span class="x"><i data-lucide="x"></i></span></div>
+      <div class="tab"><i data-lucide="file-code" style="color:var(--syn-typ)"></i>hashline.go<span class="x"><i data-lucide="x"></i></span></div>
+      <div class="tab"><i data-lucide="file-text" style="color:var(--fg-muted)"></i>README.md<span class="x"><i data-lucide="x"></i></span></div>
+    </div>
+    <div class="editor-wrap">
+      <div class="editor">
+        <div class="gutter" id="gut"></div>
+        <div class="code" id="code"></div>
+      </div>
+      <div class="problems">
+        <div class="pi"><i data-lucide="bug"></i>Problems</div>
+        <div class="pi e"><i data-lucide="circle-x"></i>0</div>
+        <div class="pi w"><i data-lucide="triangle-alert"></i>3 warnings (gopls)</div>
+        <div class="pi"><i data-lucide="info"></i>2 hints</div>
+        <div class="pi" style="margin-left:auto"><i data-lucide="lock"></i>hash-anchored · line 14</div>
+      </div>
+    </div>
+    <div class="term">
+      <div class="sh" style="padding:6px 14px">Terminal<span style="font-size:10px;color:var(--fg-dim);text-transform:none;letter-spacing:0;font-weight:400;margin-left:auto">bash</span></div>
+      <div class="termc" id="termc"></div>
+    </div>
+  </main>
+
+  <!-- Right Panel -->
+  <aside class="right">
+    <div class="rh">
+      <div class="brand-mini">
+        <i data-lucide="sparkles"></i>
+        <span>hanimo chat</span>
+      </div>
+      <span class="badge">Super</span>
+      <span class="badge lang" title="Toggle KO/EN">한</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--fg-muted)">Ctrl+K</span>
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <span>Context</span>
+        <b>23%</b>
+        <span class="up">2,481 / 200K</span>
+      </div>
+      <div class="metric">
+        <span>Cache hit</span>
+        <b>87%</b>
+        <span class="cache">saved ~$0.42</span>
+      </div>
+      <div class="metric">
+        <span>Iter</span>
+        <b>3 / 200</b>
+        <span class="up">Deep loop</span>
+      </div>
+      <div class="metric">
+        <span>Provider</span>
+        <b style="color:var(--accent)">Anthropic</b>
+        <span class="up">T1 · SWE 80%</span>
+      </div>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="cinput">
+      <div class="cibox">
+        <textarea id="inp" placeholder="hanimo에 물어보세요… (Ctrl+K for commands, @ for files, / for skills)" rows="2"></textarea>
+        <div class="cifooter">
+          <div class="actions">
+            <div class="chip"><i data-lucide="at-sign"></i>context</div>
+            <div class="chip"><i data-lucide="sparkle"></i>skill</div>
+            <div class="chip"><i data-lucide="plug-zap"></i>mcp</div>
+          </div>
+          <i data-lucide="send" class="send"></i>
+        </div>
+      </div>
+    </div>
+    <div class="tools">
+      <div class="sh" style="padding:6px 14px">Tools · Snapshots<span class="badge" style="margin-left:6px;font-size:9px">5</span></div>
+      <div id="tlog"></div>
+    </div>
+  </aside>
+
+  <!-- Command Palette preview (hidden by default, Ctrl+K to show) -->
+  <div class="palette-hint" id="palette">
+    <div class="ph-title"><i data-lucide="command" style="width:13px;height:13px"></i>Command Palette <span style="margin-left:auto">Esc to close</span></div>
+    <input placeholder="Type a command, file, skill, or ? for help…" id="pinput">
+    <div class="items">
+      <div class="pitem on"><i data-lucide="file-search"></i>Open file… <span class="kbd">⌘P</span></div>
+      <div class="pitem"><i data-lucide="sparkle"></i>Run skill: /init <span class="kbd">⇧⌘P</span></div>
+      <div class="pitem"><i data-lucide="git-branch"></i>Git: Create worktree <span class="kbd">⌥⌘W</span></div>
+      <div class="pitem"><i data-lucide="plug-zap"></i>MCP: Toggle Jira server <span class="kbd"></span></div>
+      <div class="pitem"><i data-lucide="history"></i>Session: Resume… <span class="kbd">⌘R</span></div>
+      <div class="pitem"><i data-lucide="share-2"></i>Spawn subagent <span class="kbd">⌘⇧A</span></div>
+      <div class="pitem"><i data-lucide="book-open"></i>Knowledge: Toggle pack 'spring' <span class="kbd"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Status Bar -->
+<footer class="sbar">
+  <div class="sg">
+    <div class="si"><i data-lucide="git-branch"></i>main*</div>
+    <div class="si"><i data-lucide="cloud"></i>Synced</div>
+    <div class="si"><i data-lucide="cpu"></i>claude-sonnet-4-6</div>
+    <div class="si"><i data-lucide="shield-check"></i>Ask (Shift+Tab)</div>
+  </div>
+  <div class="sg">
+    <div class="si">
+      <span>ctx</span>
+      <div class="ctx-bar"><span style="width:23%"></span></div>
+      <span>23%</span>
+    </div>
+    <div class="si">cache:87%</div>
+    <div class="si">UTF-8</div>
+    <div class="si">Go</div>
+    <div class="si"><i data-lucide="hexagon"></i>v0.3.0-dev</div>
+  </div>
+</footer>
+
+<script>
+function T(c,b){document.body.className=c;document.querySelectorAll('.tb').forEach(x=>x.classList.remove('on'));b.classList.add('on');lucide.createIcons()}
+
+// File tree
+const F=[
+  {n:'cmd/',d:1,o:1,c:[
+    {n:'hanimo/',d:1,o:1,c:[{n:'main.go'}]},
+    {n:'hanimo-code-desktop/',d:1,c:[{n:'main.go',g:'A'},{n:'app.go',g:'A'}]},
+    {n:'spark/',d:1,c:[{n:'main.go'}]}
+  ]},
+  {n:'internal/',d:1,o:1,c:[
+    {n:'agents/',d:1,c:[{n:'intent.go'},{n:'askuser.go'},{n:'subagent.go',g:'A'}]},
+    {n:'llm/',d:1,o:1,c:[
+      {n:'client.go',sel:1,g:'M'},
+      {n:'cache.go',g:'A'},
+      {n:'compaction.go'},
+      {n:'providers/',d:1}
+    ]},
+    {n:'tools/',d:1,c:[{n:'hashline.go'},{n:'apply_patch.go'},{n:'smartctx.go'}]},
+    {n:'lsp/',d:1,c:[{n:'client.go'},{n:'servers.go'}]},
+    {n:'mcp/',d:1,c:[{n:'client.go'}]},
+    {n:'skills/',d:1,c:[{n:'loader.go'}]},
+    {n:'hooks/',d:1,c:[{n:'hooks.go'}]},
+    {n:'repomap/',d:1,c:[{n:'pagerank.go',g:'A'}]},
+  ]},
+  {n:'knowledge/',d:1,c:[{n:'docs/',d:1}]},
+  {n:'.hanimo.md'},{n:'go.mod'},{n:'Makefile',g:'M'},{n:'README.md'},
+];
+function R(items,dep){let h='';for(const i of items){
+  const ind='<span class="tind"></span>'.repeat(dep);
+  const chevron=i.d?(i.o?'chevron-down':'chevron-right'):'';
+  const icon=i.d?(i.o?'folder-open':'folder'):'file-code';
+  const cls=['ti',i.d?'dir':'',i.sel?'on':''].filter(Boolean).join(' ');
+  let gb='';if(i.g==='M')gb='<span class="gb gb-m">M</span>';else if(i.g==='A')gb='<span class="gb gb-a">A</span>';
+  h+=`<div class="${cls}">${ind}`;
+  if(chevron)h+=`<i data-lucide="${chevron}"></i>`;
+  h+=`<i data-lucide="${icon}" style="${i.d?'':'color:var(--syn-fn)'}"></i><span>${i.n}</span>${gb}</div>`;
+  if(i.d&&i.o&&i.c)h+=R(i.c,dep+1);
+}return h}
+
+// Code with hashline anchor highlight
+const C=`<span class="kw">package</span> <span class="typ">llm</span>
+
+<span class="kw">import</span> (
+	<span class="str">"context"</span>
+	<span class="str">"encoding/json"</span>
+	<span class="str">"strings"</span>
+
+	<span class="str">"github.com/flykimjiwon/hanimo-code/internal/tools"</span>
+	<span class="str">"github.com/flykimjiwon/hanimo-code/internal/providers"</span>
+)
+
+<span class="cmt">// StreamChat streams a chat completion with hash-anchored edits,</span>
+<span class="cmt">// prompt caching, and doom-loop detection.</span>
+<span class="hl"><span class="kw">func</span> (c *Client) <span class="fn">StreamChat</span>(ctx context.Context, req <span class="typ">Request</span>) <span class="op">&lt;-</span><span class="kw">chan</span> <span class="typ">StreamChunk</span> {</span>
+	ch <span class="op">:=</span> <span class="fn">make</span>(<span class="kw">chan</span> StreamChunk)
+
+	<span class="kw">go</span> <span class="kw">func</span>() {
+		<span class="kw">defer</span> <span class="fn">close</span>(ch)
+
+		<span class="cmt">// Attach cache_control for Anthropic / prompt_cache_key for OpenAI</span>
+		<span class="kw">if</span> c.provider.<span class="fn">SupportsCaching</span>() {
+			req.Cache <span class="op">=</span> providers.<span class="fn">BuildCache</span>(req.Messages)
+		}
+
+		<span class="kw">if</span> c.loop.<span class="fn">IsDoomed</span>(req) {
+			ch <span class="op">&lt;-</span> StreamChunk{Err: <span class="fn">ErrDoomLoop</span>, Done: <span class="kw">true</span>}
+			<span class="kw">return</span>
+		}
+
+		stream, err <span class="op">:=</span> c.provider.<span class="fn">Stream</span>(ctx, req)
+		<span class="kw">if</span> err <span class="op">!=</span> <span class="kw">nil</span> {
+			ch <span class="op">&lt;-</span> StreamChunk{Err: err, Done: <span class="kw">true</span>}
+			<span class="kw">return</span>
+		}
+		<span class="kw">defer</span> stream.<span class="fn">Close</span>()
+
+		<span class="cmt">// hashline_edit emits line-level MD5 anchors — never overwrite</span>
+		<span class="cmt">// a file the model hasn't <span class="sq">obesrved</span>.</span>
+	}()
+	<span class="kw">return</span> ch
+}`;
+
+// Terminal
+const TM=`<div><span class="tc">$</span> <span class="tp">~/hanimo-code</span> go test ./internal/llm/... -count=1</div>
+<div class="to">ok  github.com/flykimjiwon/hanimo-code/internal/llm   0.287s  (62 tests)</div>
+<div>&nbsp;</div>
+<div><span class="tc">$</span> <span class="tp">~/hanimo-code</span> hanimo models</div>
+<div class="to">Tier 1 (Certified):  claude-sonnet-4-6, gpt-5, gemini-2.5-pro, qwen3-coder-30b</div>
+<div class="to">Tier 2 (Supported):  deepseek-v3, mistral-large, gemma-4-31b</div>
+<div class="to">Tier 3 (Experimental): 10 models behind --experimental</div>
+<div>&nbsp;</div>
+<div><span class="tc">$</span> <span class="tp">~/hanimo-code</span> make bake ENDPOINT=localhost:11434 MODEL=qwen3:8b</div>
+<div class="to">baked binary: dist/hanimo-baked-darwin-arm64 (26MB, endpoint+model frozen)</div>
+<div>&nbsp;</div>
+<div><span class="tc">$</span> <span class="tp">~/hanimo-code</span> <span class="tcur"></span></div>`;
+
+// Chat
+const CH=`
+<div class="bub u">hashline_edit로 client.go의 StreamChat 함수에 prompt caching 추가해줘</div>
+
+<div class="bub-tool"><i data-lucide="search"></i>smart_context: StreamChat</div>
+<div class="bub-tool"><i data-lucide="git-branch"></i>repo_map: 3 related files found</div>
+<div class="bub-tool hash"><i data-lucide="hash"></i>hashline_read client.go (line 14-48, anchor a3f9)</div>
+
+<div class="bub a">
+찾았습니다. 변경 전 명확히 확인할게요.
+
+<div class="ask">
+<strong>질문 3가지</strong> (Plan 승인 필요):
+<br>1. Anthropic <code>cache_control</code> + OpenAI <code>prompt_cache_key</code> 동시 지원?
+<br>2. 캐시 키 전략 — system + tools만 캐시 (4-message ephemeral)?
+<br>3. Tier 3 프로바이더는 캐시 무시하고 통과?
+</div>
+
+기본값으로 진행하려면 <code>/approve</code>, 수정하려면 답해 주세요.
+</div>
+
+<div class="bub u">1 yes, 2 system+tools만, 3 통과</div>
+
+<div class="bub-tool hash"><i data-lucide="hash"></i>hashline_edit client.go (a3f9 verified)</div>
+<div class="bub-tool"><i data-lucide="check-check"></i>apply_patch: 2 hunks, 14 lines added</div>
+<div class="bub-tool"><i data-lucide="circle-check"></i>go build: OK</div>
+
+<div class="bub a">완료. <code>providers.BuildCache()</code> 호출 추가하고 <code>SupportsCaching()</code>으로 게이트 걸었습니다. Tier 1/2만 캐시, Tier 3는 그냥 통과. <strong>테스트 3개 추가</strong> (cache hit·miss·skip).
+
+다음 단계: <code>go test ./llm/...</code> 돌릴까요, 아니면 이대로 커밋?<span style="display:inline-block;width:2px;height:13px;background:var(--accent);animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:1px"></span>
+</div>`;
+
+// Tools
+const TL=`
+<div class="tentry"><span class="ttime">10:38</span><span class="tname">smart_context</span> StreamChat <span class="tok">3 files</span></div>
+<div class="tentry"><span class="ttime">10:38</span><span class="tname">repo_map</span> query <span class="tok">80ms warm</span></div>
+<div class="tentry"><span class="ttime">10:38</span><span class="tname">hashline_read</span> client.go <span class="tok">OK a3f9</span><span class="undo">↺</span></div>
+<div class="tentry"><span class="ttime">10:39</span><span class="tname">hashline_edit</span> client.go <span class="tok">2 hunks</span><span class="undo">↺ undo</span></div>
+<div class="tentry"><span class="ttime">10:40</span><span class="tname">shell</span> go build <span class="tok">OK</span></div>`;
+
+document.getElementById('tree').innerHTML=R(F,0);
+document.getElementById('code').innerHTML=C;
+document.getElementById('termc').innerHTML=TM;
+document.getElementById('chat').innerHTML=CH;
+document.getElementById('tlog').innerHTML=TL;
+
+const lines=document.getElementById('code').innerText.split('\n').length;
+let g='';for(let i=1;i<=lines;i++)g+=i+'\n';
+document.getElementById('gut').textContent=g;
+
+document.getElementById('tree').addEventListener('click',e=>{
+  const t=e.target.closest('.ti');if(!t)return;
+  document.querySelectorAll('.ti.on').forEach(x=>x.classList.remove('on'));t.classList.add('on');
+});
+document.getElementById('inp').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();const v=this.value.trim();if(!v)return;
+  const c=document.getElementById('chat');
+  c.innerHTML+=`<div class="bub u">${v}</div><div class="bub a">확인하겠습니다<span style="display:inline-block;width:2px;height:13px;background:var(--accent);animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:1px"></span></div>`;
+  c.scrollTop=c.scrollHeight;this.value='';}
+});
+
+// Toggle command palette with Ctrl+K / Cmd+K
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){
+    e.preventDefault();
+    document.getElementById('palette').classList.toggle('on');
+    setTimeout(()=>document.getElementById('pinput').focus(),50);
+  }
+  if(e.key==='Escape'){document.getElementById('palette').classList.remove('on');}
+});
+
+lucide.createIcons();
+</script>
+</body>
+</html>

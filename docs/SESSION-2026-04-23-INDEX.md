@@ -34,13 +34,15 @@
 
 ## 2. 이번 세션 산출물
 
-### 2.1 신규 문서 (3개)
+### 2.1 신규 문서 (5개)
 
 | 경로 | 내용 |
 |---|---|
 | `docs/strategy/REPUTATION-STRATEGY-2026-04-23.md` | 경쟁 전략 마스터 · 90일 6-sprint · 12개월 이정표 · 킬러 무브 · 결정 대기 5건 |
 | `docs/porting/BIDIRECTIONAL-ANALYSIS-2026-04-23.md` | hanimo ↔ TECHAI 본질 필터링 포팅 리스트 (A 8건 · B 4건 · 양쪽 9건 · 금지 12건) |
-| `docs/TODO-decisions-2026-04-23.md` | 실제 착수 전 확정 필요 5건 |
+| `docs/TODO-decisions-2026-04-23.md` | 실제 착수 전 확정 필요 항목 (전략 5 · 포팅 블록 3 · Sprint 1 · 세컨더리 + **디자인 5**) |
+| `docs/porting/HANIMO-DESKTOP-DESIGN-PLAN-2026-04-23.md` | IDE 디자인 v1 변환표 · 외부망 전용 14기능 · 6-phase 구현 로드맵 (3~5일) |
+| `designs/hanimo-desktop-v1.html` | 678 LOC · 38KB · Honey 브랜드 테마 기본 · 8 테마 · Mode Switcher · 14 Activity 아이콘 · Command Palette 오버레이 |
 
 ### 2.2 수정 문서 (1개)
 
@@ -83,7 +85,8 @@
 - Sprint 1 (Tier 1 완벽주의) 실제 코드 작업
 - 작업 A (hanimo → TECHAI 포팅)
 - 작업 B (TECHAI → hanimo 포팅)
-- hanimo-code-desktop 포팅 (2026-04-24~)
+- hanimo-code-desktop Wails 포팅 (2026-04-24~) + Design Phase 1~5
 - 보류 문서들에 `status: deferred` frontmatter 실제 추가
+- 디자인 결정 5건 확정 후 v2 디자인 mock 갱신
 
 각 항목은 `docs/TODO-decisions-2026-04-23.md`와 관련 플랜 문서 참조하여 착수.
