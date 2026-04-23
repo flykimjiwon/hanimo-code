@@ -109,7 +109,7 @@ func TestIntegration_FileEdit_FullCycle(t *testing.T) {
 	}
 
 	// Edit
-	n, err := FileEdit(p, `"old"`, `"new"`)
+	n, _, err := FileEdit(p, `"old"`, `"new"`)
 	if err != nil {
 		t.Fatalf("edit failed: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestIntegration_FileEdit_WrongOldString(t *testing.T) {
 	os.WriteFile(p, []byte("func main() {}"), 0644)
 
 	FileRead(p) // mark as read
-	_, err := FileEdit(p, "NONEXISTENT_STRING", "replacement")
+	_, _, err := FileEdit(p, "NONEXISTENT_STRING", "replacement")
 	if err == nil {
 		t.Fatal("should fail for non-matching old_string")
 	}

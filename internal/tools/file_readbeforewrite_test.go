@@ -15,7 +15,7 @@ func TestReadBeforeWrite_EditUnread(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Attempt to edit without a prior read — must refuse.
-	_, err := FileEdit(p, "hello", "bye")
+	_, _, err := FileEdit(p, "hello", "bye")
 	if err == nil {
 		t.Fatal("expected refusal when editing unread file")
 	}
@@ -34,7 +34,7 @@ func TestReadBeforeWrite_EditAfterRead(t *testing.T) {
 	if _, err := FileRead(p); err != nil {
 		t.Fatal(err)
 	}
-	n, err := FileEdit(p, "hello", "bye")
+	n, _, err := FileEdit(p, "hello", "bye")
 	if err != nil {
 		t.Fatalf("edit after read should succeed, got %v", err)
 	}
@@ -88,7 +88,7 @@ func TestReadBeforeWrite_ResetClears(t *testing.T) {
 	}
 	_, _ = FileRead(p)
 	ResetReadSet() // new turn
-	_, err := FileEdit(p, "x", "y")
+	_, _, err := FileEdit(p, "x", "y")
 	if err == nil {
 		t.Fatal("ResetReadSet should drop the prior read, edit must refuse")
 	}

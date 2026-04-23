@@ -33,11 +33,25 @@ type DefaultConfig_ struct {
 	Model    string `yaml:"model,omitempty"`
 }
 
+type MCPServer struct {
+	Name      string            `yaml:"name"`
+	Transport string            `yaml:"transport"` // "stdio" or "sse"
+	Command   string            `yaml:"command"`   // for stdio: command to run
+	Args      []string          `yaml:"args"`      // for stdio: command args
+	URL       string            `yaml:"url"`       // for sse: endpoint URL
+	Env       map[string]string `yaml:"env"`       // optional env vars
+}
+
+type MCPConfig struct {
+	Servers []MCPServer `yaml:"servers"`
+}
+
 type Config struct {
 	API           APIConfig                 `yaml:"api"`
 	Models        ModelsConfig              `yaml:"models"`
 	Default       DefaultConfig_            `yaml:"default,omitempty"`
 	Providers     map[string]ProviderConfig `yaml:"providers,omitempty"`
+	MCP           MCPConfig                 `yaml:"mcp,omitempty"`
 	MaxIterations int                       `yaml:"max_iterations,omitempty"`
 	NoStream      bool                      `yaml:"no_stream,omitempty"`
 }

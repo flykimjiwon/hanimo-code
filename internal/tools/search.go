@@ -42,9 +42,19 @@ const (
 
 // GrepSearch searches file contents by regex pattern.
 // Returns matches in "file:line:content" format.
+// Uses ripgrep (rg) when available for 100x performance, falls back to Go.
 func GrepSearch(pattern, basePath, glob string, ignoreCase bool, contextLines int) (string, error) {
 	if pattern == "" {
 		return "", fmt.Errorf("pattern is required")
+	}
+
+	// Try ripgrep first for performance
+	if IsRipgrepAvailable() {
+		result, err := RipgrepSearch(pattern, basePath, glob, ignoreCase, contextLines)
+		if err == nil {
+			return result, nil
+		}
+		config.DebugLog("[GREP] ripgrep failed, falling back to Go: %v", err)
 	}
 
 	flags := ""

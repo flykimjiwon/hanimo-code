@@ -77,6 +77,20 @@ func AllTools() []openai.Tool {
 		{
 			Type: openai.ToolTypeFunction,
 			Function: &openai.FunctionDefinition{
+				Name:        "apply_patch",
+				Description: "Apply a multi-file patch to add, update, move, or delete files in a single call. Use the Codex patch format:\n*** Begin Patch\n*** Add File: path\n+content\n*** Update File: path\n@@ context anchor\n-old line\n+new line\n*** Delete File: path\n*** End Patch\nBest for: multi-file refactors, renames, coordinated changes across files. For single-file edits prefer file_edit.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"patch": {Type: "string", Description: "The patch text in Codex format (*** Begin Patch / *** End Patch)"},
+					},
+					Required: []string{"patch"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
 				Name:        "list_files",
 				Description: "List files in a directory. Use recursive=true to see the full project tree (skips node_modules, .git, dist). DO NOT call this on an unknown repo without trying list_tree first — large monorepos will hit the 500-file cap and waste context. DO NOT use instead of grep_search/glob_search when looking for specific files by content or pattern.",
 				Parameters: paramSchema{
@@ -133,6 +147,21 @@ func AllTools() []openai.Tool {
 						"context_lines": {Type: "string", Description: "Number of context lines around matches (default: 0)"},
 					},
 					Required: []string{"pattern"},
+				},
+			},
+		},
+		{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        "symbol_search",
+				Description: "Find code symbols (functions, classes, methods, interfaces, types) by name. Searches Go, JS, TS, Python, Java, Rust, Shell files. Faster than grep for finding definitions.",
+				Parameters: paramSchema{
+					Type: "object",
+					Properties: map[string]propertySchema{
+						"query": {Type: "string", Description: "Symbol name to search for (partial match supported)"},
+						"path":  {Type: "string", Description: "Directory to search in (default: current directory)"},
+					},
+					Required: []string{"query"},
 				},
 			},
 		},
@@ -547,11 +576,25 @@ func executeInner(name string, argsJSON string) string {
 		if path == "" || oldStr == "" {
 			return "Error: path and old_string are required"
 		}
-		count, err := FileEdit(path, oldStr, newStr)
+		count, diff, err := FileEdit(path, oldStr, newStr)
 		if err != nil {
 			return fmt.Sprintf("Error: %v", err)
 		}
+		if diff != "" {
+			return fmt.Sprintf("OK: replaced %d occurrence(s) in %s\n%s", count, path, diff)
+		}
 		return fmt.Sprintf("OK: replaced %d occurrence(s) in %s", count, path)
+
+	case "apply_patch":
+		patch, _ := args["patch"].(string)
+		if patch == "" {
+			return "Error: patch text is required"
+		}
+		result, err := ApplyPatch(patch)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
 
 	case "list_files":
 		path, _ := args["path"].(string)
@@ -637,6 +680,18 @@ func executeInner(name string, argsJSON string) string {
 			contextLines = int(cl)
 		}
 		result, err := GrepSearch(pattern, searchPath, glob, ignoreCase, contextLines)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return result
+
+	case "symbol_search":
+		query, _ := args["query"].(string)
+		if query == "" {
+			return "Error: query is required"
+		}
+		searchPath, _ := args["path"].(string)
+		result, err := SymbolSearch(query, searchPath)
 		if err != nil {
 			return fmt.Sprintf("Error: %v", err)
 		}
