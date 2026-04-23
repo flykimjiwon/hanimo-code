@@ -81,3 +81,14 @@
 - [ ] hanimo-rag Docker 파일 유지/제거 결정 (본인 미사용)
 - [ ] CONTRIBUTING.md · good-first-issue 라벨 30개 작성 (Sprint 5)
 - [ ] `hanimo.dev` 도메인 인수 및 DNS 설정
+
+## 6. Tooling Policy 편입 (2026-04-24 추가)
+
+관련 문서: `docs/superpowers/TOOLING-POLICY-2026-04-24.md`
+
+- [ ] Sprint 1 착수 전 `REPUTATION-STRATEGY`를 `superpowers:writing-plans` 포맷으로 재구성 (Phase별 verification 기준 추가)
+- [ ] `designs/hanimo-desktop-v1.html` `web-design-guidelines` 스킬로 A11y·contrast·keyboard 검증
+- [ ] Phase 0~5 각 진입 시 `writing-plans` → `executing-plans` 체인 적용
+- [ ] 2개 이상 독립 변경 발생 시 gstack 스택 분리 규칙 적용
+- [ ] 완료 선언 직전 `superpowers:verification-before-completion` 항상 invoke
+- [ ] UI 작업 시 `frontend-design` 또는 `tui-designer` 명시적 invoke
