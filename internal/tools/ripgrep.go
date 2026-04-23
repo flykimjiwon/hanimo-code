@@ -32,17 +32,6 @@ func IsRipgrepAvailable() bool {
 	return rgAvailVal
 }
 
-const maxLineChars = 2000 // truncate long lines (minified JS etc.)
-
-// truncateLine limits a line to maxLineChars runes.
-func truncateLine(line string) string {
-	runes := []rune(line)
-	if len(runes) > maxLineChars {
-		return string(runes[:maxLineChars]) + "..."
-	}
-	return line
-}
-
 // rgMatch represents a single ripgrep JSON match.
 type rgMatch struct {
 	Type string `json:"type"`

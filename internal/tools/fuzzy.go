@@ -6,23 +6,70 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/flykimjiwon/hanimo/internal/config"
 )
 
-// FuzzyMatch represents a fuzzy-matched file with a score.
-type FuzzyMatch struct {
-	Path    string
-	Score   int
-	ModTime time.Time
+// fuzzyScore computes a score for how well query matches candidate.
+// Returns -1 if query is not a subsequence of candidate.
+func fuzzyScore(query, candidate string) int {
+	lowerQuery := strings.ToLower(query)
+	lowerCand := strings.ToLower(candidate)
+
+	// Subsequence check
+	qi := 0
+	for ci := 0; ci < len(lowerCand) && qi < len(lowerQuery); ci++ {
+		if lowerCand[ci] == lowerQuery[qi] {
+			qi++
+		}
+	}
+	if qi < len(lowerQuery) {
+		return -1 // not a subsequence
+	}
+
+	score := 0
+
+	// Consecutive match bonus
+	qi = 0
+	consecutive := 0
+	for ci := 0; ci < len(lowerCand) && qi < len(lowerQuery); ci++ {
+		if lowerCand[ci] == lowerQuery[qi] {
+			consecutive++
+			if consecutive > 1 {
+				score += 3 // consecutive bonus
+			}
+			// Exact case match bonus
+			if qi < len(query) && ci < len(candidate) && candidate[ci] == query[qi] {
+				score++
+			}
+			qi++
+		} else {
+			consecutive = 0
+		}
+	}
+
+	// Basename match bonus
+	base := filepath.Base(candidate)
+	lowerBase := strings.ToLower(base)
+	bqi := 0
+	for ci := 0; ci < len(lowerBase) && bqi < len(lowerQuery); ci++ {
+		if lowerBase[ci] == lowerQuery[bqi] {
+			bqi++
+		}
+	}
+	if bqi == len(lowerQuery) {
+		score += 5
+	}
+
+	return score
 }
 
-// FuzzyFind searches for files whose names fuzzy-match the query.
-// "apgo" matches "app.go", "regst" matches "registry.go".
-func FuzzyFind(query, basePath string, maxResults int) (string, error) {
+// FuzzyFileSearch finds files matching a fuzzy query string.
+// Uses character-by-character subsequence matching with scoring.
+// Returns results formatted as "score\tpath\n".
+func FuzzyFileSearch(query, basePath string, maxResults int) (string, error) {
 	if query == "" {
-		return "", nil
+		return "", fmt.Errorf("query is required")
 	}
 	if basePath == "" {
 		basePath = "."
@@ -33,18 +80,23 @@ func FuzzyFind(query, basePath string, maxResults int) (string, error) {
 
 	absBase, err := filepath.Abs(basePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("invalid path: %w", err)
 	}
 
 	gi := LoadGitIgnore(absBase)
-	queryLower := strings.ToLower(query)
+	queryStartsDot := strings.HasPrefix(query, ".")
 
-	var matches []FuzzyMatch
+	type scored struct {
+		path  string
+		score int
+	}
+	var candidates []scored
 
-	_ = filepath.WalkDir(absBase, func(path string, d os.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(absBase, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
+
 		rel, _ := filepath.Rel(absBase, path)
 		rel = filepath.ToSlash(rel)
 
@@ -54,119 +106,50 @@ func FuzzyFind(query, basePath string, maxResults int) (string, error) {
 			}
 			return nil
 		}
+
 		if shouldSkip(gi, rel, false, d.Name()) {
 			return nil
 		}
 
-		// Skip binary files
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if binaryExts[ext] {
+		s := fuzzyScore(query, rel)
+		if s < 0 {
 			return nil
 		}
 
-		score := fuzzyScore(queryLower, strings.ToLower(rel))
-		if score > 0 {
-			mt := time.Time{}
-			if info, err := d.Info(); err == nil {
-				mt = info.ModTime()
-			}
-			matches = append(matches, FuzzyMatch{Path: rel, Score: score, ModTime: mt})
+		// Hidden files rank lower unless query starts with '.'
+		if !queryStartsDot && strings.HasPrefix(d.Name(), ".") {
+			s -= 10
 		}
 
-		// Collect enough candidates then stop
-		if len(matches) > maxResults*10 {
-			return fmt.Errorf("enough candidates")
-		}
+		candidates = append(candidates, scored{path: rel, score: s})
 		return nil
 	})
 
-	if len(matches) == 0 {
+	if walkErr != nil {
+		config.DebugLog("[FUZZY] walk error: %v", walkErr)
+	}
+
+	// Sort by score descending, then path ascending for ties
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].score != candidates[j].score {
+			return candidates[i].score > candidates[j].score
+		}
+		return candidates[i].path < candidates[j].path
+	})
+
+	if len(candidates) > maxResults {
+		candidates = candidates[:maxResults]
+	}
+
+	if len(candidates) == 0 {
 		return "No files matched.", nil
 	}
 
-	// Sort by score descending, then mtime descending
-	sort.Slice(matches, func(i, j int) bool {
-		if matches[i].Score != matches[j].Score {
-			return matches[i].Score > matches[j].Score
-		}
-		return matches[i].ModTime.After(matches[j].ModTime)
-	})
-
-	if len(matches) > maxResults {
-		matches = matches[:maxResults]
-	}
-
 	var sb strings.Builder
-	for _, m := range matches {
-		sb.WriteString(m.Path)
-		sb.WriteString("\n")
+	for _, c := range candidates {
+		sb.WriteString(fmt.Sprintf("%d\t%s\n", c.score, c.path))
 	}
 
-	config.DebugLog("[FUZZY] query=%q matches=%d", query, len(matches))
+	config.DebugLog("[FUZZY] query=%q path=%s results=%d", query, basePath, len(candidates))
 	return sb.String(), nil
-}
-
-// fuzzyScore returns a score for how well needle matches haystack.
-// Higher is better. 0 means no match.
-// Consecutive character matches and word-boundary matches score higher.
-func fuzzyScore(needle, haystack string) int {
-	if len(needle) == 0 {
-		return 0
-	}
-
-	// Exact substring match — highest score
-	if strings.Contains(haystack, needle) {
-		return 1000 + len(needle)*10
-	}
-
-	// Basename match scores higher than full path match
-	base := filepath.Base(haystack)
-	if strings.Contains(base, needle) {
-		return 900 + len(needle)*10
-	}
-
-	// Fuzzy character-by-character matching
-	needleRunes := []rune(needle)
-	score := 0
-	needleIdx := 0
-	consecutive := 0
-	prevMatched := false
-
-	for i, ch := range haystack {
-		if needleIdx >= len(needleRunes) {
-			break
-		}
-
-		if ch == needleRunes[needleIdx] {
-			needleIdx++
-			if prevMatched {
-				consecutive++
-				score += 5 + consecutive*3 // consecutive bonus
-			} else {
-				consecutive = 0
-				score += 5
-			}
-			// Word boundary bonus (after /, ., _, -)
-			if i > 0 {
-				prev := rune(haystack[i-1])
-				if prev == '/' || prev == '.' || prev == '_' || prev == '-' {
-					score += 10
-				}
-			}
-			if i == 0 {
-				score += 15 // first char match
-			}
-			prevMatched = true
-		} else {
-			prevMatched = false
-			consecutive = 0
-		}
-	}
-
-	// All characters must match
-	if needleIdx < len(needleRunes) {
-		return 0
-	}
-
-	return score
 }

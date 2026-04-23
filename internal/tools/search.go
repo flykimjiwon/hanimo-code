@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/flykimjiwon/hanimo/internal/config"
 )
@@ -24,21 +26,85 @@ var skipDirs = map[string]bool{
 
 // Binary file extensions to skip.
 var binaryExts = map[string]bool{
-	".exe": true, ".dll": true, ".so": true, ".dylib": true,
-	".bin": true, ".o": true, ".a": true,
-	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".bmp": true, ".ico": true,
-	".zip": true, ".tar": true, ".gz": true, ".7z": true, ".rar": true,
-	".pdf": true, ".doc": true, ".docx": true,
-	".woff": true, ".woff2": true, ".ttf": true, ".eot": true,
-	".mp3": true, ".mp4": true, ".avi": true, ".mov": true,
-	".wasm": true,
+	// Executables & Libraries
+	".exe": true, ".dll": true, ".so": true, ".dylib": true, ".a": true,
+	".lib": true, ".obj": true, ".o": true, ".ko": true, ".elf": true,
+	".bin": true, ".out": true, ".app": true, ".deb": true, ".rpm": true,
+	".msi": true, ".dmg": true, ".pkg": true, ".snap": true, ".flatpak": true,
+	// Archives
+	".zip": true, ".tar": true, ".gz": true, ".bz2": true, ".xz": true,
+	".7z": true, ".rar": true, ".zst": true, ".lz4": true, ".lzma": true,
+	".tgz": true, ".tbz2": true, ".war": true, ".ear": true, ".jar": true,
+	// Images
+	".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".bmp": true,
+	".ico": true, ".webp": true, ".avif": true, ".tiff": true, ".tif": true,
+	// .svg is intentionally excluded — SVG is text/XML
+	".psd": true, ".ai": true, ".eps": true, ".raw": true, ".cr2": true,
+	".nef": true, ".heic": true, ".heif": true,
+	// Audio
+	".mp3": true, ".wav": true, ".flac": true, ".aac": true, ".ogg": true,
+	".wma": true, ".m4a": true, ".opus": true,
+	// Video
+	".mp4": true, ".avi": true, ".mkv": true, ".mov": true, ".wmv": true,
+	".flv": true, ".webm": true, ".m4v": true, ".3gp": true,
+	// Fonts
+	".ttf": true, ".otf": true, ".woff": true, ".woff2": true, ".eot": true,
+	// Documents
+	".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
+	".ppt": true, ".pptx": true, ".odt": true, ".ods": true, ".odp": true,
+	// Data
+	".db": true, ".sqlite": true, ".sqlite3": true, ".mdb": true,
+	".dat": true, ".sav": true, ".bak": true,
+	// Compiled/Bytecode
+	".pyc": true, ".pyo": true, ".class": true, ".wasm": true,
+	// Other
+	".iso": true, ".img": true, ".vmdk": true, ".qcow2": true,
+	".DS_Store": true, ".lock": true,
 }
 
 const (
-	maxGrepMatches = 100
-	maxGrepBytes   = 30000
-	maxGlobFiles   = 500
+	maxGrepMatches = 300
+	maxGrepBytes   = 60000
+	maxGlobFiles   = 5000
+	maxLineChars   = 2000
 )
+
+// isBinaryFile checks if a file is binary by sampling the first 4096 bytes.
+// Returns true if null bytes found or >30% non-printable characters.
+func isBinaryFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	buf := make([]byte, 4096)
+	n, err := f.Read(buf)
+	if n == 0 {
+		return false
+	}
+	buf = buf[:n]
+
+	nonPrintable := 0
+	for _, b := range buf {
+		if b == 0x00 {
+			return true // null byte → binary
+		}
+		if b < 0x20 && b != '\n' && b != '\r' && b != '\t' {
+			nonPrintable++
+		}
+	}
+
+	return float64(nonPrintable)/float64(n) > 0.3
+}
+
+func truncateLine(line string) string {
+	runes := []rune(line)
+	if len(runes) > maxLineChars {
+		return string(runes[:maxLineChars]) + "..."
+	}
+	return line
+}
 
 // GrepSearch searches file contents by regex pattern.
 // Returns matches in "file:line:content" format.
@@ -97,9 +163,12 @@ func GrepSearch(pattern, basePath, glob string, ignoreCase bool, contextLines in
 			return nil
 		}
 
-		// Skip binary files
+		// Skip binary files (extension check + byte sampling)
 		ext := strings.ToLower(filepath.Ext(d.Name()))
 		if binaryExts[ext] {
+			return nil
+		}
+		if isBinaryFile(path) {
 			return nil
 		}
 
@@ -115,7 +184,7 @@ func GrepSearch(pattern, basePath, glob string, ignoreCase bool, contextLines in
 		if err != nil {
 			return nil
 		}
-		if info.Size() > 1024*1024 {
+		if info.Size() > 5*1024*1024 {
 			return nil
 		}
 
@@ -179,7 +248,7 @@ func searchFile(absPath, relPath string, re *regexp.Regexp, contextLines int) ([
 	var results []string
 	if contextLines <= 0 {
 		for _, ln := range matchLineNums {
-			results = append(results, fmt.Sprintf("%s:%d:%s", relPath, ln, allLines[ln-1]))
+			results = append(results, fmt.Sprintf("%s:%d:%s", relPath, ln, truncateLine(allLines[ln-1])))
 		}
 	} else {
 		// With context lines, group nearby matches
@@ -199,7 +268,7 @@ func searchFile(absPath, relPath string, re *regexp.Regexp, contextLines int) ([
 					if i == ln {
 						prefix = ">"
 					}
-					results = append(results, fmt.Sprintf("%s:%d:%s %s", relPath, i, prefix, allLines[i-1]))
+					results = append(results, fmt.Sprintf("%s:%d:%s %s", relPath, i, prefix, truncateLine(allLines[i-1])))
 					shown[i] = true
 				}
 			}
@@ -229,7 +298,11 @@ func GlobSearch(pattern, basePath string) (string, error) {
 		return "", fmt.Errorf("invalid glob pattern: %w", err)
 	}
 
-	var matches []string
+	type globEntry struct {
+		rel   string
+		mtime time.Time
+	}
+	var matches []globEntry
 
 	walkErr := filepath.WalkDir(absBase, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -245,7 +318,11 @@ func GlobSearch(pattern, basePath string) (string, error) {
 		rel, _ := filepath.Rel(absBase, path)
 		rel = filepath.ToSlash(rel)
 		if globRe.MatchString(rel) {
-			matches = append(matches, rel)
+			mtime := time.Time{}
+			if info, err := d.Info(); err == nil {
+				mtime = info.ModTime()
+			}
+			matches = append(matches, globEntry{rel: rel, mtime: mtime})
 			if len(matches) >= maxGlobFiles {
 				return fmt.Errorf("limit reached")
 			}
@@ -261,7 +338,17 @@ func GlobSearch(pattern, basePath string) (string, error) {
 		return "No files matched.", nil
 	}
 
-	result := strings.Join(matches, "\n")
+	// Sort by mtime descending (most recently modified first)
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].mtime.After(matches[j].mtime)
+	})
+
+	var names []string
+	for _, m := range matches {
+		names = append(names, m.rel)
+	}
+
+	result := strings.Join(names, "\n")
 	if len(matches) >= maxGlobFiles {
 		result += fmt.Sprintf("\n... (truncated at %d files)", maxGlobFiles)
 	}
