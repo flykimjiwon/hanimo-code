@@ -234,6 +234,24 @@ export default function ChatPanel() {
             const isCall = msg.content.startsWith('>>')
             const isResult = msg.content.startsWith('<<')
             const isLong = msg.content.length > 120
+            // Show Undo button only on file-mutating tool calls so users can
+            // roll back an AI edit with one click.
+            const isMutating = isCall && /\b(file_edit|file_write|hashline_edit|apply_patch)\b/.test(msg.content)
+            const onUndo = async () => {
+              try {
+                const mod: any = await import('../../wailsjs/go/main/App')
+                if (typeof mod.UndoLastEdit === 'function') {
+                  const res = await mod.UndoLastEdit()
+                  const m = await import('./Toast')
+                  m.showToast(`Reverted: ${res || 'latest edit'}`, 'success')
+                  return
+                }
+              } catch {
+                // Wails binding not yet wired — fall through to placeholder.
+              }
+              const m = await import('./Toast')
+              m.showToast('Undo will reach the snapshot store in Phase 3.5', 'info')
+            }
             return (
               <details key={i} open={!isLong} style={{
                 fontFamily: 'var(--font-code)', fontSize: 11,
@@ -245,7 +263,34 @@ export default function ChatPanel() {
                   color: isCall ? 'var(--accent)' : isResult ? 'var(--success)' : 'var(--fg-muted)',
                   opacity: 0.8, listStyle: 'none', display: 'flex', alignItems: 'center', gap: 4,
                 }}>
-                  {isLong ? msg.content.slice(0, 80) + '...' : msg.content}
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {isLong ? msg.content.slice(0, 80) + '...' : msg.content}
+                  </span>
+                  {isMutating && (
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); onUndo() }}
+                      title="Undo this edit (restore snapshot)"
+                      aria-label="Undo this edit"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--fg-muted)',
+                        fontSize: 11,
+                        fontFamily: 'var(--font-ui)',
+                        padding: '0 4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        transition: 'color 0.15s',
+                      }}
+                      onMouseEnter={ev => { (ev.currentTarget as HTMLButtonElement).style.color = 'var(--warning)' }}
+                      onMouseLeave={ev => { (ev.currentTarget as HTMLButtonElement).style.color = 'var(--fg-muted)' }}
+                    >
+                      ↺ undo
+                    </button>
+                  )}
                 </summary>
                 {isLong && (
                   <div style={{ padding: '4px 10px 6px', maxHeight: 150, overflow: 'auto', fontSize: 10, color: 'var(--fg-dim)', whiteSpace: 'pre-wrap' }}>

@@ -20,6 +20,7 @@ import AboutDialog from './components/AboutDialog'
 import CommandPalette from './components/CommandPalette'
 import ModeSwitcher, { Mode } from './components/ModeSwitcher'
 import ProviderChip from './components/ProviderChip'
+import ProblemsStrip from './components/ProblemsStrip'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -253,6 +254,8 @@ function App() {
               </>
             )}
           </div>
+          {/* Problems Strip — LSP diagnostics + hash-anchor status */}
+          <ProblemsStrip />
           {/* Terminal toggle bar */}
           <div onClick={() => setShowTerminal(t => !t)} style={{
             height: 22, background: 'var(--bg-activity)', borderTop: '1px solid var(--border)',
