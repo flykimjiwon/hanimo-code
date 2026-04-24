@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Sparkles, Send, Trash2, BookOpen, Download } from 'lucide-react'
 import { SendMessage, ClearChat, GetModel, GetKnowledgePacks, ToggleKnowledgePack, ExportChat, SaveSession, ListSessions, LoadSession } from '../../wailsjs/go/main/App'
 import { EventsOn } from '../../wailsjs/runtime/runtime'
+import MetricsRow from './MetricsRow'
 
 interface Message {
   role: 'user' | 'ai' | 'tool'
@@ -210,6 +211,9 @@ export default function ChatPanel() {
           <Trash2 size={14} />
         </button>
       </div>
+
+      {/* Metrics Row — Context · Cache · Iter · Provider */}
+      <MetricsRow provider={model || undefined} />
 
       {/* Messages */}
       <div ref={chatRef} style={{
