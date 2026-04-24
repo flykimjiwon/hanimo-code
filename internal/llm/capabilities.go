@@ -38,7 +38,7 @@ var knownModels = map[string]ModelCapability{
 	"deepseek-reasoner": {128000, CodingStrong, RoleAgent, true},
 	"qwen3:8b":          {32768, CodingModerate, RoleAssistant, true},
 	"qwen3:32b":         {32768, CodingStrong, RoleAgent, true},
-	"qwen3-coder-30b":   {32768, CodingStrong, RoleAgent, true},
+	"qwen3-coder-30b":   {262144, CodingStrong, RoleAgent, true},
 	"llama3.1:8b":       {128000, CodingWeak, RoleChat, false},
 	"llama3.1:70b":      {128000, CodingModerate, RoleAgent, true},
 	"codellama:13b":     {16384, CodingModerate, RoleAssistant, true},
