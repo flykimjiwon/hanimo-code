@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Hexagon } from 'lucide-react'
+import { Hexagon, Palette } from 'lucide-react'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import ActivityBar from './components/ActivityBar'
 import FileTree from './components/FileTree'
@@ -144,18 +144,29 @@ function App() {
           type="button"
           onClick={() => setShowTheme(true)}
           title="Theme (Cmd+,)"
+          aria-label="Theme"
           style={{
             background: 'var(--bg-base)',
             border: '1px solid var(--border)',
             borderRadius: 6,
-            padding: '4px 8px',
+            padding: '4px 7px',
             color: 'var(--fg-muted)',
             cursor: 'pointer',
-            fontSize: 11,
             fontFamily: 'var(--font-ui)',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'color 0.15s, border-color 0.15s',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--fg-muted)'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'
           }}
         >
-          🎨
+          <Palette size={12} />
         </button>
       </div>
 

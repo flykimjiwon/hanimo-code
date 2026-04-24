@@ -28,7 +28,7 @@ export default function MetricsRow(props: Props) {
   const metrics: Metric[] = [
     {
       label: 'Context',
-      value: `${props.contextPct ?? 0}%`,
+      value: props.contextPct !== undefined ? `${props.contextPct}%` : '·',
       sub:
         props.contextTokens !== undefined && props.contextMax !== undefined
           ? `${props.contextTokens.toLocaleString()} / ${(props.contextMax / 1000).toFixed(0)}K`
@@ -37,7 +37,7 @@ export default function MetricsRow(props: Props) {
     },
     {
       label: 'Cache hit',
-      value: `${props.cacheHitPct ?? 0}%`,
+      value: props.cacheHitPct !== undefined ? `${props.cacheHitPct}%` : '·',
       sub:
         props.cacheSavedUsd !== undefined
           ? `saved ~$${props.cacheSavedUsd.toFixed(2)}`
