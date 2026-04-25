@@ -194,3 +194,40 @@ func errMissingKey(p *Provider) error {
 	return fmt.Errorf("API key required for %s — set $%s or providers.%s.api_key (%s)",
 		p.Label, p.EnvVar, p.Name, p.KeyHint)
 }
+
+// SaveProviderConfig writes per-provider api_key / base_url overrides into
+// ~/.hanimo/config.yaml. Empty strings leave the existing value untouched
+// — use ClearProviderKey to wipe a stored key.
+func (a *App) SaveProviderConfig(name, apiKey, baseURL string) error {
+	if name == "" {
+		return fmt.Errorf("empty provider name")
+	}
+	if findProvider(name) == nil {
+		return fmt.Errorf("unknown provider: %s", name)
+	}
+	cfg := LoadTGCConfig()
+	if cfg.Providers == nil {
+		cfg.Providers = map[string]ProviderEntry{}
+	}
+	entry := cfg.Providers[name]
+	if apiKey != "" {
+		entry.APIKey = strings.TrimSpace(apiKey)
+	}
+	if baseURL != "" {
+		entry.BaseURL = strings.TrimSpace(baseURL)
+	}
+	cfg.Providers[name] = entry
+	return saveTGCConfig(cfg)
+}
+
+// ClearProviderKey wipes the stored api_key for a provider so the env var
+// fallback (or "no key" state) takes over again.
+func (a *App) ClearProviderKey(name string) error {
+	cfg := LoadTGCConfig()
+	if entry, ok := cfg.Providers[name]; ok {
+		entry.APIKey = ""
+		cfg.Providers[name] = entry
+		return saveTGCConfig(cfg)
+	}
+	return nil
+}

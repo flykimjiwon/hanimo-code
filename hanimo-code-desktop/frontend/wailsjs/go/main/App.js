@@ -10,6 +10,10 @@ export function ClearChat() {
   return window['go']['main']['App']['ClearChat']();
 }
 
+export function ClearProviderKey(arg1) {
+  return window['go']['main']['App']['ClearProviderKey'](arg1);
+}
+
 export function DeleteFile(arg1) {
   return window['go']['main']['App']['DeleteFile'](arg1);
 }
@@ -192,6 +196,10 @@ export function RunTarget(arg1) {
 
 export function SaveDroppedFile(arg1, arg2) {
   return window['go']['main']['App']['SaveDroppedFile'](arg1, arg2);
+}
+
+export function SaveProviderConfig(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SaveProviderConfig'](arg1, arg2, arg3);
 }
 
 export function SaveSession(arg1) {
