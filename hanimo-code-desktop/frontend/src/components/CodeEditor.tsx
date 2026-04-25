@@ -109,9 +109,10 @@ interface Props {
   onChange: (value: string) => void
   onCursorChange?: (line: number, col: number) => void
   onAskAI?: (selectedCode: string, filename: string) => void
+  onReady?: (view: EditorView | null) => void
 }
 
-export default function CodeEditor({ content, filename, onChange, onCursorChange, onAskAI }: Props) {
+export default function CodeEditor({ content, filename, onChange, onCursorChange, onAskAI, onReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const langCompartment = useRef(new Compartment())
@@ -237,6 +238,7 @@ export default function CodeEditor({ content, filename, onChange, onCursorChange
 
     const view = new EditorView({ state, parent: containerRef.current })
     viewRef.current = view
+    onReady?.(view)
 
     // Right-click context menu for "Ask AI"
     containerRef.current.addEventListener('contextmenu', (e) => {
@@ -247,7 +249,11 @@ export default function CodeEditor({ content, filename, onChange, onCursorChange
       }
     })
 
-    return () => { view.destroy(); viewRef.current = null }
+    return () => {
+      onReady?.(null)
+      view.destroy()
+      viewRef.current = null
+    }
   }, [filename])
 
   useEffect(() => {

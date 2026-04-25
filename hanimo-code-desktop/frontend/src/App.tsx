@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Hexagon, Palette } from 'lucide-react'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import ActivityBar from './components/ActivityBar'
@@ -23,6 +23,8 @@ import ProviderChip from './components/ProviderChip'
 import ProblemsStrip from './components/ProblemsStrip'
 import KnowledgePanel from './components/KnowledgePanel'
 import SessionsPanel from './components/SessionsPanel'
+import { setHashAnchors, type HashAnchor } from './components/hashAnchorGutter'
+import type { EditorView } from '@codemirror/view'
 import PlaceholderPanel from './components/PlaceholderPanel'
 import { PlugZap, Sparkle as SkillIcon, Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
 
@@ -53,6 +55,21 @@ function App() {
         }).catch(() => {})
       }
     }).catch(() => {})
+  }, [])
+
+  // EditorView ref for hash-anchor gutter dispatching.
+  const editorViewRef = useRef<EditorView | null>(null)
+
+  // Subscribe to hash:anchor events from the Go backend (emitted by hashline_edit
+  // tool). Phase 8 wiring — backend emit comes online with hashline integration.
+  useEffect(() => {
+    const cancel = EventsOn('hash:anchor', (raw: any) => {
+      const list: HashAnchor[] = Array.isArray(raw)
+        ? raw.filter((a: any) => a && typeof a.line === 'number' && typeof a.hash === 'string')
+        : (raw && typeof raw.line === 'number') ? [raw] : []
+      if (editorViewRef.current) setHashAnchors(editorViewRef.current, list)
+    })
+    return cancel
   }, [])
 
   // Resizable panel sizes
@@ -315,7 +332,8 @@ function App() {
               <>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                   <Editor filePath={selectedFile} onCursorChange={(l, c, lang) => setCursor({ line: l, col: c, lang })}
-                    onAskAI={(prompt) => { import('../wailsjs/go/main/App').then(m => m.SendMessage(prompt)) }} />
+                    onAskAI={(prompt) => { import('../wailsjs/go/main/App').then(m => m.SendMessage(prompt)) }}
+                    onEditorReady={view => { editorViewRef.current = view }} />
                 </div>
                 {splitFile && !previewUrl && (
                   <>
