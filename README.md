@@ -932,10 +932,35 @@ LLM이 shell_exec("rm -rf build/") 도구 호출
 
 ---
 
+## Desktop IDE — `hanimo-code-desktop/`
+
+Wails(Go + React/TS) 기반 데스크톱 IDE. CLI와 같은 `~/.hanimo/config.yaml`,
+같은 SKILL/MCP 자산을 공유하며 Honey 팔레트 + 8 테마 + 14 Activity 아이콘
++ hash-anchor gutter로 *"Agent can't silently overwrite your edits"* 라는
+브랜드 약속을 시각적으로 보여준다.
+
+- **현재 진척**: Phase 0~13 + 리뷰픽스 (24 커밋)
+- **빌드 상태**: `vite 1532 KiB` · `go test 49/49` · TS clean
+- **자세한 가이드**: [`hanimo-code-desktop/README.md`](hanimo-code-desktop/README.md)
+- **다음 세션 진입점**: [`docs/SESSION-2026-04-25-RESUME.md`](docs/SESSION-2026-04-25-RESUME.md)
+
+```bash
+cd hanimo-code-desktop
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+go mod download && (cd frontend && npm ci)
+wails dev    # hot reload · localhost:34115에 devtools
+wails build  # macOS .app / Linux binary / Windows .exe
+```
+
+데스크톱 IDE는 CLI와 마찬가지로 **완전 무료 OSS** — 유료화 계획 없음.
+
+---
+
 ## Architecture
 
 ```
 cmd/hanimo/            CLI entry point
+hanimo-code-desktop/   Wails IDE (Go + React/TS) — Phase 0-13 완성
 internal/
 ├── app/               Bubble Tea TUI (3000+ lines)
 ├── agents/            Autonomous mode + planning + intent
