@@ -100,21 +100,19 @@ type Metrics struct {
 // usage off the chatEngine. ContextPct uses the latest request's prompt
 // tokens (so the bar relaxes after a /clear), while cache hit% and saved$
 // are session-cumulative so brief tool-only turns don't snap them to zero.
+//
+// Phase 14 (M4 fix): provider name now comes from chatEngine.model instead
+// of re-reading config.yaml on every 4-second poll.
 func (a *App) GetMetrics() Metrics {
-	cfg := LoadTGCConfig()
-	provider := cfg.Models.Super
-	if provider == "" {
-		provider = "qwen3:8b"
-	}
-
 	const contextMax = 32000
 	const iterMax = 200
+	const fallbackProvider = "qwen3:8b"
 
 	m := Metrics{
 		ContextMax: contextMax,
 		IterMax:    iterMax,
 		IterLabel:  "idle",
-		Provider:   provider,
+		Provider:   fallbackProvider,
 	}
 
 	if a.chat == nil {
@@ -127,7 +125,12 @@ func (a *App) GetMetrics() Metrics {
 	iter := a.chat.iter
 	label := a.chat.iterLabel
 	baseURL := a.chat.baseURL
+	model := a.chat.model
 	a.chat.metricsMu.Unlock()
+
+	if model != "" {
+		m.Provider = model
+	}
 
 	m.ContextTokens = promptLast
 	if contextMax > 0 && promptLast > 0 {

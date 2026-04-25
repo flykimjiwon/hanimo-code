@@ -324,50 +324,60 @@ func loadMCPConfig() []mcpServerCfg {
 
 // ── App bindings ──
 
-// ensureMCP spawns configured stdio servers on first access. Cached afterwards.
-// Non-stdio transports are listed as 'not-supported' without an error (placeholder
-// until SSE/HTTP is added to desktop).
-func (a *App) ensureMCP() []*mcpServerRuntime {
-	a.mcpMu.Lock()
-	defer a.mcpMu.Unlock()
-	if a.mcpStarted {
-		return a.mcpRuntimes
-	}
-	a.mcpStarted = true
-
-	cfgs := loadMCPConfig()
-	for _, srv := range cfgs {
-		rt := &mcpServerRuntime{cfg: srv}
-		switch srv.Transport {
-		case "stdio":
-			if srv.Command == "" {
-				rt.err = "stdio transport requires 'command'"
-				break
-			}
-			tr, err := newStdioTransport(srv.Command, srv.Args, srv.Env)
-			if err != nil {
-				rt.err = err.Error()
-				break
-			}
-			cli := &mcpClient{transport: tr}
-			if err := cli.initialize(context.Background()); err != nil {
-				rt.err = "initialize: " + err.Error()
-				_ = cli.close()
-				break
-			}
-			if _, err := cli.listTools(context.Background()); err != nil {
-				// Connected but tool list failed — surface but keep client alive.
-				rt.err = "list tools: " + err.Error()
-			}
-			rt.client = cli
-		case "sse", "http":
-			rt.err = srv.Transport + " transport not supported in desktop build yet"
-		default:
-			rt.err = "unknown transport: " + srv.Transport
+// spawnRuntime creates one runtime for the given config. No locks held —
+// safe to call concurrently for different servers, also safe to call from
+// inside sync.Once.Do (which is what ensureMCP uses).
+func spawnRuntime(srv mcpServerCfg) *mcpServerRuntime {
+	rt := &mcpServerRuntime{cfg: srv}
+	switch srv.Transport {
+	case "stdio":
+		if srv.Command == "" {
+			rt.err = "stdio transport requires 'command'"
+			return rt
 		}
-		a.mcpRuntimes = append(a.mcpRuntimes, rt)
+		tr, err := newStdioTransport(srv.Command, srv.Args, srv.Env)
+		if err != nil {
+			rt.err = err.Error()
+			return rt
+		}
+		cli := &mcpClient{transport: tr}
+		if err := cli.initialize(context.Background()); err != nil {
+			rt.err = "initialize: " + err.Error()
+			_ = cli.close()
+			return rt
+		}
+		if _, err := cli.listTools(context.Background()); err != nil {
+			// Connected but tool list failed — surface but keep client alive.
+			rt.err = "list tools: " + err.Error()
+		}
+		rt.client = cli
+	case "sse", "http":
+		rt.err = srv.Transport + " transport not supported in desktop build yet"
+	default:
+		rt.err = "unknown transport: " + srv.Transport
 	}
-	return a.mcpRuntimes
+	return rt
+}
+
+// ensureMCP spawns configured servers on first access. Subsequent callers
+// either reuse the cached runtimes or wait on the in-flight Once if a spawn
+// is happening right now. mcpMu is only held briefly to swap the result —
+// so CallMCPTool / RefreshMCPServers don't block on slow stdio startups.
+func (a *App) ensureMCP() []*mcpServerRuntime {
+	a.mcpOnce.Do(func() {
+		cfgs := loadMCPConfig()
+		rts := make([]*mcpServerRuntime, 0, len(cfgs))
+		for _, srv := range cfgs {
+			rts = append(rts, spawnRuntime(srv))
+		}
+		a.mcpMu.Lock()
+		a.mcpRuntimes = rts
+		a.mcpMu.Unlock()
+	})
+	a.mcpMu.Lock()
+	out := a.mcpRuntimes
+	a.mcpMu.Unlock()
+	return out
 }
 
 // GetMCPServers returns the configured MCP servers + live connection state.
@@ -427,7 +437,7 @@ func (a *App) RefreshMCPServers() []mcpServerStatus {
 		}
 	}
 	a.mcpRuntimes = nil
-	a.mcpStarted = false
+	a.mcpOnce = &sync.Once{} // arm next ensureMCP for a fresh spawn
 	a.mcpMu.Unlock()
 	return a.GetMCPServers()
 }
@@ -442,5 +452,5 @@ func (a *App) StopMCP() {
 		}
 	}
 	a.mcpRuntimes = nil
-	a.mcpStarted = false
+	// Don't rearm mcpOnce on shutdown — the app is going down.
 }

@@ -25,10 +25,12 @@ import KnowledgePanel from './components/KnowledgePanel'
 import SessionsPanel from './components/SessionsPanel'
 import SkillsPanel from './components/SkillsPanel'
 import MCPPanel from './components/MCPPanel'
+import RunPanel from './components/RunPanel'
+import PermissionsPanel from './components/PermissionsPanel'
 import { setHashAnchors, type HashAnchor } from './components/hashAnchorGutter'
 import type { EditorView } from '@codemirror/view'
 import PlaceholderPanel from './components/PlaceholderPanel'
-import { Share2, ShieldCheck, TriangleAlert, Play } from 'lucide-react'
+import { Share2, TriangleAlert } from 'lucide-react'
 
 function App() {
   const [activePanel, setActivePanel] = useState('files')
@@ -262,32 +264,8 @@ function App() {
                   comingIn="Phase 8"
                 />
               )}
-              {activePanel === 'permissions' && (
-                <PlaceholderPanel
-                  title="Permissions"
-                  Icon={ShieldCheck}
-                  shortDesc="5-mode 퍼미션 엔진 + 학습형 yaml 룰. dangerous 명령은 차단, ask 모드는 매번 묻기, allow 모드는 자동 승인."
-                  bullets={[
-                    'Shift+Tab 으로 모드 순환',
-                    'permissions.yaml 로 학습 규칙 누적',
-                    'credential scrubbing + sandbox 기반',
-                  ]}
-                  comingIn="Phase 8"
-                />
-              )}
-              {activePanel === 'run' && (
-                <PlaceholderPanel
-                  title="Run / Debug"
-                  Icon={Play}
-                  shortDesc="현재 프로젝트의 스크립트(npm run · go test · make · python -m)를 한 클릭으로 실행하고 결과를 터미널에 띄우는 패널."
-                  bullets={[
-                    'package.json scripts · Makefile targets 자동 감지',
-                    '환경변수 패널과 연동',
-                    'Debug Adapter 통합 (DAP) — 장기',
-                  ]}
-                  comingIn="Phase 9"
-                />
-              )}
+              {activePanel === 'permissions' && <PermissionsPanel />}
+              {activePanel === 'run' && <RunPanel />}
             </div>
             <ResizeHandle direction="horizontal" onResize={resizeSidebar} />
           </>

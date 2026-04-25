@@ -29,15 +29,18 @@ type App struct {
 	shellPath   string
 	watcherDone chan struct{}
 
-	// Phase 12 — MCP clients (lazy spawn on first GetMCPServers)
+	// Phase 12 — MCP clients (lazy spawn on first GetMCPServers).
+	// Phase 14 (M2 fix): sync.Once moved spawn out of the mcpMu critical
+	// section so RefreshMCPServers/CallMCPTool aren't blocked while a slow
+	// stdio child is starting up.
 	mcpMu       sync.Mutex
-	mcpStarted  bool
+	mcpOnce     *sync.Once
 	mcpRuntimes []*mcpServerRuntime
 }
 
 func NewApp() *App {
 	cwd, _ := os.Getwd()
-	return &App{cwd: cwd}
+	return &App{cwd: cwd, mcpOnce: &sync.Once{}}
 }
 
 func (a *App) startup(ctx context.Context) {
