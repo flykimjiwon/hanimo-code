@@ -109,6 +109,23 @@ func toolDefs() []openai.Tool {
 			},
 			"required": []string{"path", "content"},
 		}),
+		makeTool("hashline_read", "Read a file with per-line MD5 anchors. Each line is prefixed with N#hash| so you can reference exact lines in hashline_edit without race conditions.", map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"path": map[string]string{"type": "string", "description": "File path to read"},
+			},
+			"required": []string{"path"},
+		}),
+		makeTool("hashline_edit", "Edit a file by replacing a line range identified by hash anchors. Anchors are in 'N#hash' format from hashline_read. Mismatched hashes abort the edit so the agent can never silently overwrite.", map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"path":         map[string]string{"type": "string", "description": "File path"},
+				"start_anchor": map[string]string{"type": "string", "description": "Start anchor like '3#a3f1'"},
+				"end_anchor":   map[string]string{"type": "string", "description": "End anchor like '7#9b2c'"},
+				"new_content":  map[string]string{"type": "string", "description": "Replacement content (multi-line ok)"},
+			},
+			"required": []string{"path", "start_anchor", "end_anchor", "new_content"},
+		}),
 		makeTool("shell_exec", "Execute a shell command and return output", map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
@@ -449,6 +466,41 @@ func (a *App) executeTool(name, argsJSON string) string {
 		// gutter visualises the brand promise. Auto-clears after 2s.
 		emitHashAnchorsFor(a, content, 12, 2*time.Second)
 		return fmt.Sprintf("OK: wrote %d bytes to %s", len(content), path)
+
+	case "hashline_read":
+		path, _ := args["path"].(string)
+		if path == "" {
+			return "Error: path is required"
+		}
+		out, err := HashlineRead(path)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		return out
+
+	case "hashline_edit":
+		path, _ := args["path"].(string)
+		startA, _ := args["start_anchor"].(string)
+		endA, _ := args["end_anchor"].(string)
+		newC, _ := args["new_content"].(string)
+		if path == "" || startA == "" || endA == "" {
+			return "Error: path, start_anchor, end_anchor are required"
+		}
+		// Resolve to absolute path so backupBeforeWrite indexes correctly.
+		abs := path
+		if absResolved, err := a.safePath(path); err == nil {
+			abs = absResolved
+		}
+		backupBeforeWrite(abs)
+		summary, startLine, count, err := HashlineEdit(abs, startA, endA, newC)
+		if err != nil {
+			return fmt.Sprintf("Error: %v", err)
+		}
+		runtime.EventsEmit(a.ctx, "file:changed", abs)
+		// Emit precise hash anchors only for the edited line range — not the
+		// whole file like file_write does. This is the brand-promise pixel.
+		emitHashAnchorsForLines(a, newC, startLine, count, 2500*time.Millisecond)
+		return summary
 
 	case "grep_search", "search_files":
 		pattern, _ := args["pattern"].(string)

@@ -1,26 +1,43 @@
 package main
 
 import (
-	"crypto/md5"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// emitHashAnchorsForLines flashes anchors at a specific line range. Phase 10
+// hashline_edit handler uses this so only the lines actually edited by the
+// agent show the 🔒 marker — instead of file_write's broad flash.
+func emitHashAnchorsForLines(a *App, newContent string, startLine, count int, clearAfter time.Duration) {
+	if a == nil || a.ctx == nil || count <= 0 {
+		return
+	}
+	lines := strings.Split(newContent, "\n")
+	if count > len(lines) {
+		count = len(lines)
+	}
+	anchors := make([]hashAnchorPayload, 0, count)
+	for i := 0; i < count; i++ {
+		ln := lines[i]
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		anchors = append(anchors, hashAnchorPayload{Line: startLine + i, Hash: hashLine(ln)})
+	}
+	runtime.EventsEmit(a.ctx, "hash:anchor", anchors)
+	go func() {
+		time.Sleep(clearAfter)
+		runtime.EventsEmit(a.ctx, "hash:anchor", []hashAnchorPayload{})
+	}()
+}
+
 // hashAnchorPayload mirrors the frontend HashAnchor type in
 // frontend/src/components/hashAnchorGutter.ts.
 type hashAnchorPayload struct {
 	Line int    `json:"line"`
 	Hash string `json:"hash"`
-}
-
-// hashLineMD5 returns the first 4 hex chars of the MD5 of a line —
-// matches hanimo CLI's tools/hashline.go anchor format.
-func hashLineMD5(line string) string {
-	h := md5.Sum([]byte(line))
-	return fmt.Sprintf("%x", h)[:4]
 }
 
 // emitHashAnchorsFor publishes a 'hash:anchor' Wails event with the first
@@ -41,7 +58,7 @@ func emitHashAnchorsFor(a *App, content string, cap int, clearAfter time.Duratio
 		if strings.TrimSpace(ln) == "" {
 			continue
 		}
-		anchors = append(anchors, hashAnchorPayload{Line: i + 1, Hash: hashLineMD5(ln)})
+		anchors = append(anchors, hashAnchorPayload{Line: i + 1, Hash: hashLine(ln)})
 	}
 	runtime.EventsEmit(a.ctx, "hash:anchor", anchors)
 	go func() {
