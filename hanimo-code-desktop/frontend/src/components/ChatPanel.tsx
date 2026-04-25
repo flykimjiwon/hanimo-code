@@ -427,22 +427,11 @@ export default function ChatPanel() {
   )
 }
 
-// Syntax color map for code blocks
-const syntaxColors: Record<string, Record<string, string>> = {
-  keyword: { color: 'var(--code-keyword, #b07cd8)' },
-  string: { color: 'var(--code-string, #8eb573)' },
-  comment: { color: 'var(--code-comment, #636d83)', fontStyle: 'italic' },
-  function: { color: 'var(--code-function, #7ba8d4)' },
-  type: { color: 'var(--code-type, #d4b76a)' },
-  number: { color: 'var(--code-number, #c9956a)' },
-}
-
-function highlightCode(code: string, lang: string): JSX.Element[] {
+function highlightCode(code: string): JSX.Element[] {
   const keywords = /\b(import|export|from|const|let|var|function|return|if|else|for|while|class|extends|new|this|typeof|interface|type|async|await|default|switch|case|break|try|catch|throw|null|undefined|true|false|void|enum|implements|static|public|private|protected|yield|of|in|do)\b/g
   const strings = /(["'`])(?:(?=(\\?))\2.)*?\1/g
   const comments = /(\/\/.*$|\/\*[\s\S]*?\*\/)/gm
   const numbers = /\b\d+\.?\d*\b/g
-  const functions = /\b([a-zA-Z_]\w*)\s*(?=\()/g
 
   // Simple token-based highlighting
   return code.split('\n').map((line, i) => {
@@ -516,7 +505,7 @@ function renderContent(text: string) {
             </span>
           </div>
           {lang && ['js', 'jsx', 'ts', 'tsx', 'javascript', 'typescript', 'go', 'python', 'py', 'java', 'rust', 'css', 'html', 'sql', 'php', 'c', 'cpp'].includes(lang.toLowerCase())
-            ? highlightCode(code, lang)
+            ? highlightCode(code)
             : code
           }
         </pre>

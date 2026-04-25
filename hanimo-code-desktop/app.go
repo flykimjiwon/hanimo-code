@@ -271,6 +271,8 @@ func (a *App) DeleteFile(path string) error {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(a.cwd, path)
 	}
+	// Snapshot before delete so the chat panel's ↺ undo can resurrect the file.
+	backupBeforeWrite(path)
 	return os.Remove(path)
 }
 
@@ -282,6 +284,9 @@ func (a *App) RenameFile(oldPath, newPath string) error {
 	if !filepath.IsAbs(newPath) {
 		newPath = filepath.Join(a.cwd, newPath)
 	}
+	// Snapshot the old location so undo restores the original path with original
+	// contents. The new path doesn't need backup — it didn't exist before.
+	backupBeforeWrite(oldPath)
 	return os.Rename(oldPath, newPath)
 }
 
