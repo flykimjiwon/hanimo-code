@@ -35,9 +35,16 @@ var tier1Catalog = []ModelOption{
 
 var tier2Catalog = []ModelOption{
 	{ID: "deepseek-chat", Label: "DeepSeek V3", Provider: "deepseek", Tier: "T2", Group: "Supported", Hint: "$0.14/$0.28"},
-	{ID: "mistral-large", Label: "Mistral Large", Provider: "mistral", Tier: "T2", Group: "Supported"},
+	{ID: "mistral-large-latest", Label: "Mistral Large", Provider: "mistral", Tier: "T2", Group: "Supported"},
 	{ID: "gemma-4-31b-it", Label: "Gemma 4 31B", Provider: "novita", Tier: "T2", Group: "Supported", Hint: "262K context"},
 	{ID: "gemini-2.5-flash", Label: "Gemini 2.5 Flash", Provider: "google", Tier: "T2", Group: "Supported", Hint: "free 1000 req/day"},
+	// OpenRouter — single key, many models. Prefix is part of the OpenRouter ID.
+	{ID: "anthropic/claude-sonnet-4-5", Label: "Claude Sonnet 4.5 (OR)", Provider: "openrouter", Tier: "T2", Group: "Supported", Hint: "via OpenRouter"},
+	{ID: "openai/gpt-4o", Label: "GPT-4o (OR)", Provider: "openrouter", Tier: "T2", Group: "Supported", Hint: "via OpenRouter"},
+	{ID: "meta-llama/llama-3.3-70b-instruct", Label: "Llama 3.3 70B (OR)", Provider: "openrouter", Tier: "T2", Group: "Supported", Hint: "via OpenRouter"},
+	// Groq + Together — fast inference clouds, OpenAI-compatible.
+	{ID: "llama-3.3-70b-versatile", Label: "Llama 3.3 70B", Provider: "groq", Tier: "T2", Group: "Supported", Hint: "Groq · ultra-fast"},
+	{ID: "Qwen/Qwen2.5-Coder-32B-Instruct", Label: "Qwen2.5 Coder 32B", Provider: "together", Tier: "T2", Group: "Supported", Hint: "Together"},
 }
 
 // fetchOllamaTags returns local Ollama models, or nil on any error.
@@ -93,13 +100,19 @@ func fetchOllamaTags(baseURL string) []ModelOption {
 }
 
 // GetAvailableModels merges the static T1/T2 catalog with local Ollama tags.
-// Frontend Phase 6 ProviderChip dropdown calls this on open.
+// Frontend Phase 6 ProviderChip dropdown calls this on open. Uses Ollama
+// provider's fixed URL so the local list shows up even when the user is
+// currently on a cloud provider.
 func (a *App) GetAvailableModels() []ModelOption {
 	cfg := LoadTGCConfig()
 	out := make([]ModelOption, 0, len(tier1Catalog)+len(tier2Catalog)+10)
 	out = append(out, tier1Catalog...)
 	out = append(out, tier2Catalog...)
-	if tags := fetchOllamaTags(cfg.API.BaseURL); len(tags) > 0 {
+	ollamaURL := "http://localhost:11434/v1"
+	if p := findProvider("ollama"); p != nil {
+		ollamaURL = resolveBaseURL(p, cfg)
+	}
+	if tags := fetchOllamaTags(ollamaURL); len(tags) > 0 {
 		out = append(out, tags...)
 	}
 	return out
@@ -128,13 +141,35 @@ func saveTGCConfig(cfg TGCConfig) error {
 }
 
 // SwitchModel updates the active model in config.yaml and rebuilds the chat
-// engine so the next message uses the new model. Returns the new model name
-// for toast confirmation.
+// engine so the next message uses the new model. Phase 15a: also rewrites
+// api.base_url + api.api_key based on the model's provider so picking a
+// Novita / OpenRouter model just works without manual config editing.
+//
+// Returns the new model name for toast confirmation. If the chosen
+// provider has no key configured (env var or providers.<name>.api_key)
+// returns an error so the frontend can prompt the user.
 func (a *App) SwitchModel(modelID string) (string, error) {
 	if strings.TrimSpace(modelID) == "" {
 		return "", fmt.Errorf("empty model id")
 	}
 	cfg := LoadTGCConfig()
+
+	// Look up the chosen model in the catalog (or Ollama discovered tags)
+	// to find its provider. If we don't recognise the model, leave provider
+	// alone — user is overriding base_url manually.
+	if opt := findModelOption(modelID); opt != nil {
+		p := findProvider(opt.Provider)
+		if p != nil {
+			key := resolveAPIKey(p, cfg)
+			if key == "" && p.EnvVar != "" {
+				return "", errMissingKey(p)
+			}
+			cfg.Provider = p.Name
+			cfg.API.BaseURL = resolveBaseURL(p, cfg)
+			cfg.API.APIKey = key
+		}
+	}
+
 	cfg.Models.Super = modelID
 	cfg.Models.Dev = modelID
 	if err := saveTGCConfig(cfg); err != nil {
@@ -147,4 +182,34 @@ func (a *App) SwitchModel(modelID string) (string, error) {
 		a.chat = newChatEngine(cfg, a)
 	}
 	return modelID, nil
+}
+
+// findModelOption searches the static catalog + freshly polled Ollama
+// tags for a matching model id. Returns nil if not found.
+func findModelOption(modelID string) *ModelOption {
+	for i := range tier1Catalog {
+		if tier1Catalog[i].ID == modelID {
+			return &tier1Catalog[i]
+		}
+	}
+	for i := range tier2Catalog {
+		if tier2Catalog[i].ID == modelID {
+			return &tier2Catalog[i]
+		}
+	}
+	// Ollama tags are dynamic — re-fetch lazily. Use the Ollama provider's
+	// fixed URL (not whatever's currently active in api.base_url) so this
+	// still works after the user switched to e.g. anthropic.
+	cfg := LoadTGCConfig()
+	ollamaURL := "http://localhost:11434/v1"
+	if p := findProvider("ollama"); p != nil {
+		ollamaURL = resolveBaseURL(p, cfg)
+	}
+	for _, tag := range fetchOllamaTags(ollamaURL) {
+		if tag.ID == modelID {
+			t := tag
+			return &t
+		}
+	}
+	return nil
 }

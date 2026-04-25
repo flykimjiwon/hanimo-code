@@ -208,7 +208,7 @@ export default function ChatPanel({ mode, onModeChange, model }: Props) {
           background: 'var(--accent-glow)', color: 'var(--accent)',
           padding: '1px 7px', borderRadius: 4, fontSize: 9, fontWeight: 700,
           textTransform: 'uppercase', letterSpacing: '0.03em'
-        }}>{model || 'Loading...'}</span>
+        }}>{model || '(loading)'}</span>
         <button title="Knowledge Packs" onClick={() => setShowPacks(p => !p)} style={{
           background: showPacks ? 'var(--accent-glow)' : 'none', border: 'none', cursor: 'pointer',
           color: showPacks ? 'var(--accent)' : 'var(--fg-dim)', padding: 6, borderRadius: 4,

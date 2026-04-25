@@ -42,6 +42,8 @@ export function GetModel():Promise<string>;
 
 export function GetProblems(arg1:string):Promise<Array<main.Problem>>;
 
+export function GetProviders():Promise<Array<main.ProviderListEntry>>;
+
 export function GetRecentProjects():Promise<Array<string>>;
 
 export function GetRunTargets():Promise<Array<main.RunTarget>>;

@@ -232,6 +232,30 @@ export namespace main {
 	        this.col = source["col"];
 	    }
 	}
+	export class ProviderListEntry {
+	    name: string;
+	    label: string;
+	    baseUrl: string;
+	    envVar: string;
+	    openaiCompatible: boolean;
+	    hasKey: boolean;
+	    keyHint: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProviderListEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.label = source["label"];
+	        this.baseUrl = source["baseUrl"];
+	        this.envVar = source["envVar"];
+	        this.openaiCompatible = source["openaiCompatible"];
+	        this.hasKey = source["hasKey"];
+	        this.keyHint = source["keyHint"];
+	    }
+	}
 	export class RunTarget {
 	    name: string;
 	    description: string;

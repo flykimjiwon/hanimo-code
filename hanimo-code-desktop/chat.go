@@ -319,13 +319,16 @@ func (a *App) ClearChat() {
 	runtime.EventsEmit(a.ctx, "chat:cleared")
 }
 
-// GetModel returns the current model name.
+// GetModel returns the current model name. Reads under metricsMu so
+// callers don't observe a partial write during SwitchModel (Go strings are
+// (ptr, len) tuples — a concurrent reassignment can otherwise tear).
 func (a *App) GetModel() string {
 	if a.chat == nil {
 		return ""
 	}
-	// Strip provider prefix for display
+	a.chat.metricsMu.Lock()
 	m := a.chat.model
+	a.chat.metricsMu.Unlock()
 	if idx := strings.LastIndex(m, "/"); idx >= 0 {
 		m = m[idx+1:]
 	}

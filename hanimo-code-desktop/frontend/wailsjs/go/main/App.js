@@ -82,6 +82,10 @@ export function GetProblems(arg1) {
   return window['go']['main']['App']['GetProblems'](arg1);
 }
 
+export function GetProviders() {
+  return window['go']['main']['App']['GetProviders']();
+}
+
 export function GetRecentProjects() {
   return window['go']['main']['App']['GetRecentProjects']();
 }

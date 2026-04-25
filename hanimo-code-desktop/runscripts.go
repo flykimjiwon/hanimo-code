@@ -69,7 +69,10 @@ func scanNpmScripts(dir string) []RunTarget {
 // non-whitespace identifier chars and an optional dependency list after the
 // colon). Skips lines starting with `.` (built-ins like `.PHONY`) and `\t`
 // (recipe bodies).
-var makeTargetRE = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*)\s*:`)
+// `target:` (deps optional, allows blank/EOL after colon) — but NOT
+// `VAR:=value` which is a make variable assignment. `VAR?=` / `VAR+=`
+// are already excluded because they have no `:` for the regex to match.
+var makeTargetRE = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*)\s*:(?:[^=]|$)`)
 
 func scanMakefile(dir string) []RunTarget {
 	for _, name := range []string{"Makefile", "makefile", "GNUmakefile"} {
