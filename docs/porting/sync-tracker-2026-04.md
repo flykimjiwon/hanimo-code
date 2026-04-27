@@ -129,38 +129,88 @@
 
 ## 8. 다음 밀수 (Next Drop) — 우선 처리
 
-순서대로:
+### 8.1 블록 실행 (즉시)
 
-1. 🔥 **IW-1 (TECHAI_CODE Plan read-only)** — 보안 핫픽스.
-2. ⭐ **T1-1 (hashline 포팅)** — TECHAI_CODE 업그레이드의 상징적 아이템.
-3. **IW-2,3 (prompt embed + clarifyFirstDirective)** — 양쪽 동시.
-4. **T1-3,4 (git, diagnostics 도구)** — TECHAI_CODE.
-5. **Doom loop detector** — 양쪽 동시.
-6. **Repo-map PoC** — TECHAI_CODE에서.
-7. **Skill PoC** — TECHAI_CODE에서.
-8. **hanimo A1 (Repo-map 풀 구현)**.
-9. **hanimo A2 (Skill 풀 구현)**.
-10. **hanimo A3 (Hooks)**.
+| 블록 | 내용 | 예상 | 실행 가이드 |
+|---|---|:---:|---|
+| **A** | hanimo → TECHAI: LSP + 도구 5종 + MCP stdio + 테스트 3종 | 반나절 | `BLOCK-A-EXEC-GUIDE.md` |
+| **B** | TECHAI → hanimo: memory.go + tests + toolparse + reasoning_content | 1~2h | `BLOCK-B-EXEC-GUIDE.md` |
+| **C** | techai-ide → hanimo-code-desktop: Wails IDE 리브랜딩 | 1~2d | `BLOCK-C-EXEC-GUIDE.md` |
 
----
+### 8.2 블록 이후 (Sprint 순서)
 
-## 9. 파일 대조표 (심볼릭 링크 대용)
+1. **Sprint 1**: Tier 1 완벽주의 (SWE-bench, 3-Layer Defense)
+2. **Anthropic 네이티브 provider** (#5, 1일)
+3. **Rate limit tracker** (#6, 4시간)
+4. **Repo-map PoC** — TECHAI에서
+5. **Subagent (context fork)** — hanimo 먼저
+6. **Permission 5-mode** — hanimo 먼저
 
-포팅 시 이 표로 1:1 대응.
+### 8.3 지속 동기화
 
-| hanimo 경로 | TECHAI_CODE 경로 | 상태 |
-|---|---|---|
-| `internal/tools/hashline.go` | `internal/tools/hashline.go` | 📋 |
-| `internal/tools/git.go` | `internal/tools/git.go` | 📋 |
-| `internal/tools/diagnostics.go` | `internal/tools/diagnostics.go` | 📋 |
-| `internal/llm/providers/` | `internal/llm/providers/` | 📋 |
-| `internal/mcp/` | `internal/mcp/` | 📋 |
-| `internal/agents/plan.go` | `internal/agents/plan.go` | 📋 |
-| `internal/agents/auto.go` | `internal/agents/auto.go` | 📋 |
-| `internal/agents/intent.go` | `internal/agents/intent.go` | 📋 |
-| `internal/ui/palette.go` | `internal/ui/palette.go` | 📋 |
-| `internal/ui/i18n.go` | `internal/ui/i18n.go` | 📋 |
+2주 Sprint마다 TECHAI delta 스캔 → 선별 포팅.
+상세: `CONTINUOUS-SYNC-STRATEGY.md`
 
 ---
 
-_Last updated: 2026-04-10_
+## 9. 파일 대조표 (2026-04-24 최신)
+
+### 9.1 TECHAI에만 있는 파일 → hanimo로 가져올 것 (블록 B)
+
+| TECHAI 경로 | hanimo 목적지 | LOC | 상태 |
+|---|---|:---:|---|
+| `internal/tools/memory.go` | `internal/tools/memory.go` | 263 | 📋 블록 B |
+| `internal/hooks/hooks_test.go` | `internal/hooks/hooks_test.go` | 151 | 📋 블록 B |
+| `internal/llm/capabilities_test.go` | `internal/llm/capabilities_test.go` | 80 | 📋 블록 B |
+| `internal/llm/client_test.go` | `internal/llm/client_test.go` | 498 | 📋 블록 B |
+| `internal/tools/apply_patch_test.go` | `internal/tools/apply_patch_test.go` | 276 | 📋 블록 B |
+| `internal/tools/grep_patterns_test.go` | `internal/tools/grep_patterns_test.go` | — | 📋 블록 B |
+| `internal/tools/search_test.go` | `internal/tools/search_test.go` | — | 📋 블록 B |
+
+### 9.2 hanimo에만 있는 파일 → TECHAI로 보낼 것 (블록 A)
+
+| hanimo 경로 | TECHAI 목적지 | LOC | 상태 |
+|---|---|:---:|---|
+| `internal/lsp/client.go` | `internal/lsp/client.go` | ~200 | 📋 블록 A |
+| `internal/lsp/protocol.go` | `internal/lsp/protocol.go` | ~150 | 📋 블록 A |
+| `internal/lsp/servers.go` | `internal/lsp/servers.go` | ~155 | 📋 블록 A |
+| `internal/tools/imports.go` | `internal/tools/imports.go` | ~150 | 📋 블록 A |
+| `internal/tools/coverage.go` | `internal/tools/coverage.go` | ~120 | 📋 블록 A |
+| `internal/tools/quality.go` | `internal/tools/quality.go` | ~130 | 📋 블록 A |
+| `internal/tools/replacer.go` | `internal/tools/replacer.go` | ~160 | 📋 블록 A |
+| `internal/tools/smartctx.go` | `internal/tools/smartctx.go` | ~140 | 📋 블록 A |
+| `internal/mcp/transport_stdio.go` | `internal/mcp/transport_stdio.go` | — | 📋 블록 A |
+
+### 9.3 양쪽 공통 (동기화 유지)
+
+| 경로 | 동기화 상태 |
+|---|---|
+| `internal/agents/{auto,intent,plan,askuser}.go` | ⇄ 동기 |
+| `internal/tools/{file,git,shell,search,hashline,...}.go` | ⇄ 동기 |
+| `internal/llm/{client,compaction,context,prompt,...}.go` | ⇄ 동기 |
+| `internal/ui/{chat,menu,palette,...}.go` | ⇄ 동기 |
+
+### 9.4 포팅 금지 (본질 위배)
+
+| 방향 | 항목 |
+|---|---|
+| TECHAI → hanimo 금지 | BXM 지식팩, `cmd/scrape-bxm/`, 한국어 고정, audit 강화, `demo-supersol/`, `바보맨/` |
+| hanimo → TECHAI 금지 | Ollama/Anthropic/Google provider, i18n, SSE transport, Spark |
+
+---
+
+## 10. TECHAI 최근 진화 (2026-04-16~24) — 포팅 후보
+
+| 커밋 | 기능 | 파일 | hanimo 포팅 | 우선순위 |
+|---|---|---|:---:|---|
+| `ef79db5`+`fbc744b`+`905199d` | reasoning_content 파싱 + 색상 분리 | `llm/client.go`, `ui/chat.go` | **Yes** | 높음 |
+| `6044126` | 스트리밍 부분 tool_call 태그 방지 | `llm/client.go` | **Yes** | 높음 |
+| `55e444a`+`5628e06` | toolparse 엣지케이스 7건 | `exec/exec.go` 또는 인라인 | **Yes** | 중간 |
+| `b598651` | status bar reasoning/writing 표시 | `ui/tabbar.go` | **Yes** | 중간 |
+| `9884959` | config 자동 마이그레이션 | `config/config.go` | 검토 | 낮음 |
+| `0de24f5` | 한국어 조사 제거 fallback | 검색 로직 | 검토 | 낮음 |
+| `d891bcf`+`93a6e01`+`faf6712` | IDE: Git branch UI + 자동저장 + 세션 | `techai-ide/` | **블록 C** | 별도 |
+
+---
+
+_Last updated: 2026-04-24_

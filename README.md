@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/flykimjiwon/hanimo/releases"><img src="https://img.shields.io/github/v/release/flykimjiwon/hanimo?style=flat-square" alt="Release"></a>
   <a href="https://golang.org"><img src="https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat-square&logo=go" alt="Go"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square" alt="License"></a>
   <a href="https://github.com/flykimjiwon/hanimo/stargazers"><img src="https://img.shields.io/github/stars/flykimjiwon/hanimo?style=flat-square" alt="Stars"></a>
 </p>
 
@@ -1136,4 +1136,6 @@ make lint       # Run go vet
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved.

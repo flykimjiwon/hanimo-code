@@ -1,35 +1,37 @@
 Hanimo Code (하니모 코드)
 Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved.
 
-ORIGINAL AUTHOR
+This project was originally created and developed by Kim Jiwon (김지원)
+as a personal open-source project. This is NOT a work-for-hire product.
+
+ORIGIN & LINEAGE
 ================
-This software was conceived, designed, and developed entirely by
-Kim Jiwon (김지원), GitHub: github.com/flykimjiwon.
+Hanimo Code is the UPSTREAM original of the "TECHAI CODE" (택가이코드) project.
+Both were independently created by the same author, Kim Jiwon.
 
-This is a personal open-source project. It is NOT a work-for-hire,
-NOT created under any employment agreement, and NOT developed using
-any employer's resources, time, or equipment.
+  - Hanimo Code (upstream): https://github.com/flykimjiwon/hanimo
+  - TECHAI CODE (downstream fork): https://github.com/flykimjiwon/TECHAI_CODE
+  - SHGPT (predecessor web app): https://github.com/flykimjiwon/SHGPT
 
-DERIVATIVE WORKS
-================
-The following project is a derivative work of Hanimo Code,
-also created by the same original author (Kim Jiwon):
+Hanimo Code was conceived, designed, and implemented solely by Kim Jiwon
+during personal time, using personal equipment, outside the scope of any
+employment agreement.
 
-  - TECHAI CODE: https://github.com/flykimjiwon/TECHAI_CODE
-    TECHAI CODE was forked from Hanimo Code and extended with
-    additional features. Both projects share the same original author.
+AUTHOR DECLARATION
+==================
+I, Kim Jiwon (김지원), hereby declare that:
+  1. I am the sole original author of this software.
+  2. Development began in 2025 as a personal project.
+  3. All architectural decisions, code, and design are my own work.
+  4. This software was not created as part of any employment obligation.
+  5. No employer resources (hardware, software, time) were used in creation.
+  6. Git commit history serves as timestamped proof of authorship.
 
-TIMELINE
-========
-  - 2025: Initial concept and development began (Hanimo Code)
-  - 2025-2026: Continued development, forked into TECHAI CODE
-  - All git commits are timestamped and attributable to flykimjiwon
-
-AUTHORSHIP EVIDENCE
-===================
-  - GitHub account: github.com/flykimjiwon
-  - Repository: github.com/flykimjiwon/dev_anywhere (Hanimo Code)
-  - Repository: github.com/flykimjiwon/TECHAI_CODE (derivative)
-  - Complete git history with author attribution available in both repos
+COMPONENTS
+==========
+  - Hanimo Code TUI: Go + Bubble Tea terminal AI coding assistant
+  - Hanimo Code Desktop: Wails GUI IDE with AI integration
+  - 23+ built-in tools, 62 knowledge docs, 5 themes, 14+ LLM providers
 
 Licensed under the Apache License, Version 2.0.
+See LICENSE file for full license text.
