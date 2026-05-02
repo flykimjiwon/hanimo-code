@@ -264,7 +264,7 @@
 
 <header class="hero">
   <div class="brand">hanimo · Open-Source AI Stack</div>
-  <h1>5 products. <span class="highlight">1 author.</span> All open source.</h1>
+  <h1>4 products. <span class="highlight">1 author.</span> All open source.</h1>
   <p class="tagline">
     터미널 코딩 에이전트, 데스크톱 IDE, 셀프호스팅 채팅 플랫폼, RAG 엔진,
     커뮤니티 — 전부 한 사람이 만들고 모두 Apache 2.0으로 풀어둔다.
@@ -301,7 +301,7 @@
   <div class="manifest">
     <h3>I, Kim Jiwon (김지원), hereby declare that:</h3>
     <ol>
-      <li>I am the sole original author of <strong>hanimo-code, hanimo-webui, hanimo-rag, hanimo-community,</strong> and <strong>hanimo-toy-coffee</strong>.</li>
+      <li>I am the sole original author of <strong>hanimo-code, hanimo-webui, hanimo-rag,</strong> and <strong>hanimo-community</strong> (plus the private <code>hanimo-toy-coffee</code> sandbox).</li>
       <li>Development of the hanimo ecosystem began in <strong>2025</strong> as a personal project.</li>
       <li>All architectural decisions, code, and design across all 5 repositories are my own work.</li>
       <li>None of these projects were created as part of any employment obligation.</li>
@@ -319,7 +319,7 @@
 <!-- 2. Products                                           -->
 <!-- ==================================================== -->
 <section id="products">
-  <h2><span class="num">02</span>The 5 hanimo products</h2>
+  <h2><span class="num">02</span>The 4 hanimo products</h2>
   <p class="lede">
     각 제품은 독립 레포에서 운영되며 모두 Apache License 2.0 단일 라이선스를
     채택한다. 5개 레포가 NOTICE 파일을 통해 서로의 origin & lineage를 명시
@@ -404,31 +404,14 @@
       <a class="repo" href="https://github.com/flykimjiwon/hanimo-community">github.com/flykimjiwon/hanimo-community →</a>
     </article>
 
-    <article class="product">
-      <div class="badge-row">
-        <span class="badge lic">Apache 2.0</span>
-        <span class="badge status-sandbox">SANDBOX</span>
-      </div>
-      <h3>hanimo-toy-coffee <span class="ko">하니모 토이커피 — Agent Observation Sandbox</span></h3>
-      <p class="desc">
-        hanimo의 자율 모드(Deep Agent / Super / Plan)가 단일 설계 프롬프트만으로
-        어디까지 가는지 관찰하기 위한 토이/실험 프로젝트. tool-call 로그,
-        스트리밍 타이밍, compaction 발동 지점 캡처용.
-      </p>
-      <div class="meta">
-        <div><strong>Use</strong> hanimo TUI 자율 실행 회귀 테스트 + 회고</div>
-        <div><strong>License</strong> Apache 2.0 (신규 적용)</div>
-      </div>
-      <a class="repo" href="https://github.com/flykimjiwon/hanimo-toy-coffee">github.com/flykimjiwon/hanimo-toy-coffee →</a>
-    </article>
-
   </div>
 
   <div class="callout">
-    <strong>제외:</strong> TECHAI_CODE는 hanimo와 별도 프로젝트로 관리된다.
-    NOTICE 차원에서는 hanimo가 upstream / TECHAI가 downstream 포크임을
-    명시하지만, 본 hanimo 제품 쇼케이스에는 포함되지 않는다. TECHAI는
-    신한 사내망 전용 폐쇄망 변형으로 별도 운영된다.
+    <strong>쇼케이스 제외:</strong>
+    <code class="inline">hanimo-toy-coffee</code>는 hanimo TUI 자율 모드 행동을 관찰하기
+    위한 *내부 회귀 샌드박스*라 본 제품 쇼케이스에서 제외한다 (저장소·라이선스는
+    유지, NOTICE의 lineage에는 등재). <code class="inline">TECHAI_CODE</code>는
+    신한 사내망 전용 폐쇄망 변형으로 hanimo와 *별도 운영*되며 본 페이지에 포함되지 않는다.
   </div>
 </section>
 
@@ -659,7 +642,7 @@ tail -30 .test-output.log</pre>
     <tbody>
       <tr>
         <td>코드 라이선스</td>
-        <td>Apache License 2.0 — 5 레포 통일</td>
+        <td>Apache License 2.0 — 4 공개 레포 + 1 내부 샌드박스 통일</td>
       </tr>
       <tr>
         <td>저작권</td>
