@@ -1156,8 +1156,9 @@ for the full policy.
 | Telemetry · privacy · air-gap | [`docs/policy/telemetry-and-privacy.md`](docs/policy/telemetry-and-privacy.md) |
 | LTS · on-premises · enterprise | [`docs/policy/lts-onprem.md`](docs/policy/lts-onprem.md) |
 | Contributing · DCO · CLA grant | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| **Brand · 디자인 · 마스코트** | [`docs/branding/BRAND.md`](docs/branding/BRAND.md) — Modol the Honey-Bee Bichon |
 
-Index: [`docs/policy/README.md`](docs/policy/README.md)
+Index: [`docs/policy/README.md`](docs/policy/README.md) · [`docs/branding/README.md`](docs/branding/README.md)
 
 ---
 

@@ -1,0 +1,145 @@
+/* ============================================
+ * hanimo Design Tokens v1
+ * Modol the Honey-Bee Bichon brand · 2026-05-03
+ *
+ * Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * 5 repo 공유 단일 source.
+ * 변경 시 hanimo-code · hanimo-webui · hanimo-rag · hanimo-community
+ * 4 repo 모두 영향. PR을 통한 명시적 승인 필요.
+ *
+ * 적용 방법:
+ *   - Wails / React 앱:  src/style.css에서 @import 또는 :root 직접 박음
+ *   - Next.js (webui):   app/globals.css 최상단 @import
+ *   - 정적 HTML:         <link rel="stylesheet" href="..."> 또는 <style> 인라인
+ *
+ * Tailwind 사용 시 tailwind.config.js의 theme.extend.colors에 매핑:
+ *   colors: {
+ *     'hanimo-amber':       '#f5a623',
+ *     'hanimo-amber-soft':  '#ffd089',
+ *     'hanimo-amber-deep':  '#d99437',
+ *     ...
+ *   }
+ * ============================================ */
+
+:root {
+  /* ─────────── Honey palette (메타포: 꿀벌 옷) ─────────── */
+  --hanimo-amber:        #f5a623;
+  --hanimo-amber-soft:   #ffd089;
+  --hanimo-amber-deep:   #d99437;
+  --hanimo-amber-glow:   rgba(245, 166, 35, 0.22);
+
+  /* ─────────── Cream / Brown bed (메타포: 모돌 털 + 어두운 배경) ─────────── */
+  --hanimo-cream:        #f0e4d3;
+  --hanimo-cream-soft:   #f7eedf;
+  --hanimo-brown:        #1a1410;
+  --hanimo-brown-soft:   #1f1813;
+  --hanimo-brown-deeper: #14100d;
+
+  /* ─────────── Semantic (의미론적 색상, 모두 따뜻한 톤) ─────────── */
+  --hanimo-good:         #6cae75;   /* 따뜻한 녹색 — 차가운 #10b981 거부 */
+  --hanimo-good-soft:    rgba(108, 174, 117, 0.15);
+  --hanimo-warn:         #e8a317;
+  --hanimo-warn-soft:    rgba(232, 163, 23, 0.15);
+  --hanimo-error:        #d97757;   /* 따뜻한 적색 — 차가운 #f87171 거부 */
+  --hanimo-error-soft:   rgba(217, 119, 87, 0.15);
+  --hanimo-info:         #6b8db5;
+  --hanimo-info-soft:    rgba(107, 141, 181, 0.15);
+
+  /* ─────────── Foreground / Text ─────────── */
+  --hanimo-fg:           #e8e8ec;
+  --hanimo-fg-dim:       #a0a0a8;
+  --hanimo-fg-faint:     #5a5a64;
+
+  /* ─────────── Surface (다크 모드 기본) ─────────── */
+  --hanimo-bg:           var(--hanimo-brown);
+  --hanimo-bg-elev:      var(--hanimo-brown-soft);
+  --hanimo-bg-card:      #161619;
+  --hanimo-bg-code:      #0f0f12;
+  --hanimo-border:       #1f1f24;
+  --hanimo-border-strong:#2a2a32;
+  --hanimo-border-focus: var(--hanimo-amber);
+
+  /* ─────────── Typography ─────────── */
+  --hanimo-font-ui:      'Pretendard', 'Noto Sans KR', system-ui, -apple-system, 'SF Pro Text', sans-serif;
+  --hanimo-font-mono:    'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', ui-monospace, monospace;
+
+  /* ─────────── Radius ─────────── */
+  --hanimo-radius-xs:    4px;
+  --hanimo-radius-sm:    6px;
+  --hanimo-radius:       10px;
+  --hanimo-radius-lg:    14px;
+  --hanimo-radius-xl:    20px;
+  --hanimo-radius-pill:  999px;
+
+  /* ─────────── Shadow ─────────── */
+  --hanimo-shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.2);
+  --hanimo-shadow:       0 4px 12px rgba(0, 0, 0, 0.3);
+  --hanimo-shadow-lg:    0 8px 32px rgba(0, 0, 0, 0.4);
+  --hanimo-shadow-glow:  0 0 32px var(--hanimo-amber-glow);
+
+  /* ─────────── Spacing scale (4 단위) ─────────── */
+  --hanimo-sp-1:         4px;
+  --hanimo-sp-2:         8px;
+  --hanimo-sp-3:         12px;
+  --hanimo-sp-4:         16px;
+  --hanimo-sp-5:         20px;
+  --hanimo-sp-6:         24px;
+  --hanimo-sp-8:         32px;
+  --hanimo-sp-10:        40px;
+  --hanimo-sp-12:        48px;
+  --hanimo-sp-16:        64px;
+
+  /* ─────────── Transition ─────────── */
+  --hanimo-transition-fast:   100ms ease-out;
+  --hanimo-transition:        180ms ease-out;
+  --hanimo-transition-slow:   300ms ease-out;
+
+  /* ─────────── Z-index scale ─────────── */
+  --hanimo-z-dropdown:   100;
+  --hanimo-z-sticky:     200;
+  --hanimo-z-overlay:    300;
+  --hanimo-z-modal:      400;
+  --hanimo-z-popover:    500;
+  --hanimo-z-tooltip:    600;
+  --hanimo-z-toast:      700;
+}
+
+/* ============================================
+ * Light mode override (옵션)
+ * 다크가 기본이지만 사용자가 명시적으로 light 선택 시
+ * ============================================ */
+[data-theme="light"] {
+  --hanimo-fg:           #1a1410;
+  --hanimo-fg-dim:       #5a4838;
+  --hanimo-fg-faint:     #8a7a68;
+
+  --hanimo-bg:           var(--hanimo-cream);
+  --hanimo-bg-elev:      var(--hanimo-cream-soft);
+  --hanimo-bg-card:      #faf6ee;
+  --hanimo-bg-code:      #f0e4d3;
+  --hanimo-border:       rgba(26, 20, 16, 0.10);
+  --hanimo-border-strong:rgba(26, 20, 16, 0.20);
+}
+
+/* ============================================
+ * Reset / 기본 합치 (옵션 — 적용하지 않을 수도 있음)
+ * ============================================ */
+html {
+  font-family: var(--hanimo-font-ui);
+  color: var(--hanimo-fg);
+  background: var(--hanimo-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--hanimo-font-mono);
+}
+
+/* selection */
+::selection {
+  background: var(--hanimo-amber-glow);
+  color: var(--hanimo-fg);
+}
