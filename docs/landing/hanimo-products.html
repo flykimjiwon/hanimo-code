@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hanimo — Open-Source AI Stack by Kim Jiwon</title>
+<meta name="description" content="hanimo 오픈소스 AI 생태계 — TUI · Desktop IDE · WebUI · RAG · Community · Toy Sandbox. 모두 Apache 2.0 단일 저작자(Kim Jiwon).">
+<!-- Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg-elev: #111115;
+    --bg-card: #161619;
+    --border: #1f1f24;
+    --border-strong: #2a2a32;
+    --text: #e8e8ec;
+    --text-dim: #a0a0a8;
+    --text-faint: #5a5a64;
+    --accent: #ffb84d;        /* honey */
+    --accent-soft: #ffd089;
+    --accent-deep: #d99437;
+    --code-bg: #0f0f12;
+    --good: #4ade80;
+    --warn: #facc15;
+    --danger: #f87171;
+    --link: #ffb84d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, system-ui, 'SF Pro Text', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* hero */
+  .hero {
+    padding: 96px 24px 80px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(255,184,77,0.08) 0%, transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero .brand { font-size: 14px; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 18px; text-transform: uppercase; }
+  .hero h1 {
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 800;
+    letter-spacing: -2.5px;
+    margin-bottom: 18px;
+    line-height: 1.05;
+  }
+  .hero h1 .highlight { color: var(--accent); }
+  .hero .tagline {
+    font-size: clamp(16px, 1.6vw, 20px);
+    color: var(--text-dim);
+    max-width: 680px;
+    margin: 0 auto 32px;
+  }
+  .hero .author-line {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .hero .author-line strong { color: var(--accent); font-weight: 700; }
+  .hero .author-line .dot { color: var(--text-faint); }
+
+  /* nav */
+  nav.toc {
+    position: sticky; top: 0;
+    background: rgba(10, 10, 12, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 50;
+  }
+  nav.toc .inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; gap: 20px; align-items: center; overflow-x: auto;
+    font-size: 13px;
+  }
+  nav.toc a { color: var(--text-dim); text-decoration: none; white-space: nowrap; transition: color .15s; }
+  nav.toc a:hover { color: var(--text); }
+  nav.toc .home { color: var(--accent); font-weight: 600; }
+
+  /* sections */
+  section { padding: 80px 24px; max-width: 1200px; margin: 0 auto; }
+  section.section-tight { padding: 56px 24px; }
+  section h2 {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+  }
+  section h2 .num { color: var(--accent); font-weight: 600; margin-right: 14px; }
+  section .lede { font-size: 17px; color: var(--text-dim); margin-bottom: 44px; max-width: 760px; }
+
+  /* author manifest */
+  .manifest {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    padding: 36px;
+    position: relative;
+  }
+  .manifest::before {
+    content: ''; position: absolute; left: 0; top: 24px; bottom: 24px;
+    width: 4px; background: var(--accent); border-radius: 0 4px 4px 0;
+  }
+  .manifest h3 { font-size: 22px; margin-bottom: 18px; padding-left: 18px; }
+  .manifest ol { padding-left: 38px; color: var(--text); }
+  .manifest ol li { margin: 10px 0; }
+  .manifest p.note {
+    margin-top: 22px; padding-left: 18px;
+    font-size: 14px; color: var(--text-faint); font-style: italic;
+  }
+
+  /* product grid */
+  .products { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 22px; }
+  .product {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    transition: border-color .2s, transform .2s;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .product:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .product .badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .product .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge.lic { background: rgba(255,184,77,0.12); color: var(--accent); border: 1px solid rgba(255,184,77,0.3); }
+  .badge.status-active   { background: rgba(74,222,128,0.12); color: var(--good); border: 1px solid rgba(74,222,128,0.3); }
+  .badge.status-released  { background: rgba(255,184,77,0.12); color: var(--accent); border: 1px solid rgba(255,184,77,0.3); }
+  .badge.status-alpha    { background: rgba(250,204,21,0.12); color: var(--warn); border: 1px solid rgba(250,204,21,0.3); }
+  .badge.status-sandbox  { background: rgba(160,160,168,0.10); color: var(--text-dim); border: 1px solid var(--border-strong); }
+  .product h3 {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .product h3 .ko { display: block; font-size: 13px; color: var(--text-faint); font-weight: 500; letter-spacing: 0; margin-top: 4px; }
+  .product .desc { font-size: 14.5px; color: var(--text-dim); flex: 1; }
+  .product .meta { font-size: 12.5px; color: var(--text-faint); display: grid; gap: 4px; }
+  .product .meta strong { color: var(--text-dim); font-weight: 600; }
+  .product a.repo {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--link); text-decoration: none;
+    font-size: 13px; font-weight: 600;
+    margin-top: 6px;
+  }
+  .product a.repo:hover { text-decoration: underline; }
+
+  /* multi-session section */
+  .ms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 40px; }
+  @media (max-width: 800px) { .ms-grid { grid-template-columns: 1fr; } }
+  .ms-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px;
+  }
+  .ms-card h4 { font-size: 16px; margin-bottom: 8px; color: var(--accent); }
+  .ms-card p { font-size: 14px; color: var(--text-dim); }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 18px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  pre .c { color: #6b7280; }       /* comment */
+  pre .k { color: var(--accent); }  /* keyword */
+  pre .s { color: #94d2c0; }       /* string */
+  code.inline {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.92em;
+    color: var(--accent-soft);
+  }
+
+  /* prompt template card */
+  .prompt-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 18px 0;
+  }
+  .prompt-card .role {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .prompt-card h4 { font-size: 17px; margin-bottom: 6px; }
+  .prompt-card .summary { color: var(--text-dim); font-size: 14px; margin-bottom: 12px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  table th { text-align: left; padding: 12px 14px; color: var(--text-faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-strong); }
+  table td { padding: 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.92em; }
+
+  /* footer */
+  footer {
+    margin-top: 80px;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+  }
+  footer .marks { color: var(--text-dim); margin-top: 10px; }
+  footer .marks strong { color: var(--accent); }
+
+  /* divider */
+  .divider { height: 1px; background: var(--border); margin: 56px 0; }
+
+  /* note callout */
+  .callout {
+    background: rgba(255,184,77,0.05);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 22px 0;
+    font-size: 14.5px;
+    color: var(--text);
+  }
+  .callout strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="brand">hanimo · Open-Source AI Stack</div>
+  <h1>5 products. <span class="highlight">1 author.</span> All open source.</h1>
+  <p class="tagline">
+    터미널 코딩 에이전트, 데스크톱 IDE, 셀프호스팅 채팅 플랫폼, RAG 엔진,
+    커뮤니티 — 전부 한 사람이 만들고 모두 Apache 2.0으로 풀어둔다.
+  </p>
+  <div class="author-line">
+    <span>Made by</span>
+    <strong>Kim Jiwon (김지원)</strong>
+    <span class="dot">·</span>
+    <span>2025–2026 · Solo author</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="inner">
+    <a href="#manifest" class="home">Author Manifest</a>
+    <a href="#products">Products</a>
+    <a href="#multi-session">Multi-Session Workflow</a>
+    <a href="#prompt-templates">Prompt Templates</a>
+    <a href="#license">License &amp; Marks</a>
+  </div>
+</nav>
+
+<!-- ==================================================== -->
+<!-- 1. Author Manifest                                    -->
+<!-- ==================================================== -->
+<section id="manifest">
+  <h2><span class="num">01</span>Author Manifest</h2>
+  <p class="lede">
+    hanimo의 모든 레포는 <strong>Kim Jiwon (김지원)</strong>이 단독 저작·설계·구현했다.
+    개인 시간, 개인 장비, 비고용 저작물. 본 선언은 각 레포의 <code class="inline">NOTICE</code>
+    파일에 동일한 형태로 박혀있고 Apache 2.0 §4(d)에 의해 모든 파생 배포에 보존 의무가 있다.
+  </p>
+
+  <div class="manifest">
+    <h3>I, Kim Jiwon (김지원), hereby declare that:</h3>
+    <ol>
+      <li>I am the sole original author of <strong>hanimo-code, hanimo-webui, hanimo-rag, hanimo-community,</strong> and <strong>hanimo-toy-coffee</strong>.</li>
+      <li>Development of the hanimo ecosystem began in <strong>2025</strong> as a personal project.</li>
+      <li>All architectural decisions, code, and design across all 5 repositories are my own work.</li>
+      <li>None of these projects were created as part of any employment obligation.</li>
+      <li>No employer resources (hardware, software, time) were used in their creation.</li>
+      <li>Git commit history across all 5 repositories serves as timestamped, cryptographic proof of authorship.</li>
+    </ol>
+    <p class="note">
+      Predecessor: <strong>SHGPT</strong> (2025-09) · Apache 2.0 ecosystem launch: 2026-04-28.
+      Author identity: <a href="https://github.com/flykimjiwon" style="color:var(--accent)">github.com/flykimjiwon</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 2. Products                                           -->
+<!-- ==================================================== -->
+<section id="products">
+  <h2><span class="num">02</span>The 5 hanimo products</h2>
+  <p class="lede">
+    각 제품은 독립 레포에서 운영되며 모두 Apache License 2.0 단일 라이선스를
+    채택한다. 5개 레포가 NOTICE 파일을 통해 서로의 origin & lineage를 명시
+    상호 참조한다.
+  </p>
+
+  <div class="products">
+
+    <article class="product">
+      <div class="badge-row">
+        <span class="badge lic">Apache 2.0</span>
+        <span class="badge status-released">v0.2.0 RELEASED</span>
+      </div>
+      <h3>hanimo-code <span class="ko">하니모 코드 — TUI + Desktop IDE</span></h3>
+      <p class="desc">
+        터미널 기반 AI 코딩 에이전트(Bubble Tea TUI) +
+        Wails 기반 데스크톱 IDE. 14+ LLM 프로바이더, 23+ 내장 도구,
+        62 임베디드 지식 문서, 5 테마, 멀티에이전트 오케스트레이션,
+        Hash-Anchored Editing, 에어갭 모드.
+      </p>
+      <div class="meta">
+        <div><strong>Stack</strong> Go · Bubble Tea · Wails · React · CodeMirror 6</div>
+        <div><strong>Binary</strong> ~20MB single binary, zero runtime deps</div>
+        <div><strong>License</strong> Apache 2.0 · LTS-Onprem 빌드 분리</div>
+      </div>
+      <a class="repo" href="https://github.com/flykimjiwon/hanimo">github.com/flykimjiwon/hanimo →</a>
+    </article>
+
+    <article class="product">
+      <div class="badge-row">
+        <span class="badge lic">Apache 2.0</span>
+        <span class="badge status-active">ACTIVE</span>
+      </div>
+      <h3>hanimo-webui <span class="ko">하니모 웹UI — Browser AI Chat Platform</span></h3>
+      <p class="desc">
+        Next.js 15 기반 셀프호스팅 AI 채팅 플랫폼. 멀티모델 채팅 (Ollama,
+        OpenAI 호환, Gemini), Agent 시스템, Custom Instructions, Draw 캔버스,
+        OpenAI 호환 API 서버, 관리자 패널, DB 뷰어, PII 탐지, 커뮤니티
+        (게시판/쪽지/공지), i18n (ko/en), 테마 시스템.
+      </p>
+      <div class="meta">
+        <div><strong>Stack</strong> Next.js 15 · TypeScript · Postgres · OAuth SSO</div>
+        <div><strong>Deploy</strong> 셀프호스팅 / Docker / Kubernetes</div>
+        <div><strong>License</strong> Apache 2.0 (was MIT, 통일)</div>
+      </div>
+      <a class="repo" href="https://github.com/flykimjiwon/hanimo-webui">github.com/flykimjiwon/hanimo-webui →</a>
+    </article>
+
+    <article class="product">
+      <div class="badge-row">
+        <span class="badge lic">Apache 2.0</span>
+        <span class="badge status-active">ACTIVE</span>
+      </div>
+      <h3>hanimo-rag <span class="ko">하니모 라그 — PostgreSQL-native RAG Engine</span></h3>
+      <p class="desc">
+        PostgreSQL 단독으로 동작하는 경량 하이브리드 RAG 엔진. Elasticsearch
+        없음, 별도 벡터 DB 없음, 그래프 DB 없음. <code class="inline">pip install hanimo-rag</code> 한 줄로
+        설치. 문서 업로드 → 컬렉션 그룹핑 → LLM 연결 → 프로덕션 검색 API.
+      </p>
+      <div class="meta">
+        <div><strong>Stack</strong> Python 3.11+ · FastAPI · PostgreSQL 15+ · pgvector</div>
+        <div><strong>Install</strong> <code class="inline">pip install hanimo-rag</code></div>
+        <div><strong>License</strong> Apache 2.0 (was MIT, 통일)</div>
+      </div>
+      <a class="repo" href="https://github.com/flykimjiwon/hanimo-rag">github.com/flykimjiwon/hanimo-rag →</a>
+    </article>
+
+    <article class="product">
+      <div class="badge-row">
+        <span class="badge lic">Apache 2.0</span>
+        <span class="badge status-alpha">EARLY</span>
+      </div>
+      <h3>hanimo-community <span class="ko">하니모 커뮤니티 — Hub &amp; Docs</span></h3>
+      <p class="desc">
+        hanimo 생태계 사용자·기여자를 위한 커뮤니티 / 토론 / 문서 허브.
+        랜딩, 가이드, 사례, 공지, 이슈 트래킹 진입점.
+      </p>
+      <div class="meta">
+        <div><strong>Status</strong> 초기 단계 — 콘텐츠 채우는 중</div>
+        <div><strong>License</strong> Apache 2.0 (신규 적용)</div>
+      </div>
+      <a class="repo" href="https://github.com/flykimjiwon/hanimo-community">github.com/flykimjiwon/hanimo-community →</a>
+    </article>
+
+    <article class="product">
+      <div class="badge-row">
+        <span class="badge lic">Apache 2.0</span>
+        <span class="badge status-sandbox">SANDBOX</span>
+      </div>
+      <h3>hanimo-toy-coffee <span class="ko">하니모 토이커피 — Agent Observation Sandbox</span></h3>
+      <p class="desc">
+        hanimo의 자율 모드(Deep Agent / Super / Plan)가 단일 설계 프롬프트만으로
+        어디까지 가는지 관찰하기 위한 토이/실험 프로젝트. tool-call 로그,
+        스트리밍 타이밍, compaction 발동 지점 캡처용.
+      </p>
+      <div class="meta">
+        <div><strong>Use</strong> hanimo TUI 자율 실행 회귀 테스트 + 회고</div>
+        <div><strong>License</strong> Apache 2.0 (신규 적용)</div>
+      </div>
+      <a class="repo" href="https://github.com/flykimjiwon/hanimo-toy-coffee">github.com/flykimjiwon/hanimo-toy-coffee →</a>
+    </article>
+
+  </div>
+
+  <div class="callout">
+    <strong>제외:</strong> TECHAI_CODE는 hanimo와 별도 프로젝트로 관리된다.
+    NOTICE 차원에서는 hanimo가 upstream / TECHAI가 downstream 포크임을
+    명시하지만, 본 hanimo 제품 쇼케이스에는 포함되지 않는다. TECHAI는
+    신한 사내망 전용 폐쇄망 변형으로 별도 운영된다.
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 3. Multi-Session Workflow                             -->
+<!-- ==================================================== -->
+<section id="multi-session">
+  <h2><span class="num">03</span>Multi-Terminal · Multi-Session Workflow</h2>
+  <p class="lede">
+    hanimo TUI는 *단일 바이너리*라서 터미널 여러 개 띄우면 자동으로 N개의
+    독립 세션이 된다. 각 세션은 자기 SQLite DB / 자기 모드 / 자기 모델 /
+    자기 프로젝트 디렉토리를 갖고, <code class="inline">.hanimo.md</code> +
+    <code class="inline">.hanimo/knowledge/</code>로 컨텍스트가 자동 분리된다.
+  </p>
+
+  <div class="ms-grid">
+    <div class="ms-card">
+      <h4>① 세션 격리 원칙</h4>
+      <p>
+        각 hanimo 인스턴스는 *현재 작업 디렉토리*를 root로 잡는다.
+        다른 프로젝트면 다른 컨텍스트, 다른 세션 DB. 같은 프로젝트면 자동 공유.
+      </p>
+    </div>
+    <div class="ms-card">
+      <h4>② 모델 분담</h4>
+      <p>
+        무거운 모델은 1~2개 세션, 빠른 모델은 N개 세션에 분산. <code class="inline">/model</code>로 세션별 즉시 전환.
+        BYOK라 사용자 결제 키 1개를 N 세션이 공유해도 OK.
+      </p>
+    </div>
+    <div class="ms-card">
+      <h4>③ 역할 분담</h4>
+      <p>
+        Planner / Coder / Reviewer / Tester / Doc-writer로 각 세션을
+        나누면 컨텍스트 오염 없이 병렬. 각 세션 시작 시 역할 프롬프트 1개만
+        붙여넣으면 됨 (아래 §4 템플릿).
+      </p>
+    </div>
+    <div class="ms-card">
+      <h4>④ 동기화</h4>
+      <p>
+        세션 간 결과 공유는 *파일*로 한다 (Reviewer가 Coder의 출력을 읽음).
+        직접 메시지 패싱 안 함 — 단순함이 곧 안정성. 필요하면 Plan 모드의
+        <code class="inline">plan.json</code> 활용.
+      </p>
+    </div>
+  </div>
+
+  <h3 style="font-size: 22px; margin: 32px 0 12px; letter-spacing: -0.5px;">tmux 4-pane 셋업 — 한 명령으로 시작</h3>
+  <p style="color: var(--text-dim); font-size: 14.5px; margin-bottom: 16px;">
+    프로젝트 루트에 두면 좋은 <code class="inline">scripts/hanimo-tmux.sh</code> 예시. 한 번 실행하면
+    Planner / Coder / Reviewer / Run 4 pane이 같은 프로젝트 디렉토리를 공유하며 뜬다.
+  </p>
+
+<pre><span class="c">#!/usr/bin/env bash</span>
+<span class="c"># scripts/hanimo-tmux.sh — 한 프로젝트에 hanimo 4-pane 띄우기</span>
+<span class="c"># Usage: ./scripts/hanimo-tmux.sh [session-name]</span>
+
+<span class="k">set</span> -euo pipefail
+SESSION=${1:-hanimo}
+ROOT=$(<span class="k">pwd</span>)
+
+tmux new-session -d -s <span class="s">"$SESSION"</span> -c <span class="s">"$ROOT"</span> -n main
+
+<span class="c"># pane 1 — Planner (Plan mode, 큰 모델)</span>
+tmux send-keys -t <span class="s">"$SESSION"</span>:main <span class="s">"hanimo --mode plan"</span> C-m
+
+<span class="c"># pane 2 — Coder (Dev mode, 자율 200회)</span>
+tmux split-window -h -t <span class="s">"$SESSION"</span>:main -c <span class="s">"$ROOT"</span>
+tmux send-keys -t <span class="s">"$SESSION"</span>:main.2 <span class="s">"hanimo --mode dev"</span> C-m
+
+<span class="c"># pane 3 — Reviewer (Super mode, 읽기 위주)</span>
+tmux split-window -v -t <span class="s">"$SESSION"</span>:main.1 -c <span class="s">"$ROOT"</span>
+tmux send-keys -t <span class="s">"$SESSION"</span>:main.3 <span class="s">"hanimo"</span> C-m
+
+<span class="c"># pane 4 — Run/Test (일반 셸)</span>
+tmux split-window -v -t <span class="s">"$SESSION"</span>:main.2 -c <span class="s">"$ROOT"</span>
+
+tmux select-pane -t <span class="s">"$SESSION"</span>:main.1
+tmux attach -t <span class="s">"$SESSION"</span></pre>
+
+  <p style="color: var(--text-faint); font-size: 13px;">
+    위 스크립트는 4 pane을 띄우지만 각 pane은 자기 hanimo 인스턴스이므로
+    SQLite 세션도 4개로 분리. 단, 같은 프로젝트 디렉토리라 <code class="inline">.hanimo.md</code> +
+    <code class="inline">~/.hanimo/sessions.db</code>의 메모리 / 사용량 통계는 공유.
+  </p>
+</section>
+
+<!-- ==================================================== -->
+<!-- 4. Prompt Templates                                   -->
+<!-- ==================================================== -->
+<section id="prompt-templates">
+  <h2><span class="num">04</span>Prompt Templates per Session</h2>
+  <p class="lede">
+    각 pane을 띄운 직후 *첫 메시지*로 붙여넣을 역할 부여 프롬프트 4종.
+    이걸 한 번 넣으면 그 세션은 정확히 그 역할만 수행하며, 다른 pane
+    결과를 *파일*로만 참조한다.
+  </p>
+
+  <div class="prompt-card">
+    <span class="role">Pane 1 · Planner</span>
+    <h4>요구사항을 단계별 계획서로 변환</h4>
+    <p class="summary">
+      <code class="inline">hanimo --mode plan</code>으로 띄워진 세션. 사용자 요구를 받아
+      실행 단계 JSON을 생성, <code class="inline">/approve</code> 후 단계별 명령을 발행한다.
+    </p>
+<pre>너는 Planner 세션이다. 코드는 직접 수정하지 마라.
+다음 규칙을 지켜라:
+
+1. 사용자 요구를 받으면 먼저 <span class="s">.plan.md</span>로 단계 목록을 출력한다.
+2. 각 단계는 다음 형식: <span class="s">"[N] (Coder|Reviewer) -- 작업 한 줄"</span>.
+3. 추정·가정이 있으면 단계 위에 <span class="s">"ASSUME: ..."</span>로 명시.
+4. <span class="s">.plan.md</span> 작성 후 사용자 승인을 기다린다.
+5. 승인 후 <span class="s">.plan.md</span>의 [1]부터 *Coder pane에 줄 명령*만 출력한다.
+6. 직접 file_write를 호출하지 않는다 — 그건 Coder의 일.
+
+승인 받기 전에는 어떤 파일도 만들지 말 것.</pre>
+  </div>
+
+  <div class="prompt-card">
+    <span class="role">Pane 2 · Coder</span>
+    <h4>Plan의 단계만 정확히 실행</h4>
+    <p class="summary">
+      <code class="inline">hanimo --mode dev</code> (자율 200회). Planner가 발행한 단계 하나를
+      받아 끝까지 구현. 끝나면 <code class="inline">[STEP_COMPLETE]</code>로 알린다.
+    </p>
+<pre>너는 Coder 세션이다. 너의 일:
+
+1. 메시지로 "[N] -- 작업" 형태가 들어오면 그 단계만 실행한다.
+2. 그 단계와 무관한 코드는 절대 건드리지 않는다.
+3. 끝나면 마지막에 <span class="s">[STEP_COMPLETE: N]</span> 한 줄로 보고한다.
+4. 막히면 <span class="s">[STEP_BLOCKED: N -- 이유]</span> + 질문을 출력하고 멈춘다.
+5. <span class="s">.plan.md</span>는 읽기 전용. 절대 수정하지 마라.
+6. Reviewer pane이 코드 검토 중일 가능성이 있다 — 빌드를 깨면 안 된다.
+
+매 단계마다 자동으로 <span class="s">go test</span> / <span class="s">npm run build</span> 등
+관련 검증을 실행하고 그 결과도 보고에 포함한다.</pre>
+  </div>
+
+  <div class="prompt-card">
+    <span class="role">Pane 3 · Reviewer</span>
+    <h4>읽기 전용으로 Coder 출력 검증</h4>
+    <p class="summary">
+      Super 모드 (기본 모드). 파일 수정 권한 없이 <code class="inline">file_read</code> /
+      <code class="inline">git_diff</code> / <code class="inline">grep_search</code>만 사용하여
+      코드 리뷰 노트를 <code class="inline">.review.md</code>로 출력.
+    </p>
+<pre>너는 Reviewer 세션이다. 절대 file_write / file_edit 호출 금지.
+허용 도구: file_read, list_files, grep_search, glob_search, git_diff,
+       git_log, diagnostics.
+
+작업 흐름:
+
+1. 사용자가 <span class="s">"review STEP_N"</span> 형태로 트리거하면,
+2. <span class="s">git diff</span>로 직전 변경분만 본다.
+3. 다음 항목을 체크: 의도 부합 / 회귀 / 보안 / 가독성 / 테스트.
+4. 결과를 <span class="s">.review-N.md</span>에 *추가*한다 (덮어쓰지 마라).
+5. 마지막에 <span class="s">[REVIEW_OK: N]</span> 또는
+   <span class="s">[REVIEW_REJECT: N -- 사유]</span>로 1-line 보고.
+
+추측은 금지. 실제 본 파일·라인 번호만 인용한다.</pre>
+  </div>
+
+  <div class="prompt-card">
+    <span class="role">Pane 4 · Run / Test</span>
+    <h4>실제 빌드·실행은 hanimo 밖 일반 셸</h4>
+    <p class="summary">
+      hanimo가 아닌 *일반 셸*. <code class="inline">go test ./...</code> /
+      <code class="inline">npm run dev</code> / <code class="inline">make build-onprem</code> 등을
+      직접 돌리고 출력을 다른 pane에서 <code class="inline">file_read</code>로 회수.
+    </p>
+<pre><span class="c"># 이 pane은 hanimo가 아닌 일반 셸. 자동화 없음.</span>
+<span class="c"># 다른 pane(Reviewer/Coder)이 검증을 요청하면 여기서 직접 실행.</span>
+
+<span class="c"># 권장 패턴 — 출력을 파일로 떨어뜨려 다른 pane이 읽게 함</span>
+go test ./... 2>&amp;1 | tee .test-output.log
+make build-onprem 2>&amp;1 | tee .build-output.log
+npm run dev > .dev-server.log 2>&amp;1 &amp;
+
+<span class="c"># 실패 시 마지막 30줄 빠르게 보기</span>
+tail -30 .test-output.log</pre>
+  </div>
+
+  <h3 style="font-size: 22px; margin: 36px 0 12px; letter-spacing: -0.5px;">파일로 통신하는 이유</h3>
+  <table>
+    <thead><tr><th>방식</th><th>장점</th><th>단점</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>파일 매개</strong> (.plan.md / .review-N.md / .test-output.log)</td>
+        <td>각 pane은 자기 SQLite 세션만 신경. 컨텍스트 오염 없음. <code>git diff</code>로 추적 가능</td>
+        <td>약간 verbose</td>
+      </tr>
+      <tr>
+        <td>SSE / IPC 직접 메시징</td>
+        <td>실시간</td>
+        <td>인스턴스 간 결합 ↑, 디버깅 어려움. 한 세션 죽으면 전체 멈춤</td>
+      </tr>
+      <tr>
+        <td>단일 Plan 모드 + Auto</td>
+        <td>한 세션</td>
+        <td>compaction 빨리 발동, 200회 한계, 역할 구분 X</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>팁:</strong> 4 pane 모두 같은 프로젝트 디렉토리에 있으므로 <code class="inline">.hanimo/knowledge/</code>의
+    프로젝트 지식 문서 + <code class="inline">.hanimo.md</code> 프로젝트 프로파일이 모든 pane에 자동
+    공급된다. 즉 *"역할 부여"* 프롬프트만 pane별로 다르고, 도메인 지식은 자동 공유.
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 5. License & Marks                                    -->
+<!-- ==================================================== -->
+<section id="license">
+  <h2><span class="num">05</span>License &amp; Trademark</h2>
+  <p class="lede">
+    5개 레포 모두 <strong>Apache License 2.0</strong> 단일 라이선스.
+    Section 4(d)에 의해 모든 파생 배포는 NOTICE 파일을 보존해야 하므로,
+    위 §1의 Author Manifest는 어떤 포크에도 따라간다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>항목</th><th>정책</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>코드 라이선스</td>
+        <td>Apache License 2.0 — 5 레포 통일</td>
+      </tr>
+      <tr>
+        <td>저작권</td>
+        <td>Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved.</td>
+      </tr>
+      <tr>
+        <td>이름·로고</td>
+        <td>"hanimo" 및 hanimo 로고는 Kim Jiwon의 <strong>미등록 트레이드마크</strong>. Apache 2.0 §6에 의해 라이선스가 트레이드마크 권리를 부여하지 않음. 포크는 별도 이름 사용 권장</td>
+      </tr>
+      <tr>
+        <td>nominative fair use</td>
+        <td>블로그 포스트, 비교 글, 인용, "Powered by hanimo" 배지는 자유</td>
+      </tr>
+      <tr>
+        <td>텔레메트리</td>
+        <td>0 by default · 컴파일 타임 보장 (<code>-tags=onprem</code>) · 옵트인 강제</td>
+      </tr>
+      <tr>
+        <td>기여</td>
+        <td>DCO 서명 (<code>git commit -s</code>) + 라이선스 부여 (Apache 2.0 + 미래 재라이선싱 옵션)</td>
+      </tr>
+      <tr>
+        <td>엔터프라이즈</td>
+        <td>코드는 영원히 무료. 인증 빌드 / SLA / 백포트 / 한국어 지원이 별도 *서비스* 상품 (LTS-Onprem)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size: 20px; margin: 32px 0 14px;">관련 정책 문서</h3>
+  <ul style="padding-left: 22px; color: var(--text-dim); line-height: 2;">
+    <li><a href="../policy/copyright.md" style="color:var(--link)">copyright.md</a> — 자동 귀속 · 헤더 컨벤션 · GPG 서명 · 한국저작권위원회 등록</li>
+    <li><a href="../policy/trademark-and-naming.md" style="color:var(--link)">trademark-and-naming.md</a> — 미등록 트레이드마크 · 포크 네이밍 · 공식 채널</li>
+    <li><a href="../policy/telemetry-and-privacy.md" style="color:var(--link)">telemetry-and-privacy.md</a> — 0 텔레메트리 · 에어갭 모드</li>
+    <li><a href="../policy/lts-onprem.md" style="color:var(--link)">lts-onprem.md</a> — 분기 LTS · 12개월 백포트 · 인증 빌드</li>
+    <li><a href="../strategy/STRATEGY-2026-04-27-LICENSE-DEPLOYMENT-IP.md" style="color:var(--link)">STRATEGY-2026-04-27</a> — 5 결정 + 거부 대안 + 트리거 액션</li>
+  </ul>
+</section>
+
+<footer>
+  <div>
+    Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved. ·
+    Licensed under the Apache License, Version 2.0.
+  </div>
+  <div class="marks">
+    <strong>hanimo</strong> 및 hanimo 로고는 Kim Jiwon의 미등록 트레이드마크입니다.
+  </div>
+</footer>
+
+</body>
+</html>
