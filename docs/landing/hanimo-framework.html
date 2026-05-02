@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hanimo Framework — 한 페이지로 보는 전체 구조</title>
+<meta name="description" content="hanimo 프레임워크 전체 구조: 12 레이어 아키텍처, 모듈 맵, 도구 카탈로그, 모드, Knowledge/Skills/MCP, 빌드 프로파일, 문서 인덱스.">
+<!-- Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg-elev: #111115;
+    --bg-card: #161619;
+    --border: #1f1f24;
+    --border-strong: #2a2a32;
+    --text: #e8e8ec;
+    --text-dim: #a0a0a8;
+    --text-faint: #5a5a64;
+    --accent: #ffb84d;
+    --accent-soft: #ffd089;
+    --accent-deep: #d99437;
+    --code-bg: #0f0f12;
+    --good: #4ade80;
+    --warn: #facc15;
+    --info: #60a5fa;
+    --link: #ffb84d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, system-ui, 'SF Pro Text', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* hero */
+  .hero {
+    padding: 96px 24px 80px; text-align: center;
+    background: radial-gradient(ellipse at top, rgba(255,184,77,0.08) 0%, transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero .brand { font-size: 14px; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 18px; text-transform: uppercase; }
+  .hero h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 800; letter-spacing: -2.5px; margin-bottom: 18px; line-height: 1.05;
+  }
+  .hero h1 .highlight { color: var(--accent); }
+  .hero .tagline {
+    font-size: clamp(16px, 1.6vw, 19px);
+    color: var(--text-dim); max-width: 740px; margin: 0 auto 28px;
+  }
+  .hero .meta-pills {
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;
+  }
+  .meta-pill {
+    padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border-strong);
+    border-radius: 999px; font-size: 13px; color: var(--text-dim);
+  }
+  .meta-pill strong { color: var(--accent); }
+
+  /* nav */
+  nav.toc {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,10,12,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.toc .inner {
+    max-width: 1200px; margin: 0 auto; padding: 14px 24px;
+    display: flex; gap: 18px; align-items: center; overflow-x: auto; font-size: 13px;
+  }
+  nav.toc a { color: var(--text-dim); text-decoration: none; white-space: nowrap; transition: color .15s; }
+  nav.toc a:hover { color: var(--text); }
+  nav.toc .current { color: var(--accent); font-weight: 600; }
+
+  /* sections */
+  section { padding: 72px 24px; max-width: 1200px; margin: 0 auto; }
+  section h2 {
+    font-size: clamp(26px, 3.2vw, 36px);
+    font-weight: 800; letter-spacing: -1px; margin-bottom: 14px;
+  }
+  section h2 .num { color: var(--accent); font-weight: 600; margin-right: 14px; }
+  section .lede { font-size: 16px; color: var(--text-dim); margin-bottom: 36px; max-width: 780px; }
+
+  /* layer cards */
+  .layers { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .layer {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px 26px;
+    display: grid; grid-template-columns: 60px 1fr; gap: 22px;
+    align-items: start;
+  }
+  .layer .layer-num {
+    font-size: 32px; font-weight: 800; color: var(--accent);
+    line-height: 1; letter-spacing: -1px;
+  }
+  .layer h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .layer .layer-sub { color: var(--text-faint); font-size: 13px; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; }
+  .layer p { font-size: 14.5px; color: var(--text-dim); margin-bottom: 8px; }
+  .layer .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .layer .pill {
+    font-size: 11px; padding: 3px 9px; border-radius: 4px;
+    background: var(--bg-elev); border: 1px solid var(--border-strong); color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* module grid */
+  .modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .module {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    transition: border-color .2s;
+  }
+  .module:hover { border-color: var(--accent); }
+  .module .pkg {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--accent); margin-bottom: 8px; font-weight: 600;
+  }
+  .module h4 { font-size: 15px; margin-bottom: 6px; }
+  .module p { font-size: 13px; color: var(--text-dim); }
+
+  /* tool grid */
+  .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .tool-cat {
+    background: var(--bg-elev); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .tool-cat h4 {
+    font-size: 13px; color: var(--accent); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 10px;
+  }
+  .tool-cat code {
+    display: block; font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    color: var(--text); padding: 3px 0;
+  }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  table th { text-align: left; padding: 12px 14px; color: var(--text-faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-strong); }
+  table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.92em; font-family: 'JetBrains Mono', monospace; color: var(--accent-soft); }
+
+  /* code blocks */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border-strong);
+    border-radius: 10px; padding: 18px 20px;
+    overflow-x: auto; margin: 18px 0;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 13px; line-height: 1.7; color: var(--text);
+  }
+  pre .c { color: #6b7280; }
+  pre .k { color: var(--accent); }
+  pre .s { color: #94d2c0; }
+  pre .arrow { color: var(--text-faint); }
+  code.inline {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.92em; color: var(--accent-soft);
+  }
+
+  /* ascii diagram */
+  .ascii {
+    background: var(--code-bg); border: 1px solid var(--border-strong);
+    border-radius: 12px; padding: 24px 20px; margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    line-height: 1.5; color: var(--text); overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* doc index list */
+  .doc-list { list-style: none; padding: 0; }
+  .doc-list li {
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+    display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;
+  }
+  .doc-list li:last-child { border-bottom: none; }
+  .doc-list a {
+    color: var(--accent); text-decoration: none; font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px; font-weight: 600;
+  }
+  .doc-list a:hover { text-decoration: underline; }
+  .doc-list .desc { font-size: 14px; color: var(--text-dim); }
+
+  /* mode chips */
+  .mode-row { display: flex; gap: 14px; margin: 18px 0 24px; flex-wrap: wrap; }
+  .mode-chip {
+    background: var(--bg-elev); border: 1px solid var(--border-strong);
+    border-radius: 12px; padding: 18px 22px; min-width: 220px; flex: 1;
+  }
+  .mode-chip .mode-name {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 6px;
+  }
+  .mode-chip h4 { font-size: 17px; margin-bottom: 4px; }
+  .mode-chip p { font-size: 13px; color: var(--text-dim); }
+
+  /* callout */
+  .callout {
+    background: rgba(255,184,77,0.05); border-left: 3px solid var(--accent);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0;
+    font-size: 14.5px; color: var(--text);
+  }
+  .callout strong { color: var(--accent); }
+
+  /* footer */
+  footer {
+    margin-top: 80px; padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    text-align: center; color: var(--text-faint); font-size: 13px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer .marks { color: var(--text-dim); margin-top: 10px; }
+
+  @media (max-width: 700px) {
+    .layer { grid-template-columns: 1fr; gap: 8px; }
+    .doc-list li { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="brand">hanimo · Framework Reference</div>
+  <h1>한 페이지로 보는 <span class="highlight">hanimo 전체 구조</span></h1>
+  <p class="tagline">
+    이벤트 루프 → LLM 스트리밍 → 도구 실행 → 컴패니언 SSE 까지 12 레이어,
+    내부 패키지 16개, 도구 23+, 슬래시 명령 30+, 모드 3종, 빌드 프로파일
+    4종을 한 곳에 정리.
+  </p>
+  <div class="meta-pills">
+    <span class="meta-pill"><strong>v0.2.0</strong> Desktop</span>
+    <span class="meta-pill"><strong>Apache 2.0</strong></span>
+    <span class="meta-pill"><strong>Go 1.26+</strong> · React/TS · Wails</span>
+    <span class="meta-pill"><strong>~20MB</strong> single binary</span>
+    <span class="meta-pill"><strong>0 telemetry</strong> by default</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="inner">
+    <a href="#architecture" class="current">Architecture</a>
+    <a href="#modules">Modules</a>
+    <a href="#tools">Tools</a>
+    <a href="#modes">Modes &amp; Commands</a>
+    <a href="#extension">Knowledge · Skills · MCP</a>
+    <a href="#multi-agent">Multi-Agent</a>
+    <a href="#build">Build Profiles</a>
+    <a href="#docs">Documentation</a>
+  </div>
+</nav>
+
+<!-- ==================================================== -->
+<!-- 1. Architecture                                       -->
+<!-- ==================================================== -->
+<section id="architecture">
+  <h2><span class="num">01</span>12-Layer Architecture</h2>
+  <p class="lede">
+    사용자 키 입력부터 LLM 스트리밍·도구 실행·UI 렌더링·세션 영속화까지
+    hanimo TUI의 단일 프로세스 안에서 일어나는 흐름을 12 레이어로 분해.
+    각 레이어는 README.md "Internal Process Flow"에서 도식 풀버전 확인.
+  </p>
+
+  <div class="ascii">사용자 (터미널)
+   ↓ 키보드 입력
+[Bubble Tea 이벤트 루프]   ← Layer 1
+   ↓ msg dispatch
+[키 입력 → sendMessage]    ← Layer 2
+   ↓
+[LLM 스트리밍 + 도구 루프] ← Layer 3
+   ↓
+[View() 렌더링]            ← Layer 4
+   ↓
+[패키지 책임 맵]           ← Layer 5
+   ↓
+[/auto 자율 모드]          ← Layer 6
+[Plan: 계획→승인→실행]     ← Layer 7
+[3-Stage Compaction]       ← Layer 8
+[Knowledge 주입 파이프]    ← Layer 9
+[위험 명령 확인 플로우]    ← Layer 10
+[SQLite 세션 영속화]       ← Layer 11
+[멀티에이전트 오케스트레이션] ← Layer 12</div>
+
+  <div class="layers">
+
+    <div class="layer">
+      <div class="layer-num">01</div>
+      <div>
+        <h3>Bubble Tea 이벤트 루프</h3>
+        <div class="layer-sub">internal/app/app.go — Update(msg)</div>
+        <p>모든 입력·타이머·스트리밍 청크가 단일 msg 채널로 들어와 순차 처리. UI 갱신 깜빡임을 막기 위해 150ms 틱으로 분리.</p>
+        <div class="pill-row">
+          <span class="pill">tea.KeyPressMsg</span>
+          <span class="pill">tea.PasteMsg</span>
+          <span class="pill">streamTickMsg</span>
+          <span class="pill">streamChunkMsg</span>
+          <span class="pill">toolResultMsg</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">02</div>
+      <div>
+        <h3>키 입력 → 메시지 전송 파이프라인</h3>
+        <div class="layer-sub">handleSlashCommand() · sendMessage()</div>
+        <p>오버레이(setup/palette/menu/askUser/dangerCmd)가 활성이면 일반 키 처리 스킵. 슬래시(/)는 명령 디스패처로, 그 외엔 LLM 메시지로.</p>
+        <div class="pill-row">
+          <span class="pill">Tab → 모드 전환</span>
+          <span class="pill">Ctrl+K → 팔레트</span>
+          <span class="pill">↑/↓ → 입력 히스토리</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">03</div>
+      <div>
+        <h3>LLM 스트리밍 + 도구 실행 루프</h3>
+        <div class="layer-sub">internal/llm/client.go — StreamChat()</div>
+        <p>OpenAI 호환 SSE 청크를 streamCh 채널로. tool_calls 도착 시 도구 실행 → history 추가 → 재요청. 최대 20회(/auto는 200회).</p>
+        <div class="pill-row">
+          <span class="pill">SSE streaming</span>
+          <span class="pill">tool loop ≤20</span>
+          <span class="pill">drift detection</span>
+          <span class="pill">danger gate</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">04</div>
+      <div>
+        <h3>View() 렌더링 스택</h3>
+        <div class="layer-sub">internal/ui/ — chat.go · styles.go · menu.go · palette.go</div>
+        <p>viewport(스크롤) → intent hint → ASK_USER 블록 → textarea → 상태바 → 오버레이 순으로 위에서 아래로 합성.</p>
+        <div class="pill-row">
+          <span class="pill">5 themes</span>
+          <span class="pill">i18n ko/en</span>
+          <span class="pill">Lip Gloss</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">05</div>
+      <div>
+        <h3>파일별 책임 맵</h3>
+        <div class="layer-sub">"이 부분 고쳐"의 진입점 인덱스</div>
+        <p>입력/이벤트는 <code class="inline">app.go</code>, 도구는 <code class="inline">internal/tools/registry.go</code>, 프롬프트는 <code class="inline">internal/llm/prompt.go</code>, Git HUD는 <code class="inline">internal/gitinfo/</code>. README.md Layer 5에 풀 인덱스.</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">06</div>
+      <div>
+        <h3>/auto 자율 모드 루프</h3>
+        <div class="layer-sub">internal/agents/auto.go — CheckAutoMarkers()</div>
+        <p>시스템 프롬프트에 <code class="inline">[AUTO_COMPLETE]</code>/<code class="inline">[AUTO_PAUSE]</code> 마커 주입. 매 스트림 끝에 마커 검사. 미발견 시 200회까지 자동 재요청.</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">07</div>
+      <div>
+        <h3>Plan 모드 — 계획 → 승인 → 단계별 실행</h3>
+        <div class="layer-sub">internal/agents/plan.go — ParsePlan()</div>
+        <p>JSON plan 생성 → 사용자 <code class="inline">/approve</code> → 단계마다 <code class="inline">[STEP_COMPLETE]</code>/<code class="inline">[STEP_FAILED]</code> 마커. 단계 간 컨텍스트 분리.</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">08</div>
+      <div>
+        <h3>3-Stage Compaction</h3>
+        <div class="layer-sub">internal/llm/compaction.go — Compact()</div>
+        <p><strong>Snip</strong> (40+ msgs, tool 결과 절단) → <strong>Micro</strong> (4000자+ 메시지 자르기) → <strong>LLM 요약</strong> (ctx ≥90% 자동, /compact 수동).</p>
+        <div class="pill-row">
+          <span class="pill">ctx&lt;70% normal</span>
+          <span class="pill">70-79% warn</span>
+          <span class="pill">80-89% critical</span>
+          <span class="pill">≥90% auto</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">09</div>
+      <div>
+        <h3>Knowledge 주입 파이프라인</h3>
+        <div class="layer-sub">internal/knowledge/ — Inject()</div>
+        <p>키워드 매칭 → BM25 스코어링 → 토큰 예산 8192 내 Tier 우선 선택. 소스 3곳: <code class="inline">knowledge/docs/</code>(62개 임베디드) + <code class="inline">.hanimo/knowledge/</code>(프로젝트) + <code class="inline">~/.hanimo/knowledge/</code>(글로벌).</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">10</div>
+      <div>
+        <h3>위험 명령 확인 플로우</h3>
+        <div class="layer-sub">internal/tools/shell.go — IsDangerous()</div>
+        <p>shell_exec 호출 시 dangerous regex 매칭(rm -rf, sudo, git push --force, dd if=, chmod 777, curl|sh 등). 위험 감지 시 Allow/Deny 오버레이로 사용자 승인 강제.</p>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">11</div>
+      <div>
+        <h3>SQLite 세션 영속화</h3>
+        <div class="layer-sub">internal/session/ — db/schema.sql</div>
+        <p>매 메시지(user/assistant/tool)마다 <code class="inline">~/.hanimo/sessions.db</code> 자동 저장. <code class="inline">/save</code> 이름 지정, <code class="inline">/load</code> 복원, <code class="inline">/search</code> 전문검색, <code class="inline">/export</code> 마크다운.</p>
+        <div class="pill-row">
+          <span class="pill">sessions</span>
+          <span class="pill">messages</span>
+          <span class="pill">memories</span>
+          <span class="pill">usage_log</span>
+          <span class="pill">mcp_servers</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-num">12</div>
+      <div>
+        <h3>멀티에이전트 오케스트레이션</h3>
+        <div class="layer-sub">internal/multi/ — orchestrator.go · strategy.go · merge.go</div>
+        <p>Agent1(Super 모델) + Agent2(Dev 모델) 병렬 실행. <strong>Review</strong>(생성→리뷰), <strong>Consensus</strong>(독립→합성), <strong>Scan</strong>(파일 파티셔닝), <strong>Auto</strong>(키워드 자동선택).</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 2. Modules                                             -->
+<!-- ==================================================== -->
+<section id="modules">
+  <h2><span class="num">02</span>Internal Module Map</h2>
+  <p class="lede">
+    <code class="inline">internal/</code> 아래 16 패키지 + <code class="inline">cmd/</code> 진입점 3개.
+    각 패키지는 단일 책임을 갖고 다른 패키지에 대한 의존을 명시적으로 노출.
+  </p>
+
+  <div class="modules">
+    <div class="module">
+      <div class="pkg">internal/app</div>
+      <h4>Bubble Tea TUI 메인</h4>
+      <p>3000+ 줄 단일 모델. Update() · View() · sendMessage() · streamChunk 처리.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/agents</div>
+      <h4>자율 모드 + 계획 + 인텐트</h4>
+      <p>auto.go · plan.go · intent.go · askuser.go.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/companion</div>
+      <h4>브라우저 SSE 대시보드</h4>
+      <p>server.go · hub.go · events.go. <code class="inline">/companion</code> 명령으로 실행.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/config</div>
+      <h4>YAML 설정 + Baked builds</h4>
+      <p>vanilla / distro / sealed 빌드 모드. ldflags 주입.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/build</div>
+      <h4>빌드 태그 분기</h4>
+      <p><code class="inline">//go:build onprem</code> · <code class="inline">Onprem=true</code>. 컴파일 타임 텔레메트리 0 보장.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/gitinfo</div>
+      <h4>Git HUD</h4>
+      <p>브랜치명 + dirty 인디케이터. 상태바 갱신용.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/knowledge</div>
+      <h4>임베디드 지식 베이스</h4>
+      <p>62개 docs (go:embed) · BM25 스코어 · Tier 우선순위.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/llm</div>
+      <h4>LLM 스트리밍 + Provider 추상화</h4>
+      <p>14+ provider · client.go · prompt.go · compaction.go · capabilities.go · cache.go.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/mcp</div>
+      <h4>MCP 클라이언트</h4>
+      <p>JSON-RPC 2.0 · stdio + SSE · tool 위임.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/multi</div>
+      <h4>듀얼 모델 오케스트레이션</h4>
+      <p>review · consensus · scan · auto 4 전략.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/session</div>
+      <h4>SQLite 세션 저장</h4>
+      <p>sessions · messages · memories · usage_log · mcp_servers.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/skills</div>
+      <h4>SKILL.md 로더</h4>
+      <p>agentskills.io 호환 스킬 시스템.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/tools</div>
+      <h4>23+ 내장 도구</h4>
+      <p>file/shell/git/search/diagnostics/snapshot/secrets/hashline 등.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">internal/ui</div>
+      <h4>TUI 컴포넌트</h4>
+      <p>chat · styles · menu · palette · context · i18n.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">cmd/hanimo</div>
+      <h4>CLI 진입점</h4>
+      <p>플래그 파싱 · 모드 선택 · 메인 루프 시작.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">cmd/build-index</div>
+      <h4>Knowledge 인덱스 빌더</h4>
+      <p>62개 docs를 빌드 시점에 BM25 인덱스로 변환.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">cmd/spark</div>
+      <h4>보조 바이너리</h4>
+      <p>실험적 sub-product 진입점.</p>
+    </div>
+    <div class="module">
+      <div class="pkg">hanimo-code-desktop</div>
+      <h4>Wails 데스크톱 IDE</h4>
+      <p>Phase 0-19 + v0.2.0 출시. CLI 엔진 재사용 + React 프런트.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 3. Tool Catalog                                        -->
+<!-- ==================================================== -->
+<section id="tools">
+  <h2><span class="num">03</span>Tool Catalog (23+)</h2>
+  <p class="lede">
+    LLM이 호출 가능한 내장 도구 23개. 카테고리별로 그룹핑되며 각 도구는
+    <code class="inline">internal/tools/registry.go</code>의 AllTools()에 정의되고 executeInner()로 실행.
+  </p>
+
+  <div class="tools-grid">
+    <div class="tool-cat">
+      <h4>File Operations</h4>
+      <code>file_read</code>
+      <code>file_write</code>
+      <code>file_edit</code>
+      <code>hashline_read</code>
+      <code>hashline_edit</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Directory</h4>
+      <code>list_files</code>
+      <code>list_tree</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Search</h4>
+      <code>grep_search</code>
+      <code>glob_search</code>
+      <code>knowledge_search</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Shell</h4>
+      <code>shell_exec</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Git</h4>
+      <code>git_status</code>
+      <code>git_diff</code>
+      <code>git_log</code>
+      <code>git_commit</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Project</h4>
+      <code>project_detect</code>
+      <code>init_project</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Code Quality</h4>
+      <code>diagnostics</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Snapshots</h4>
+      <code>snapshot.Create</code>
+      <code>snapshot.Undo</code>
+    </div>
+    <div class="tool-cat">
+      <h4>Secrets Guard</h4>
+      <code>CheckSecrets</code>
+      <code>CheckSensitiveFile</code>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Hash-Anchored Editing.</strong> <code class="inline">hashline_*</code> 도구군은 라인별 MD5 4자리 해시를 anchor로 사용해 *stale-edit corruption*을 방지한다. AI가 본 적 없는 라인을 환각으로 덮어쓰는 사고를 차단하는 hanimo의 시그니처 자산.
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 4. Modes & Commands                                    -->
+<!-- ==================================================== -->
+<section id="modes">
+  <h2><span class="num">04</span>Modes &amp; Slash Commands</h2>
+  <p class="lede">
+    Tab으로 순환되는 3 모드 + 30+ 슬래시 명령. 각 모드는 시스템 프롬프트와
+    허용 도구 집합이 다르다.
+  </p>
+
+  <div class="mode-row">
+    <div class="mode-chip">
+      <div class="mode-name">Mode 1 / Tab</div>
+      <h4>Super</h4>
+      <p>만능. 모든 도구 + clarify-first directive. 일반 사용 기본.</p>
+    </div>
+    <div class="mode-chip">
+      <div class="mode-name">Mode 2 / Tab Tab</div>
+      <h4>Dev (Deep Agent)</h4>
+      <p>자율 100~200회. ASK_USER 최소화. 무거운 코딩 작업.</p>
+    </div>
+    <div class="mode-chip">
+      <div class="mode-name">Mode 3 / Tab Tab Tab</div>
+      <h4>Plan</h4>
+      <p>JSON 계획 → 승인 → 단계 실행. 분석·아키텍처 검토.</p>
+    </div>
+  </div>
+
+  <h3 style="font-size: 18px; margin: 32px 0 12px;">Slash Commands (30+)</h3>
+  <table>
+    <thead><tr><th>카테고리</th><th>명령</th></tr></thead>
+    <tbody>
+      <tr><td>세션</td><td><code>/new</code> · <code>/save</code> · <code>/load</code> · <code>/search</code> · <code>/export</code></td></tr>
+      <tr><td>AI 제어</td><td><code>/auto</code> · <code>/plan</code> · <code>/approve</code> · <code>/reject</code> · <code>/multi</code> · <code>/compact</code></td></tr>
+      <tr><td>도구 트리거</td><td><code>/git</code> · <code>/diff</code> · <code>/init</code> · <code>/diagnostics</code> · <code>/undo</code> · <code>/copy</code> · <code>/commands</code></td></tr>
+      <tr><td>설정</td><td><code>/model</code> · <code>/provider</code> · <code>/config</code> · <code>/theme</code> · <code>/lang</code> · <code>/setup</code> · <code>/companion</code> · <code>/mcp</code></td></tr>
+      <tr><td>정보</td><td><code>/help</code> · <code>/version</code> · <code>/usage</code> · <code>/remember</code> · <code>/memories</code> · <code>/forget</code> · <code>/clear</code> · <code>/exit</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">Keyboard Shortcuts</h3>
+  <table>
+    <thead><tr><th>키</th><th>동작</th></tr></thead>
+    <tbody>
+      <tr><td><code>Enter</code> / <code>Shift+Enter</code></td><td>전송 / 줄바꿈</td></tr>
+      <tr><td><code>Tab</code></td><td>모드 순환 (Super → Dev → Plan)</td></tr>
+      <tr><td><code>Ctrl+K</code></td><td>커맨드 팔레트 (퍼지 검색)</td></tr>
+      <tr><td><code>↑/↓</code> / <code>Ctrl+P/N</code></td><td>입력 히스토리 탐색</td></tr>
+      <tr><td><code>Esc</code></td><td>메뉴 / 스트리밍 취소</td></tr>
+      <tr><td><code>Alt+↑/↓</code></td><td>viewport 스크롤</td></tr>
+      <tr><td><code>Ctrl+L</code></td><td>화면 초기화</td></tr>
+      <tr><td><code>Ctrl+C</code></td><td>종료</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================================================== -->
+<!-- 5. Knowledge / Skills / MCP                            -->
+<!-- ==================================================== -->
+<section id="extension">
+  <h2><span class="num">05</span>Extension System — Knowledge · Skills · MCP</h2>
+  <p class="lede">
+    hanimo는 *임베디드 지식*과 *외부 확장*을 동시에 지원한다. 사용자가 새
+    문서를 떨구거나 MCP 서버를 연결하면 시스템 프롬프트와 도구 목록에
+    동적으로 합쳐진다.
+  </p>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">Knowledge Sources (3 layers)</h3>
+  <table>
+    <thead><tr><th>소스</th><th>위치</th><th>로드 시점</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>임베디드</strong> (62 docs)</td>
+        <td><code>knowledge/docs/</code> — go:embed</td>
+        <td>빌드 시점에 박힘 · 인터넷 불요</td>
+      </tr>
+      <tr>
+        <td><strong>프로젝트</strong></td>
+        <td><code>.hanimo/knowledge/*.md</code></td>
+        <td>해당 폴더에서 hanimo 실행 시 자동 인덱싱</td>
+      </tr>
+      <tr>
+        <td><strong>글로벌</strong></td>
+        <td><code>~/.hanimo/knowledge/*.md</code></td>
+        <td>모든 hanimo 인스턴스 공유</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">Skills System</h3>
+  <p style="color: var(--text-dim); font-size: 14.5px;">
+    <code class="inline">.hanimo/skills/&lt;name&gt;/SKILL.md</code> 형식. agentskills.io 표준 호환. 프론트매터 + <code class="inline">$ARGUMENTS</code> + 인라인 <code class="inline">!shell</code> 명령 + lazy load 지원.
+  </p>
+  <pre><span class="c">---</span>
+<span class="c">name: review-pr</span>
+<span class="c">description: PR 리뷰 워크플로</span>
+<span class="c">trigger: review-pr $PR_NUMBER</span>
+<span class="c">---</span>
+
+다음 PR을 리뷰해라:
+- <span class="k">!gh pr view $PR_NUMBER --json title,body</span>
+- 변경분 분석
+- ...</pre>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">MCP — Model Context Protocol</h3>
+  <p style="color: var(--text-dim); font-size: 14.5px;">
+    JSON-RPC 2.0 over stdio 또는 SSE. <code class="inline">~/.hanimo/config.yaml</code>의
+    <code class="inline">mcp_servers</code>에 정의. 외부 서버의 도구가 hanimo의 도구 목록에 자동 합쳐짐. desktop IDE에서는 라이브 트리 뷰 (Phase 12).
+  </p>
+  <pre><span class="k">mcp_servers:</span>
+  - <span class="k">name:</span> <span class="s">filesystem</span>
+    <span class="k">transport:</span> <span class="s">stdio</span>
+    <span class="k">command:</span> <span class="s">npx -y @modelcontextprotocol/server-filesystem ~/Desktop</span>
+  - <span class="k">name:</span> <span class="s">github</span>
+    <span class="k">transport:</span> <span class="s">sse</span>
+    <span class="k">url:</span> <span class="s">http://localhost:3001/sse</span></pre>
+
+  <div class="callout">
+    <strong>한국 MCP 카탈로그 35종.</strong> Phase 19에서 한국 시장에 특화된 MCP 서버 35개를 카탈로그로 박아놨다. 사용자가 <code class="inline">/mcp</code>로 토글만 하면 즉시 사용. wedge: "한국 폐쇄망/공공/금융 + 한국어" 시장에 hanimo가 자연 정렬.
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 6. Multi-Agent                                         -->
+<!-- ==================================================== -->
+<section id="multi-agent">
+  <h2><span class="num">06</span>Multi-Agent Orchestration</h2>
+  <p class="lede">
+    듀얼 모델로 같은 작업을 *역할 나눠* 동시 진행. Agent1(Super 모델, 쓰기 권한) + Agent2(Dev 모델, 보조). 4 전략을 <code class="inline">/multi</code>로 토글.
+  </p>
+
+  <table>
+    <thead><tr><th>전략</th><th>흐름</th><th>적합한 작업</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>/multi review</code></td>
+        <td>Agent1 생성 → Agent2 읽기전용 검토 → LLM 합성</td>
+        <td>코드 변경 + 회귀 점검</td>
+      </tr>
+      <tr>
+        <td><code>/multi consensus</code></td>
+        <td>Agent1·2 독립 실행 → LLM이 두 응답 비교·합성</td>
+        <td>설계 결정 / 비교 분석</td>
+      </tr>
+      <tr>
+        <td><code>/multi scan</code></td>
+        <td>파일/함수 단위 파티셔닝 → 영역별 담당 → 결과 합산</td>
+        <td>대규모 리팩토링 / 검색</td>
+      </tr>
+      <tr>
+        <td><code>/multi auto</code></td>
+        <td>입력 키워드로 위 3 전략 자동 선택</td>
+        <td>무엇을 쓸지 모를 때</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="color: var(--text-faint); font-size: 13px; margin-top: 14px;">
+    구현: <code class="inline">internal/multi/orchestrator.go</code> · <code class="inline">strategy.go</code> · <code class="inline">merge.go</code>. 각 에이전트 최대 20 tool iterations · 실시간 progress가 companion SSE로 송출.
+  </p>
+</section>
+
+<!-- ==================================================== -->
+<!-- 7. Build Profiles                                      -->
+<!-- ==================================================== -->
+<section id="build">
+  <h2><span class="num">07</span>Build Profiles (4)</h2>
+  <p class="lede">
+    같은 코드베이스 + 다른 빌드 플래그 = 다른 배포 채널.
+    <code class="inline">internal/config</code> ldflags + <code class="inline">internal/build</code> 빌드 태그가 분기.
+  </p>
+
+  <table>
+    <thead><tr><th>프로파일</th><th>명령</th><th>대상</th><th>특징</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>vanilla</strong></td>
+        <td><code>make build</code></td>
+        <td>OSS 사용자</td>
+        <td>아무것도 baked 안 됨. 사용자가 endpoint/key 설정.</td>
+      </tr>
+      <tr>
+        <td><strong>distro</strong></td>
+        <td><code>make build-distro</code></td>
+        <td>회사 배포</td>
+        <td>endpoint/provider/model frozen, API_KEY는 사용자가 런타임 입력</td>
+      </tr>
+      <tr>
+        <td><strong>sealed</strong></td>
+        <td><code>make build-sealed</code></td>
+        <td>내부 단일 배포</td>
+        <td>endpoint + API_KEY 모두 frozen. 비공개 유지 필수.</td>
+      </tr>
+      <tr>
+        <td><strong>onprem (LTS)</strong></td>
+        <td><code>make build-onprem</code></td>
+        <td>폐쇄망 / 분기 LTS</td>
+        <td><code>-tags=onprem</code>으로 컴파일 타임 텔레메트리 0 보장. 분기 1회 발행.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">크로스 플랫폼</h3>
+  <p style="color: var(--text-dim); font-size: 14.5px;">
+    각 프로파일별 <code class="inline">build-*-all</code> 타겟이 5 OS×Arch 매트릭스를 한 번에 빌드: macOS arm64/amd64 · Linux amd64/arm64 · Windows amd64.
+  </p>
+  <pre><span class="c"># 예시: 분기 LTS 풀 매트릭스</span>
+make build-onprem-all
+<span class="c"># dist/hanimo-onprem-darwin-arm64</span>
+<span class="c"># dist/hanimo-onprem-darwin-amd64</span>
+<span class="c"># dist/hanimo-onprem-linux-amd64</span>
+<span class="c"># dist/hanimo-onprem-linux-arm64</span>
+<span class="c"># dist/hanimo-onprem-windows-amd64.exe</span></pre>
+
+  <div class="callout">
+    <strong>desktop 빌드는 별도.</strong> <code class="inline">hanimo-code-desktop/</code>에서 <code class="inline">wails build</code> · macOS .app · Windows .exe · Linux는 GH Actions에서 빌드 (Phase 18).
+  </div>
+</section>
+
+<!-- ==================================================== -->
+<!-- 8. Documentation                                       -->
+<!-- ==================================================== -->
+<section id="docs">
+  <h2><span class="num">08</span>Documentation Index</h2>
+  <p class="lede">
+    프로젝트 문서는 4 디렉토리에 분산. <strong>policy</strong>(법적/운영 규칙) ·
+    <strong>strategy</strong>(전략 결정) · <strong>roadmap</strong>(개발 계획) ·
+    <strong>SESSION-*</strong>(시간순 세션 산출).
+  </p>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">정책 (docs/policy/)</h3>
+  <ul class="doc-list">
+    <li><a href="../policy/README.md">policy/README.md</a><div class="desc">정책 인덱스 + FAQ + 변경 절차</div></li>
+    <li><a href="../policy/copyright.md">policy/copyright.md</a><div class="desc">자동 귀속 · SPDX 헤더 컨벤션 · GPG 서명 · 한국저작권위원회 등록</div></li>
+    <li><a href="../policy/trademark-and-naming.md">policy/trademark-and-naming.md</a><div class="desc">미등록 트레이드마크 · 포크 네이밍 · 공식 채널 목록 · 사칭 대응</div></li>
+    <li><a href="../policy/telemetry-and-privacy.md">policy/telemetry-and-privacy.md</a><div class="desc">텔레메트리 0 영구화 · 에어갭 모드 · 향후 도입 시 강제 규칙</div></li>
+    <li><a href="../policy/lts-onprem.md">policy/lts-onprem.md</a><div class="desc">분기 LTS 캐덴스 · 12개월 백포트 · 인증 빌드 서비스화</div></li>
+  </ul>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">전략 (docs/strategy/)</h3>
+  <ul class="doc-list">
+    <li><a href="../strategy/STRATEGY-2026-04-27-LICENSE-DEPLOYMENT-IP.md">STRATEGY-2026-04-27 — License · Deployment · IP</a><div class="desc">5 결정 + 거부 대안 6 + 시장 분업 + 시나리오 매트릭스 + 트리거 액션</div></li>
+    <li><a href="../strategy/VISION-2026-04-25-MULTI-MODEL-MULTI-DEVICE.md">VISION-2026-04-25 — All Models · All Devices · OSS</a><div class="desc">6축 비전 + 시장 매트릭스 13 제품 + hanimo 자리</div></li>
+    <li><a href="../strategy/MARKET-ANALYSIS-2026-04-24.md">MARKET-ANALYSIS-2026-04-24</a><div class="desc">시장 진단 · IDE wedge · 플러그인 흡수 전략</div></li>
+    <li><a href="../strategy/REPUTATION-STRATEGY-2026-04-23.md">REPUTATION-STRATEGY-2026-04-23</a><div class="desc">명성 wedge 전략 — 한국어 + OSS</div></li>
+    <li><a href="../strategy/hanimo-certified-models-v0.2.4.md">Certified Models v0.2.4</a><div class="desc">Tier 1/2/3 모델 정책 (vs 무한 호환)</div></li>
+  </ul>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">로드맵 (docs/roadmap/)</h3>
+  <ul class="doc-list">
+    <li><a href="../roadmap/enhancement-plan-2026-04.md">Enhancement Plan 2026-04</a><div class="desc">Phase A/B/C 풀 플랜 (Repo-map · Skill · Hooks · Subagent · LSP · Caching)</div></li>
+    <li><a href="../roadmap/v0.2-v0.4-improvement-plan.md">v0.2 → v0.4 Improvement</a><div class="desc">버전별 누적 작업 목록</div></li>
+  </ul>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">최근 세션 (docs/SESSION-*)</h3>
+  <ul class="doc-list">
+    <li><a href="../SESSION-2026-04-27-CLOSING.md">SESSION 2026-04-27 — Policy Infrastructure</a><div class="desc">라이선스·트레이드마크·LTS-Onprem 정책 박힘 (이번 시리즈)</div></li>
+    <li><a href="../SESSION-2026-04-25-CLOSING.md">SESSION 2026-04-25 — Phase 19 + v0.2.0</a><div class="desc">한국 MCP 35종 + Multi-OS 빌드 + 첫 정식 릴리스</div></li>
+    <li><a href="../SESSION-2026-04-23-INDEX.md">SESSION 2026-04-23 — IDE 디자인 v1</a><div class="desc">Honey 팔레트 + 14 Activity Bar 아이콘 + 8 테마</div></li>
+    <li><a href="../SESSION-2026-04-16-17-PORTING-SUMMARY.md">SESSION 2026-04-16/17 — 포팅 라운드</a><div class="desc">hashline · auto · git tools · diagnostics · palette</div></li>
+    <li><a href="../SESSION-2026-04-11-INDEX.md">SESSION 2026-04-11 — Master Overview</a><div class="desc">레포 정체성 + 14+ provider + Tier 시스템 피벗</div></li>
+  </ul>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">제품 쇼케이스</h3>
+  <ul class="doc-list">
+    <li><a href="hanimo-products.html">hanimo-products.html</a><div class="desc">5 제품 카드 + Author Manifest + Multi-Session Workflow + Prompt Templates</div></li>
+    <li><a href="hanimo-dev-landing.html">hanimo-dev-landing.html</a><div class="desc">기존 개발자 랜딩 페이지</div></li>
+  </ul>
+
+  <h3 style="font-size: 18px; margin: 24px 0 12px;">기여 · 라이선스</h3>
+  <ul class="doc-list">
+    <li><a href="../../CONTRIBUTING.md">CONTRIBUTING.md</a><div class="desc">기여자 라이선스 부여 · DCO 서명 · SPDX 헤더 · PR 체크리스트</div></li>
+    <li><a href="../../LICENSE">LICENSE</a><div class="desc">Apache License 2.0 풀텍스트</div></li>
+    <li><a href="../../NOTICE">NOTICE</a><div class="desc">Kim Jiwon 단독 저작자 6조항 선언 + 5-repo lineage + 트레이드마크 안내</div></li>
+  </ul>
+</section>
+
+<footer>
+  <div>
+    Copyright 2025-2026 <strong style="color: var(--accent)">Kim Jiwon (김지원)</strong>. All rights reserved. ·
+    Licensed under the Apache License, Version 2.0.
+  </div>
+  <div class="marks">
+    Sister page: <a href="hanimo-products.html">hanimo-products.html</a> · 5-repo product showcase
+  </div>
+</footer>
+
+</body>
+</html>
