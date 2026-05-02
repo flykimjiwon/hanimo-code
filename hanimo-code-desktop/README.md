@@ -147,4 +147,10 @@ hanimo-code-desktop/
 
 ## 라이선스
 
-상위 레포(MIT)와 동일.
+상위 레포와 동일 — **Apache License 2.0**. 자세한 내용은
+[`../LICENSE`](../LICENSE) · [`../NOTICE`](../NOTICE) ·
+[`../docs/policy/README.md`](../docs/policy/README.md) 참고.
+
+데스크톱 IDE는 CLI와 마찬가지로 **완전 무료 OSS** — 유료화/티어 분리
+계획 없음. 사내망/폐쇄망 사용자를 위한 분기 LTS 빌드 정책은
+[`../docs/policy/lts-onprem.md`](../docs/policy/lts-onprem.md) 참고.

@@ -38,7 +38,8 @@ LDFLAGS_SEALED = -ldflags "-s -w -X main.version=$(VERSION) \
 	$(BAKE_COMMON)"
 
 .PHONY: build run clean build-all install lint test build-index \
-	build-distro build-sealed build-distro-all build-sealed-all bake-help
+	build-distro build-sealed build-distro-all build-sealed-all bake-help \
+	build-onprem build-onprem-all
 
 # Knowledge index
 build-index:
@@ -140,3 +141,22 @@ build-sealed-all: clean build-index
 	GOOS=linux   GOARCH=arm64 go build $(LDFLAGS_SEALED) -o dist/$(BINARY)-sealed-linux-arm64       ./cmd/hanimo
 	GOOS=windows GOARCH=amd64 go build $(LDFLAGS_SEALED) -o dist/$(BINARY)-sealed-windows-amd64.exe ./cmd/hanimo
 	@echo "✓ sealed matrix built in dist/ — contains baked secret, keep private"
+
+# ---------- on-premises LTS builds ----------
+#
+# Activates the `onprem` build tag for closed-network deployments.
+# See docs/policy/lts-onprem.md for cadence, EOL policy, and the
+# compile-time guarantees this profile provides.
+
+build-onprem: build-index
+	go build -tags=onprem $(LDFLAGS) -o $(BINARY)-onprem ./cmd/hanimo
+	@echo "✓ onprem build: -tags=onprem (see docs/policy/lts-onprem.md)"
+
+build-onprem-all: clean build-index
+	@mkdir -p dist
+	GOOS=darwin  GOARCH=arm64 go build -tags=onprem $(LDFLAGS) -o dist/$(BINARY)-onprem-darwin-arm64       ./cmd/hanimo
+	GOOS=darwin  GOARCH=amd64 go build -tags=onprem $(LDFLAGS) -o dist/$(BINARY)-onprem-darwin-amd64       ./cmd/hanimo
+	GOOS=linux   GOARCH=amd64 go build -tags=onprem $(LDFLAGS) -o dist/$(BINARY)-onprem-linux-amd64        ./cmd/hanimo
+	GOOS=linux   GOARCH=arm64 go build -tags=onprem $(LDFLAGS) -o dist/$(BINARY)-onprem-linux-arm64        ./cmd/hanimo
+	GOOS=windows GOARCH=amd64 go build -tags=onprem $(LDFLAGS) -o dist/$(BINARY)-onprem-windows-amd64.exe  ./cmd/hanimo
+	@echo "✓ onprem matrix built in dist/ — see docs/policy/lts-onprem.md"

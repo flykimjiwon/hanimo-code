@@ -37,3 +37,7 @@ dist/
 _legacy_ts/node_modules/
 spark
 hanimo
+
+# Local backups & superseded drafts (kept on disk for reference, never committed)
+*.local.backup
+docs/strategy/STRATEGY-2026-04-27-LICENSE-AND-DEPLOYMENT.md

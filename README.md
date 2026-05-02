@@ -1134,6 +1134,33 @@ make lint       # Run go vet
 
 ---
 
+## Name & Marks
+
+The names *hanimo* / *Hanimo Code* (하니모 코드) and the hanimo logo are
+**unregistered marks of Kim Jiwon (김지원)**. Apache 2.0 (Section 6) does
+not grant trademark rights — forks are welcome but must use a distinct
+product name. Nominative fair use (blog posts, comparisons, citations,
+"Powered by hanimo" badges) is explicitly permitted.
+
+See [`docs/policy/trademark-and-naming.md`](docs/policy/trademark-and-naming.md)
+for the full policy.
+
+---
+
+## Policies
+
+| Policy | Document |
+|---|---|
+| Copyright · source headers · GPG signing | [`docs/policy/copyright.md`](docs/policy/copyright.md) |
+| Trademark · forking · naming | [`docs/policy/trademark-and-naming.md`](docs/policy/trademark-and-naming.md) |
+| Telemetry · privacy · air-gap | [`docs/policy/telemetry-and-privacy.md`](docs/policy/telemetry-and-privacy.md) |
+| LTS · on-premises · enterprise | [`docs/policy/lts-onprem.md`](docs/policy/lts-onprem.md) |
+| Contributing · DCO · CLA grant | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+
+Index: [`docs/policy/README.md`](docs/policy/README.md)
+
+---
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
