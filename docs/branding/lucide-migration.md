@@ -58,20 +58,76 @@
 - [ ] 워크플로우 노드 시각 회귀 테스트 — 노드 아이콘 인지 가능한지
 - [ ] PR + 커밋 메시지: `refactor(workflow): Phosphor → Lucide 이전 (N/3)`
 
-### Phase 4 — Central adapter cleanup
+### Phase 4 — Central adapter cleanup (별도 PR 권장)
 
-`app/components/icons/index.jsx` 정리.
+`app/components/icons/index.jsx` 정리. **Phase 1·2·3 대비 위험 계수 큼 —
+별도 dedicated PR + 시각 회귀 테스트 확보 후 진행 권장.**
 
-체크리스트:
-- [ ] phosphor import 제거
-- [ ] 중앙 adapter를 lucide-react re-export로 단순화 또는 *완전 제거*
-  (직접 lucide-react import 권장)
-- [ ] `import` 일괄 검색으로 잔존 phosphor 사용 0건 확인
-- [ ] `package.json`에서 `@phosphor-icons/react` 제거
-- [ ] `npm install` → lockfile 갱신
-- [ ] 빌드 확인: `npm run build`
-- [ ] 시각 회귀 테스트 (전체)
-- [ ] PR + 커밋 메시지: `refactor(icons): Phosphor 의존 완전 제거`
+#### 왜 Phase 4가 위험한가
+
+- 100+ 아이콘 매핑이 들어있는 중앙 어댑터 — 한 매핑이라도 틀리면 *수십
+  컴포넌트가 동시에 깨짐* (전 화면 회귀)
+- Phosphor → Lucide 이름이 *대부분 비슷*하지만 정확히 같지 않은 경우
+  많음 (예: Phosphor `Heartbeat` ↔ Lucide `Activity`, `CircleNotch` ↔
+  `Loader2`, `MagnifyingGlass` ↔ `Search`, `Prohibit` ↔ `PowerOff`)
+- 시각 회귀: Phosphor의 `weight="light"/"duotone"`가 Lucide의 `strokeWidth`
+  로 정확히 매칭되지 않음. 일부 아이콘은 시각적으로 *살짝 무거워* 보임
+- shadcn/ui 프리미티브 alias가 어댑터에 박혀있어 dialog/select/dropdown 등
+  핵심 UI 흐름이 모두 이 어댑터를 의존
+
+#### 권장 Phase 4 진행 절차
+
+1. **사전 작업** (별도 PR 또는 작업 셋업)
+   - [ ] Lucide-react 정식 export 이름 매니페스트 추출:
+     ```bash
+     node -e "console.log(Object.keys(require('lucide-react')).sort().join('\n'))" \
+       > lucide-export-list.txt
+     ```
+   - [ ] 어댑터의 phosphor 사용 100+ 매핑 표 작성:
+     `Phosphor 이름 | Lucide 이름 | 시각 차이 노트` 3 컬럼
+   - [ ] 매핑 표 메인테이너 검토 (특히 `weight` → `strokeWidth` 변환 정책)
+   - [ ] Storybook 또는 *시각 비교 페이지* 1회성 작성: 모든 100+ 아이콘을
+     before/after 양쪽 렌더 → screenshot 저장
+
+2. **본 PR**
+   - [ ] 어댑터 파일을 lucide-react re-export로 *완전 교체*
+   - [ ] `w()` wrapper 함수 제거 (weight prop 무시 의미를 잃음)
+   - [ ] 일부 alias 처리: `LucideImage`, `CheckCircle2`, `Code2`, `Table2`,
+     `PieChartIcon`, shadcn/ui 프리미티브 11개 (`CheckIcon`, `ChevronDownIcon`
+     등)
+   - [ ] `package.json`에서 `@phosphor-icons/react` 제거
+   - [ ] `package-lock.json` / `yarn.lock` 갱신
+   - [ ] **빌드 검증 필수**: `npm run build` (Next.js 프로덕션 빌드)
+   - [ ] **타입 검증**: `npm run typecheck` 또는 `tsc --noEmit`
+   - [ ] **시각 회귀 검증**: 사전 작업의 Storybook/스크린샷 대비
+   - [ ] 첫 PR은 *해결 못한 시각 차이*를 *명시*하는 issue 동반
+     (예: "워크플로우 노드 아이콘이 Phosphor 대비 12% 두꺼워 보임 — 디자인
+     팀 확인 후 별도 fix")
+
+3. **후속 PR**
+   - [ ] 시각 회귀 fix (개별 strokeWidth 조정)
+   - [ ] *어댑터 자체 폐기* — 남은 `@/components/icons` import를 직접
+     `lucide-react`로 마이그레이션 (long-term)
+
+#### 임시 회피 방법
+
+Phase 4가 진행되기 전까지 어댑터는 *동작*함 (Phosphor 의존). 다만:
+
+- 신규 코드는 *직접 lucide-react* 사용 (어댑터 import 금지)
+- `package.json`의 `@phosphor-icons/react`는 *유지* — Phase 4 PR에서 제거
+- 디스크 사용량 약 4MB 추가, 번들 사이즈 미세 영향 (tree-shaking 안 되는
+  부분 있을 수 있음)
+
+#### 체크리스트 요약
+
+- [ ] Phase 4a: Lucide export 매니페스트 + 100+ 매핑 표 작성
+- [ ] Phase 4a: 시각 비교 페이지 / Storybook
+- [ ] Phase 4b: 어댑터 lucide-react re-export 교체
+- [ ] Phase 4b: 빌드/타입 검증
+- [ ] Phase 4b: 시각 회귀 첫 라운드 fix
+- [ ] Phase 4c: package.json phosphor dep 제거
+- [ ] Phase 4c: lockfile 갱신
+- [ ] Phase 4d (long-term): 어댑터 자체 폐기 + 직접 lucide import 마이그레이션
 
 ## Phosphor → Lucide 매핑 표 (시작점)
 
