@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="docs/branding/assets/hanimo-logo-horizontal.svg" alt="hanimo — Modol the Honey-Bee Bichon" width="480">
+</p>
+
+<p align="center">
   <img src="docs/images/hanimo-screenshot.png" alt="hanimo screenshot" width="600">
 </p>
 
