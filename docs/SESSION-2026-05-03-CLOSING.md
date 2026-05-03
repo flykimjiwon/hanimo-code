@@ -43,8 +43,9 @@ bc15e1c  docs(readme): 라이선스 배지 색을 Honey amber(#f5a623)로 통일
 ```
 (545018d/3c7c2a8/2936c71는 04-27 정책 라운드 + 본 세션 brand 라운드 누적)
 
-### hanimo-webui (5 commits)
+### hanimo-webui (6 commits)
 ```
+e9d1d8f  refactor(workflow): Phosphor → Lucide Phase 3 (Workflow domain)
 38dc9c5  docs(readme): hero에 hanimo Modol-꿀벌 로고 추가
 20a674a  refactor(admin): Phosphor → Lucide Phase 2 (Settings page)
 c2d6627  brand+refactor: Honey 토큰 + Lucide Phase 1 (Chat domain)
@@ -52,8 +53,9 @@ c2d6627  brand+refactor: Honey 토큰 + Lucide Phase 1 (Chat domain)
 4b737e2  [Legal] Apache 2.0 + 단독 저작자 선언
 ```
 
-### hanimo-rag (3 commits)
+### hanimo-rag (4 commits)
 ```
+e0ce6b6  brand+privacy(dashboard): CDN 폰트 제거 + Honey 토큰 박음
 56704bd  docs(readme): hero에 hanimo Modol-꿀벌 로고 + 한국어 부제 추가
 02b0784  docs(readme): 라이선스 배지 MIT → Apache 2.0 + Honey amber 색상 통일
 04c83dc  [Legal] Apache 2.0 + 단독 저작자 선언

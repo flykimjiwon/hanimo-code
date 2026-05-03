@@ -124,12 +124,15 @@
 각 Phase 완료 시 본 문서의 체크박스 업데이트 + 진행 상태:
 
 ```
-- [x] Phase 1 — Chat domain (PR #N, merged YYYY-MM-DD)
-- [ ] Phase 2 — Admin / Settings domain
-- [ ] Phase 3 — Workflow domain (1/3)
-- [ ] Phase 3 — Workflow domain (2/3)
-- [ ] Phase 3 — Workflow domain (3/3)
+- [x] Phase 1 — Chat domain (commit c2d6627, 2026-05-03)
+- [x] Phase 2 — Admin / Settings domain (commit 20a674a, 2026-05-03)
+- [x] Phase 3 — Workflow domain 3 파일 일괄 (commit e9d1d8f, 2026-05-03)
+       · 스코프 예상보다 작음 — 3 phosphor 아이콘만 + wrapper 패턴 동일
+       · CircleArrowRight/Left + MessageSquareText, strokeWidth=1.5
 - [ ] Phase 4 — Central adapter cleanup
+       · app/components/icons/index.jsx 중앙 어댑터 phosphor 제거
+       · package.json @phosphor-icons/react 의존성 제거
+       · npm install lockfile 갱신
 ```
 
 ## 첫 시도 시 추천 시점

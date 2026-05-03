@@ -51,8 +51,12 @@
 - [x] Honey amber `#f5a623` 라이선스 배지 5 repo 통일 (hanimo-code/rag/webui)
 - [x] Lucide 단일 source 컨벤션 박음 (hanimo-webui `app/components/icons/index.jsx`)
 - [x] 본 brand docs 7종 신규 작성
-- [ ] `tokens.css` 5 repo import 적용
-- [ ] 4 repo README hero 통일 (로고 SVG 후 권장)
-- [ ] 모돌-꿀벌 SVG 로고 v1 작성
-- [ ] hanimo.dev 통합 랜딩 페이지
-- [ ] Phosphor → Lucide 도메인 단위 점진 치환 (chat → workflow → admin)
+- [x] `tokens.css` 적용: hanimo-webui `app/globals.css` + hanimo-rag `dashboard/src/index.css` (@theme + :root)
+- [x] 4 repo README hero 통일 (로고 v0 + 영문/한국어 부제 + 배지)
+- [x] 모돌-꿀벌 SVG 로고 v0 placeholder (square 256 + horizontal 600 + compact 64)
+- [x] Phosphor → Lucide 도메인 단위 치환: Phase 1 Chat ✅ · Phase 2 Admin ✅ · Phase 3 Workflow ✅
+- [x] 외부 CDN 폰트 제거: hanimo-rag dashboard Google Fonts → 시스템 폴백
+- [ ] 모돌-꿀벌 SVG 로고 v1 (정식 일러스트 — placeholder 교체)
+- [ ] Phase 4: `app/components/icons/index.jsx` 중앙 어댑터 cleanup + `@phosphor-icons/react` 의존성 제거
+- [ ] Pretendard 로컬 번들 (5 repo)
+- [ ] hanimo.dev 통합 랜딩 페이지 (도메인 확보 후)
