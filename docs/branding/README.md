@@ -56,7 +56,10 @@
 - [x] 모돌-꿀벌 SVG 로고 v0 placeholder (square 256 + horizontal 600 + compact 64)
 - [x] Phosphor → Lucide 도메인 단위 치환: Phase 1 Chat ✅ · Phase 2 Admin ✅ · Phase 3 Workflow ✅
 - [x] 외부 CDN 폰트 제거: hanimo-rag dashboard Google Fonts → 시스템 폴백
+- [x] Phase 4 절차 풀버전 박음 (위험 요인 + 사전 작업 + 본 PR + 후속 PR — `lucide-migration.md`)
+- [x] **Documentation Hub 신설**: `docs/index.html` (시각) + `docs/README.md` (markdown) — 8 섹션 single entry point
+- [x] 기존 HTML 3종 nav에 "← Hub" 크로스링크 + legacy `hanimo-brand-design.html`에 deprecation banner
 - [ ] 모돌-꿀벌 SVG 로고 v1 (정식 일러스트 — placeholder 교체)
-- [ ] Phase 4: `app/components/icons/index.jsx` 중앙 어댑터 cleanup + `@phosphor-icons/react` 의존성 제거
+- [ ] Phase 4 본 PR: `app/components/icons/index.jsx` 어댑터 cleanup + `@phosphor-icons/react` 의존성 제거
 - [ ] Pretendard 로컬 번들 (5 repo)
 - [ ] hanimo.dev 통합 랜딩 페이지 (도메인 확보 후)
