@@ -65,12 +65,25 @@ export default function Terminal() {
       }
     }))
     term.open(termRef.current)
-    setTimeout(() => { fit.fit(); ResizeTerminal(term.rows, term.cols).catch(() => {}) }, 100)
+    setTimeout(() => {
+      fit.fit()
+      ResizeTerminal(term.rows, term.cols).catch(() => {})
+      // 명시적 focus — Wails 데스크톱에서 자동 focus 안 잡히는 케이스 대응
+      term.focus()
+    }, 100)
     term.onData(data => WriteTerminal(data))
+    // 컨테이너 클릭 → xterm focus 강제 (입력 안 잡힐 때 fallback)
+    const onContainerClick = () => { term.focus() }
+    termRef.current.addEventListener('mousedown', onContainerClick)
     const obs = new ResizeObserver(() => { fit.fit(); ResizeTerminal(term.rows, term.cols).catch(() => {}) })
     obs.observe(termRef.current)
     xtermRef.current = term; fitRef.current = fit
-    return () => { obs.disconnect(); term.dispose(); xtermRef.current = null }
+    return () => {
+      termRef.current?.removeEventListener('mousedown', onContainerClick)
+      obs.disconnect()
+      term.dispose()
+      xtermRef.current = null
+    }
   }, [])
 
   useEffect(() => {

@@ -25,18 +25,25 @@ type ModelOption struct {
 
 // tier1Catalog mirrors docs/strategy/hanimo-certified-models-v0.2.4.md.
 // Static list — refreshed manually when the certified tier is updated.
+//
+// 2026-05-03: Novita marketplace 호환 model id로 정리. Novita는 vendor-prefix
+// 형식을 강제(예: `openai/gpt-oss-120b`)하므로 바닐라 이름을 직접 보내면
+// MODEL_NOT_FOUND 404. Ollama 전용 모델은 Provider="ollama"로 분리해두고
+// 사용자가 Ollama daemon 띄울 때만 동작.
 var tier1Catalog = []ModelOption{
 	{ID: "claude-sonnet-4-6", Label: "Claude Sonnet 4.6", Provider: "anthropic", Tier: "T1", Group: "Certified", Hint: "1M context · SWE 80%"},
 	{ID: "gpt-5", Label: "GPT-5", Provider: "openai", Tier: "T1", Group: "Certified", Hint: "Codex-class"},
 	{ID: "gemini-2.5-pro", Label: "Gemini 2.5 Pro", Provider: "google", Tier: "T1", Group: "Certified", Hint: "free tier 1000 req/day"},
-	{ID: "qwen3-coder-30b", Label: "Qwen3-Coder 30B", Provider: "ollama", Tier: "T1", Group: "Certified", Hint: "256K context · local"},
-	{ID: "gpt-oss-120b", Label: "gpt-oss 120B", Provider: "novita", Tier: "T1", Group: "Certified", Hint: "$0.20/MTok"},
+	{ID: "openai/gpt-oss-120b", Label: "gpt-oss 120B", Provider: "novita", Tier: "T1", Group: "Certified", Hint: "$0.20/MTok · Novita"},
+	{ID: "qwen/qwen3-235b-a22b-instruct-2507", Label: "Qwen3 235B Instruct", Provider: "novita", Tier: "T1", Group: "Certified", Hint: "256K · MoE · Novita"},
+	{ID: "qwen3-coder-30b", Label: "Qwen3-Coder 30B (Ollama)", Provider: "ollama", Tier: "T1", Group: "Certified", Hint: "local · Ollama daemon 필요"},
 }
 
 var tier2Catalog = []ModelOption{
-	{ID: "deepseek-chat", Label: "DeepSeek V3", Provider: "deepseek", Tier: "T2", Group: "Supported", Hint: "$0.14/$0.28"},
+	{ID: "deepseek/deepseek-v3.2", Label: "DeepSeek V3.2", Provider: "novita", Tier: "T2", Group: "Supported", Hint: "Sparse Attention · Novita"},
+	{ID: "deepseek-chat", Label: "DeepSeek V3 (직접)", Provider: "deepseek", Tier: "T2", Group: "Supported", Hint: "$0.14/$0.28 · 직접 키"},
 	{ID: "mistral-large-latest", Label: "Mistral Large", Provider: "mistral", Tier: "T2", Group: "Supported"},
-	{ID: "gemma-4-31b-it", Label: "Gemma 4 31B", Provider: "novita", Tier: "T2", Group: "Supported", Hint: "262K context"},
+	{ID: "qwen/qwen-2.5-72b-instruct", Label: "Qwen 2.5 72B", Provider: "novita", Tier: "T2", Group: "Supported", Hint: "general instruct · Novita"},
 	{ID: "gemini-2.5-flash", Label: "Gemini 2.5 Flash", Provider: "google", Tier: "T2", Group: "Supported", Hint: "free 1000 req/day"},
 	// OpenRouter — single key, many models. Prefix is part of the OpenRouter ID.
 	{ID: "anthropic/claude-sonnet-4-5", Label: "Claude Sonnet 4.5 (OR)", Provider: "openrouter", Tier: "T2", Group: "Supported", Hint: "via OpenRouter"},

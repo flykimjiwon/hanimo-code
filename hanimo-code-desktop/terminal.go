@@ -1,19 +1,27 @@
+// Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
-	"bufio"
 	"io"
 	"os"
 	"os/exec"
 	"runtime"
 	"sync"
 
+	"github.com/creack/pty"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// termSession is a real PTY-backed terminal session.
+//
+// 2026-05-03: cmd.StdinPipe / cmd.StdoutPipe 기반의 가짜 PTY에서 진짜 PTY로
+// 전환. 이전 구현은 zsh/bash가 non-interactive 모드로 들어가 echo·prompt·
+// line editing이 모두 죽었음 (사용자가 입력해도 글자 안 보이는 원인).
 type termSession struct {
 	cmd    *exec.Cmd
-	stdin  io.WriteCloser
+	pty    io.ReadWriteCloser // PTY master
 	mu     sync.Mutex
 	closed bool
 }
@@ -68,41 +76,49 @@ func (a *App) StartTerminal() error {
 	cmd := exec.Command(shell)
 	cmd.Dir = a.cwd
 
+	// 환경 변수 — TERM은 컬러 처리, COLORFGBG는 일부 셸의 컬러 감지 보조
 	if runtime.GOOS != "windows" {
-		cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+		cmd.Env = append(os.Environ(),
+			"TERM=xterm-256color",
+			"COLORTERM=truecolor",
+		)
 	}
 
 	// Platform-specific: hide console window on Windows
 	hideConsoleWindow(cmd)
 
-	stdin, err := cmd.StdinPipe()
+	// 진짜 PTY 시작 — pty.Start 가 master pty(io.ReadWriteCloser) 반환
+	// cmd.Stdin/Stdout/Stderr 는 자동으로 slave에 연결됨
+	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		return err
 	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cmd.Stderr = cmd.Stdout
 
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	term := &termSession{cmd: cmd, stdin: stdin}
+	term := &termSession{cmd: cmd, pty: ptmx}
 	a.term = term
 
+	// PTY → wails event 스트림 (xterm.js가 그대로 받아서 렌더)
 	go func() {
-		scanner := bufio.NewScanner(stdout)
-		scanner.Buffer(make([]byte, 4096), 1024*1024)
-		for scanner.Scan() {
-			term.mu.Lock()
-			if !term.closed {
-				wailsRuntime.EventsEmit(a.ctx, "term:output", scanner.Text()+"\r\n")
+		buf := make([]byte, 4096)
+		for {
+			n, err := ptmx.Read(buf)
+			if n > 0 {
+				term.mu.Lock()
+				closed := term.closed
+				term.mu.Unlock()
+				if closed {
+					break
+				}
+				wailsRuntime.EventsEmit(a.ctx, "term:output", string(buf[:n]))
 			}
-			term.mu.Unlock()
+			if err != nil {
+				break
+			}
 		}
-		if !term.closed {
+		term.mu.Lock()
+		alreadyClosed := term.closed
+		term.mu.Unlock()
+		if !alreadyClosed {
 			wailsRuntime.EventsEmit(a.ctx, "term:output", "\r\n[Process exited]\r\n")
 		}
 	}()
@@ -110,19 +126,33 @@ func (a *App) StartTerminal() error {
 	return nil
 }
 
+// WriteTerminal forwards xterm.js keystrokes to the PTY master. PTY echoes
+// back automatically (in canonical mode), so the user sees what they type.
 func (a *App) WriteTerminal(input string) {
 	if a.term == nil {
 		return
 	}
 	a.term.mu.Lock()
 	defer a.term.mu.Unlock()
-	if a.term.closed || a.term.stdin == nil {
+	if a.term.closed || a.term.pty == nil {
 		return
 	}
-	_, _ = a.term.stdin.Write([]byte(input))
+	_, _ = a.term.pty.Write([]byte(input))
 }
 
-func (a *App) ResizeTerminal(rows, cols int) {}
+// ResizeTerminal resizes the PTY window so applications like vim/htop redraw
+// at the right dimensions. Without this, line wrapping breaks.
+func (a *App) ResizeTerminal(rows, cols int) {
+	if a.term == nil || a.term.pty == nil {
+		return
+	}
+	if f, ok := a.term.pty.(*os.File); ok {
+		_ = pty.Setsize(f, &pty.Winsize{
+			Rows: uint16(rows),
+			Cols: uint16(cols),
+		})
+	}
+}
 
 func (a *App) StopTerminal() {
 	if a.term == nil {
@@ -131,12 +161,12 @@ func (a *App) StopTerminal() {
 	a.term.mu.Lock()
 	a.term.closed = true
 	a.term.mu.Unlock()
-	if a.term.stdin != nil {
-		a.term.stdin.Close()
+	if a.term.pty != nil {
+		a.term.pty.Close()
 	}
 	if a.term.cmd != nil && a.term.cmd.Process != nil {
-		a.term.cmd.Process.Kill()
-		a.term.cmd.Wait()
+		_ = a.term.cmd.Process.Kill()
+		_ = a.term.cmd.Wait()
 	}
 	a.term = nil
 }
