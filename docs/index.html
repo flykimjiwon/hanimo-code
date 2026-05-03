@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hanimo Documentation Hub</title>
+<meta name="description" content="hanimo 생태계 모든 문서·HTML 쇼케이스·정책·전략·세션·브랜드 자산을 한 페이지에 정리한 진입점.">
+<!-- Copyright 2025-2026 Kim Jiwon (김지원). All rights reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg-elev: #111115;
+    --bg-card: #161619;
+    --border: #1f1f24;
+    --border-strong: #2a2a32;
+    --text: #e8e8ec;
+    --text-dim: #a0a0a8;
+    --text-faint: #5a5a64;
+    --accent: #f5a623;
+    --accent-soft: #ffd089;
+    --good: #6cae75;
+    --warn: #e8a317;
+    --warm-blue: #6b8db5;
+    --link: #f5a623;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard', 'Noto Sans KR', -apple-system, system-ui, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 0.92em; background: #0f0f12; padding: 2px 7px; border-radius: 5px; color: var(--accent-soft); border: 1px solid var(--border); }
+
+  header.hero {
+    padding: 80px 24px 56px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(245,166,35,0.08) 0%, transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero img.logo { display: block; margin: 0 auto 24px; }
+  .hero .brand { font-size: 13px; letter-spacing: 0.3em; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; }
+  .hero h1 {
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800; letter-spacing: -2px; margin-bottom: 14px; line-height: 1.05;
+  }
+  .hero h1 .highlight { color: var(--accent); }
+  .hero p.tagline {
+    font-size: clamp(15px, 1.4vw, 18px);
+    color: var(--text-dim); max-width: 720px; margin: 0 auto;
+  }
+
+  nav.toc {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,10,12,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav.toc .inner {
+    max-width: 1200px; margin: 0 auto; padding: 12px 24px;
+    display: flex; gap: 18px; align-items: center; overflow-x: auto; font-size: 13px;
+  }
+  nav.toc a { color: var(--text-dim); white-space: nowrap; transition: color .15s; text-decoration: none; }
+  nav.toc a:hover { color: var(--text); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 64px 24px 48px; }
+  section { margin-bottom: 64px; }
+  section h2 {
+    font-size: clamp(24px, 3vw, 32px);
+    font-weight: 800; letter-spacing: -1px; margin-bottom: 8px;
+  }
+  section h2 .num { color: var(--accent); font-weight: 600; margin-right: 12px; }
+  section .lede { font-size: 15.5px; color: var(--text-dim); margin-bottom: 28px; max-width: 760px; }
+
+  /* card grid */
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    transition: border-color .2s, transform .2s;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card .badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .card .badge {
+    display: inline-block; padding: 3px 9px;
+    border-radius: 999px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .badge.html { background: rgba(245,166,35,0.12); color: var(--accent); border: 1px solid rgba(245,166,35,0.3); }
+  .badge.md   { background: rgba(107,141,181,0.12); color: var(--warm-blue); border: 1px solid rgba(107,141,181,0.3); }
+  .badge.css  { background: rgba(108,174,117,0.12); color: var(--good); border: 1px solid rgba(108,174,117,0.3); }
+  .badge.svg  { background: rgba(232,163,23,0.12); color: var(--warn); border: 1px solid rgba(232,163,23,0.3); }
+  .badge.legacy { background: rgba(160,160,168,0.10); color: var(--text-dim); border: 1px solid var(--border-strong); }
+  .badge.active { background: rgba(108,174,117,0.12); color: var(--good); border: 1px solid rgba(108,174,117,0.3); }
+
+  .card h3 {
+    font-size: 17px; font-weight: 700; letter-spacing: -0.4px;
+    color: var(--text);
+  }
+  .card .desc { font-size: 13.5px; color: var(--text-dim); flex: 1; }
+  .card .meta { font-size: 12px; color: var(--text-faint); display: flex; gap: 12px; flex-wrap: wrap; }
+  .card .meta strong { color: var(--text-dim); font-weight: 600; }
+
+  /* start-here block */
+  .start-here {
+    background: linear-gradient(135deg, rgba(245,166,35,0.08), rgba(245,166,35,0.02));
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 56px;
+  }
+  .start-here h3 { font-size: 19px; margin-bottom: 14px; color: var(--accent); }
+  .start-here ol { padding-left: 22px; color: var(--text-dim); }
+  .start-here ol li { margin: 7px 0; font-size: 15px; }
+  .start-here ol li strong { color: var(--text); font-weight: 700; }
+
+  /* table */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+  table th { text-align: left; padding: 10px 14px; color: var(--text-faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-strong); }
+  table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table td a { font-weight: 500; }
+
+  footer {
+    max-width: 1200px; margin: 0 auto;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    text-align: center; color: var(--text-faint); font-size: 13px;
+  }
+  footer strong { color: var(--accent); }
+
+  @media (max-width: 700px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <img class="logo" src="branding/assets/hanimo-logo-horizontal.svg" alt="hanimo — Modol the Honey-Bee Bichon" width="420">
+  <div class="brand">Documentation Hub · v1 · 2026-05-03</div>
+  <h1>hanimo <span class="highlight">생태계 문서</span> 한 곳에</h1>
+  <p class="tagline">
+    HTML 쇼케이스 · 브랜드 시스템 · 정책 · 전략 · 세션 기록 · 코드 인프라.
+    각 문서가 어디 있고 무엇을 다루는지 30초 안에 찾을 수 있도록.
+  </p>
+</header>
+
+<nav class="toc">
+  <div class="inner">
+    <a href="#start">Start here</a>
+    <a href="#html">HTML</a>
+    <a href="#brand">Brand</a>
+    <a href="#policy">Policy</a>
+    <a href="#strategy">Strategy</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#sessions">Sessions</a>
+    <a href="#code">Code</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Start here                                                      -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="start">
+  <div class="start-here">
+    <h3>처음 오셨다면 — 30초 진입 가이드</h3>
+    <ol>
+      <li><strong>hanimo가 뭔가요?</strong> → <a href="landing/hanimo-products.html">hanimo-products.html</a> (5 제품 카드 + 마스코트 + 멀티세션 워크플로우)</li>
+      <li><strong>기술적으로 어떤 구조?</strong> → <a href="landing/hanimo-framework.html">hanimo-framework.html</a> (12-layer 아키텍처 + 모듈 + 도구)</li>
+      <li><strong>브랜드·디자인은?</strong> → <a href="branding/BRAND.md">branding/BRAND.md</a> (Modol 마스코트 컨셉) + <a href="branding/tokens.md">tokens.md</a></li>
+      <li><strong>회사에서 가져다 쓸 때 라이선스?</strong> → <a href="policy/README.md">policy/README.md</a> (5 정책 인덱스)</li>
+      <li><strong>최근 변화?</strong> → <a href="SESSION-2026-05-03-CLOSING.md">SESSION-2026-05-03-CLOSING.md</a> (마지막 세션 30초 복구)</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- HTML Showcases                                                  -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="html">
+  <h2><span class="num">01</span>HTML Showcases</h2>
+  <p class="lede">
+    브라우저에서 바로 열 수 있는 비주얼 페이지. 외부 CDN/폰트 없음, 단일 파일,
+    에어갭 환경에서도 정상 렌더링 (telemetry-and-privacy 정합).
+  </p>
+
+  <div class="grid grid-2">
+    <article class="card">
+      <div class="badge-row">
+        <span class="badge html">HTML</span>
+        <span class="badge active">ACTIVE · v1</span>
+      </div>
+      <h3><a href="landing/hanimo-products.html">hanimo-products.html</a></h3>
+      <p class="desc">
+        4 제품 카드(hanimo-code · webui · rag · community) + Author Manifest +
+        Multi-Terminal·Multi-Session Workflow + tmux 4-pane 스크립트 +
+        Planner·Coder·Reviewer·Run 프롬프트 템플릿 + 라이선스/트레이드마크.
+      </p>
+      <p class="meta"><strong>5 sections</strong> · <strong>~31 KB</strong> · <strong>2026-05-03</strong></p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row">
+        <span class="badge html">HTML</span>
+        <span class="badge active">ACTIVE · v1</span>
+      </div>
+      <h3><a href="landing/hanimo-framework.html">hanimo-framework.html</a></h3>
+      <p class="desc">
+        12-Layer Architecture + 16 Internal Module Map + 23+ Tool Catalog +
+        3 Modes & 30+ Slash Commands + Knowledge·Skills·MCP 확장 시스템 +
+        Multi-Agent 4 전략 + 4 Build Profiles + Documentation Index.
+      </p>
+      <p class="meta"><strong>8 sections</strong> · <strong>~34 KB</strong> · <strong>2026-05-03</strong></p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row">
+        <span class="badge html">HTML</span>
+        <span class="badge active">ACTIVE</span>
+      </div>
+      <h3><a href="landing/hanimo-dev-landing.html">hanimo-dev-landing.html</a></h3>
+      <p class="desc">
+        개발자 랜딩 페이지 (기존 자산). 본 hub와 별도 운영, 기여자 진입점.
+      </p>
+      <p class="meta"><strong>landing</strong> · <strong>2026-04 이전</strong></p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row">
+        <span class="badge html">HTML</span>
+        <span class="badge legacy">LEGACY · v0</span>
+      </div>
+      <h3><a href="branding/hanimo-brand-design.html">branding/hanimo-brand-design.html</a></h3>
+      <p class="desc">
+        Catppuccin + lavender accent 기반 v0 brand 시스템. 2026-05-03 Modol
+        컨셉 도입으로 *legacy 표기 보존*. 신규 작업은 <a href="branding/BRAND.md">BRAND.md</a>
+        + <a href="branding/tokens.css">tokens.css</a> 우선 참조.
+      </p>
+      <p class="meta"><strong>brand v0</strong> · <strong>archived 2026-05-03</strong></p>
+    </article>
+  </div>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Brand                                                           -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="brand">
+  <h2><span class="num">02</span>Brand &amp; Design System</h2>
+  <p class="lede">
+    Modol the Honey-Bee Bichon 마스코트 컨셉, Honey 팔레트 토큰, 로고 사양,
+    README 템플릿, Lucide 단일 아이콘 source 마이그레이션 가이드.
+  </p>
+
+  <div class="grid grid-3">
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="branding/README.md">branding/README.md</a></h3>
+      <p class="desc">Brand system 인덱스 + 적용 진행 상태 체크리스트.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="branding/BRAND.md">BRAND.md</a></h3>
+      <p class="desc">컨셉·메타포·컬러·타이포·메시징 톤 10절 풀버전. 어원·마스코트 핵심.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge css">CSS</span></div>
+      <h3><a href="branding/tokens.css">tokens.css</a></h3>
+      <p class="desc">5 repo 공유 단일 디자인 토큰 — Honey palette + 타이포 + radius + shadow + spacing + transition.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="branding/tokens.md">tokens.md</a></h3>
+      <p class="desc">tokens.css의 모든 변수 reference + Tailwind/HTML/React 사용 예시.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="branding/readme-template.md">readme-template.md</a></h3>
+      <p class="desc">11-section 통일 README 템플릿 + placeholder 가이드.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="branding/logo-spec.md">logo-spec.md</a></h3>
+      <p class="desc">모돌-꿀벌 SVG 사양 + 3 variant + AI 일러스트 프롬프트.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="branding/lucide-migration.md">lucide-migration.md</a></h3>
+      <p class="desc">Phosphor → Lucide 4-phase 점진 이전 체크리스트 + 매핑 표.</p>
+    </article>
+
+    <article class="card">
+      <div class="badge-row"><span class="badge svg">SVG · v0</span></div>
+      <h3>Logo Assets</h3>
+      <p class="desc">
+        <a href="branding/assets/hanimo-logo-square.svg">square 256×256</a> ·
+        <a href="branding/assets/hanimo-logo-horizontal.svg">horizontal 600×200</a> ·
+        <a href="branding/assets/hanimo-logo-compact.svg">compact 64×64</a>
+      </p>
+    </article>
+  </div>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Policy                                                          -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="policy">
+  <h2><span class="num">03</span>Policies</h2>
+  <p class="lede">
+    라이선스·저작권·트레이드마크·텔레메트리·LTS-Onprem 5 정책 문서. 5 repo에 공통
+    적용되며, hanimo-code가 canonical.
+  </p>
+  <table>
+    <thead><tr><th>Policy</th><th>Document</th><th>Scope</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Index + FAQ</td>
+        <td><a href="policy/README.md">policy/README.md</a></td>
+        <td>5 정책 진입점</td>
+      </tr>
+      <tr>
+        <td>Copyright</td>
+        <td><a href="policy/copyright.md">policy/copyright.md</a></td>
+        <td>자동 귀속 · SPDX 헤더 · GPG 서명 · 한국저작권위원회 등록</td>
+      </tr>
+      <tr>
+        <td>Trademark</td>
+        <td><a href="policy/trademark-and-naming.md">policy/trademark-and-naming.md</a></td>
+        <td>미등록 트레이드마크 · 포크 네이밍 · 공식 채널</td>
+      </tr>
+      <tr>
+        <td>Telemetry &amp; Privacy</td>
+        <td><a href="policy/telemetry-and-privacy.md">policy/telemetry-and-privacy.md</a></td>
+        <td>외부 통신 0 · 에어갭 · 향후 도입 시 강제 규칙</td>
+      </tr>
+      <tr>
+        <td>LTS &amp; On-Premises</td>
+        <td><a href="policy/lts-onprem.md">policy/lts-onprem.md</a></td>
+        <td>분기 LTS 캐덴스 · 12개월 백포트 · 인증 빌드 서비스화</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Strategy                                                        -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="strategy">
+  <h2><span class="num">04</span>Strategy</h2>
+  <p class="lede">
+    의사결정·시장 분석·비전·인증 모델 등 전략 문서. 거부된 대안 + 트리거 액션이
+    함께 박힘.
+  </p>
+
+  <div class="grid grid-2">
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD · ADR</span></div>
+      <h3><a href="strategy/STRATEGY-2026-04-27-LICENSE-DEPLOYMENT-IP.md">STRATEGY-2026-04-27 — License · Deployment · IP</a></h3>
+      <p class="desc">5 결정 + 거부 대안 6 + 시장 분업 + 시나리오 매트릭스 + 트리거 액션.</p>
+    </article>
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="strategy/VISION-2026-04-25-MULTI-MODEL-MULTI-DEVICE.md">VISION-2026-04-25 — All Models · All Devices · OSS</a></h3>
+      <p class="desc">6축 비전 + 시장 매트릭스 13 제품 + hanimo의 자리.</p>
+    </article>
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="strategy/MARKET-ANALYSIS-2026-04-24.md">MARKET-ANALYSIS-2026-04-24</a></h3>
+      <p class="desc">시장 진단 · IDE wedge · 플러그인 흡수 전략.</p>
+    </article>
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="strategy/REPUTATION-STRATEGY-2026-04-23.md">REPUTATION-STRATEGY-2026-04-23</a></h3>
+      <p class="desc">명성 wedge — 한국어 + OSS.</p>
+    </article>
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="strategy/hanimo-certified-models-v0.2.4.md">Certified Models v0.2.4</a></h3>
+      <p class="desc">Tier 1/2/3 모델 정책 (vs 무한 호환).</p>
+    </article>
+  </div>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Roadmap                                                         -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="roadmap">
+  <h2><span class="num">05</span>Roadmap</h2>
+  <p class="lede">
+    Phase A/B/C 풀 플랜 + 버전별 누적 작업.
+  </p>
+
+  <div class="grid grid-2">
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="roadmap/enhancement-plan-2026-04.md">Enhancement Plan 2026-04</a></h3>
+      <p class="desc">Phase A/B/C 풀 플랜 — Repo-map · Skill · Hooks · Subagent · LSP · Caching.</p>
+    </article>
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="roadmap/v0.2-v0.4-improvement-plan.md">v0.2 → v0.4 Improvement</a></h3>
+      <p class="desc">버전별 누적 작업 목록.</p>
+    </article>
+    <article class="card">
+      <div class="badge-row"><span class="badge md">MD</span></div>
+      <h3><a href="roadmap/2026-04-16-hanimo-enhancement-plan.md">Enhancement Plan 2026-04-16</a></h3>
+      <p class="desc">중간 갱신본.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Sessions                                                        -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="sessions">
+  <h2><span class="num">06</span>Recent Sessions</h2>
+  <p class="lede">
+    시간순 세션 마감 기록. 새 세션 진입 시 가장 최근 CLOSING부터 읽으면 30초 안에 맥락 복구.
+  </p>
+
+  <table>
+    <thead><tr><th>Date</th><th>Document</th><th>Highlight</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>2026-05-03</td>
+        <td><a href="SESSION-2026-05-03-CLOSING.md">SESSION-2026-05-03-CLOSING</a></td>
+        <td><strong>Brand v1</strong> — Modol 마스코트, 5 repo 통일, Lucide Phase 1·2·3</td>
+      </tr>
+      <tr>
+        <td>2026-04-27</td>
+        <td><a href="SESSION-2026-04-27-CLOSING.md">SESSION-2026-04-27-CLOSING</a></td>
+        <td>정책 인프라 — Apache 2.0, LTS-Onprem 빌드 골격, 정책 5종</td>
+      </tr>
+      <tr>
+        <td>2026-04-27</td>
+        <td><a href="SESSION-2026-04-27-INDEX.md">SESSION-2026-04-27-INDEX</a></td>
+        <td>시간순 산출 기록</td>
+      </tr>
+      <tr>
+        <td>2026-04-25</td>
+        <td><a href="SESSION-2026-04-25-CLOSING.md">SESSION-2026-04-25-CLOSING</a></td>
+        <td>Phase 19 + v0.2.0 출시 — 한국 MCP 35종, Multi-OS 빌드</td>
+      </tr>
+      <tr>
+        <td>2026-04-23</td>
+        <td><a href="SESSION-2026-04-23-INDEX.md">SESSION-2026-04-23-INDEX</a></td>
+        <td>IDE 디자인 v1 — Honey 팔레트, 14 Activity Bar 아이콘</td>
+      </tr>
+      <tr>
+        <td>2026-04-16/17</td>
+        <td><a href="SESSION-2026-04-16-17-PORTING-SUMMARY.md">SESSION-2026-04-16-17-PORTING-SUMMARY</a></td>
+        <td>포팅 라운드 — hashline · auto · git tools · diagnostics</td>
+      </tr>
+      <tr>
+        <td>2026-04-11</td>
+        <td><a href="SESSION-2026-04-11-INDEX.md">SESSION-2026-04-11-INDEX</a></td>
+        <td>Master Overview — 14+ provider, Tier 시스템 피벗</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────── -->
+<!-- Code Infrastructure                                             -->
+<!-- ────────────────────────────────────────────────────────────── -->
+<section id="code">
+  <h2><span class="num">07</span>Code Infrastructure</h2>
+  <p class="lede">
+    루트의 라이선스·NOTICE·기여자 가이드 + 빌드 인프라.
+  </p>
+
+  <table>
+    <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><a href="../LICENSE">../LICENSE</a></td><td>Apache License 2.0 풀텍스트</td></tr>
+      <tr><td><a href="../NOTICE">../NOTICE</a></td><td>Kim Jiwon 단독 저작자 6조항 + 5-repo lineage + 트레이드마크 안내</td></tr>
+      <tr><td><a href="../CONTRIBUTING.md">../CONTRIBUTING.md</a></td><td>라이선스 부여 + DCO 서명 + SPDX 헤더 + PR 체크리스트</td></tr>
+      <tr><td><a href="../README.md">../README.md</a></td><td>hanimo-code 메인 README — 14+ provider, 23+ 도구, 멀티에이전트, 12-layer 아키텍처</td></tr>
+      <tr><td><a href="../Makefile">../Makefile</a></td><td>빌드 타겟 — vanilla / distro / sealed / <strong>onprem</strong> 4 프로파일</td></tr>
+      <tr><td><a href="../internal/build/">../internal/build/</a></td><td><code>//go:build onprem</code> · <code>build.Onprem</code> 컴파일 타임 분기</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  <div>
+    Copyright 2025-2026 <strong>Kim Jiwon (김지원)</strong>. All rights reserved. ·
+    Licensed under the Apache License, Version 2.0.
+  </div>
+  <div style="margin-top: 8px; color: var(--text-dim);">
+    🍯 brand: Modol the Honey-Bee Bichon · 본 페이지는 <a href="../docs/index.html">docs/index.html</a> ·
+    repo: <a href="https://github.com/flykimjiwon/hanimo-code">github.com/flykimjiwon/hanimo-code</a>
+  </div>
+</footer>
+
+</body>
+</html>
