@@ -1,12 +1,16 @@
-# hanimo Desktop — Feature List (v0.1.0)
+# hanimo Desktop — Feature List (v0.2.x)
 
 > 빌드: macOS 12MB / Windows 12MB
 > 기술: Go + Wails v2 + React + TypeScript + CodeMirror 6
-> 테스트: 30개 (Go 백엔드) — 전체 PASS
+> 테스트: 44개 (Go 백엔드) — 전체 PASS
+>
+> 이 문서는 v0.1.0 시점 84개 기능의 카탈로그(아래)를 보존합니다.
+> v0.2.x 추가분(116+ 기능 / xterm.js 터미널 / Git Graph / 다중 커서 / DnD 등)은
+> [TODO.md](TODO.md)와 커밋 로그가 source of truth입니다.
 
 ---
 
-## 전체 84개 기능
+## v0.1.0 — 84개 기능 (historical 카탈로그)
 
 ### Core (7)
 1. Activity Bar (Explorer/Search/Git/Settings/Account)
@@ -103,4 +107,5 @@ Cmd+S/W/P/Shift+P/F/Shift+F/B/J/\\/1/2/3/,/O/↑↓
 
 ---
 
-**Total: 84 features | 30 tests | 12MB**
+**v0.1.0 시점: 84 features | 30 tests | 12MB**
+**v0.2.x 실측 (2026-05-05): 44 tests PASS · 자세한 변경분은 TODO.md / git log**
