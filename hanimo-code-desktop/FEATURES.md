@@ -2,7 +2,7 @@
 
 > 빌드: macOS 12MB / Windows 12MB
 > 기술: Go + Wails v2 + React + TypeScript + CodeMirror 6
-> 테스트: 44개 (Go 백엔드) — 전체 PASS
+> 테스트: 53개 (Go 백엔드, default+onprem 양쪽 PASS)
 >
 > 이 문서는 v0.1.0 시점 84개 기능의 카탈로그(아래)를 보존합니다.
 > v0.2.x 추가분(116+ 기능 / xterm.js 터미널 / Git Graph / 다중 커서 / DnD 등)은
@@ -108,4 +108,4 @@ Cmd+S/W/P/Shift+P/F/Shift+F/B/J/\\/1/2/3/,/O/↑↓
 ---
 
 **v0.1.0 시점: 84 features | 30 tests | 12MB**
-**v0.2.x 실측 (2026-05-05): 44 tests PASS · 자세한 변경분은 TODO.md / git log**
+**v0.2.x 실측 (2026-05-05): 53 tests PASS (default+onprem) · 자세한 변경분은 TODO.md / git log**

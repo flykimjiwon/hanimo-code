@@ -45,7 +45,22 @@ wails build  # → build/bin/hanimo-code-desktop.app
 ```
 
 기본 LLM endpoint는 `~/.hanimo/config.yaml`을 따른다 (CLI와 동일).
-설정 없으면 `localhost:11434/v1` (Ollama) + `qwen3:8b`.
+설정 없으면 `localhost:11434/v1` (Ollama) + `qwen3:8b` (zero-config 안전망).
+
+## 빌드 프로파일 (default vs onprem)
+
+postmortem 2026-05-03 Bug #1을 따라 컴파일 타임 분기 도입.
+`internal/build/{default,onprem}.go` 가 source of truth.
+
+| 프로파일 | 명령 | RecommendedSuperModel | RecommendedProvider |
+|---|---|---|---|
+| **default** (외부망 OSS) | `go build .` / `wails build` | `openai/gpt-oss-120b` | `novita` (vendor-prefix marketplace) |
+| **onprem** (TECHAI 사내망) | `go build -tags=onprem .` / `wails build -tags=onprem` | `gpt-oss-120b` (바닐라) | `vllm` (사내 endpoint) |
+
+Recommended 값은 첫 실행 wizard / "Reset to Recommended" 진입점이 쓰는
+*시드*일 뿐이다. 이미 ~/.hanimo/config.yaml 이 있으면 그 값을 우선한다.
+Frontend 는 `GetBuildProfile()` 바인딩으로 현재 프로파일을 알아낼 수
+있다 (status bar 사내망/외부망 배지 등).
 
 ## 멀티-OS 빌드 (Phase 18 검증 완료)
 
@@ -64,7 +79,8 @@ wails build  # → build/bin/hanimo-code-desktop.app
 
 ```bash
 go build ./...                   # OK
-go test ./... -count=1           # ok 49/49
+go test ./... -count=1           # ok 53/53 (default · 2026-05-05)
+go test -tags=onprem ./...       # ok 53/53 (onprem)
 cd frontend && npm run build     # 1532.45 KiB · 1814 modules
 ```
 
