@@ -147,6 +147,77 @@ func saveTGCConfig(cfg TGCConfig) error {
 	return nil
 }
 
+// pingOllama probes the Ollama daemon's /api/tags endpoint to verify
+// reachability before SwitchModel commits an Ollama target to config.
+// Returns nil on 200, non-nil otherwise. 700ms timeout matches
+// fetchOllamaTags so the picker doesn't hang.
+func pingOllama(baseURL string) error {
+	if baseURL == "" {
+		return fmt.Errorf("empty base url")
+	}
+	root := strings.TrimSuffix(strings.TrimRight(baseURL, "/"), "/v1")
+	if root == "" {
+		return fmt.Errorf("empty root after trim: %q", baseURL)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Millisecond)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", root+"/api/tags", nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// resolveSwitchTarget computes the post-switch config for modelID without
+// touching disk or globals. Pure function — caller persists via saveTGCConfig.
+// Two safety properties postmortem 2026-05-03 Bug #2 demands:
+//
+//  1. **Same-provider short-circuit** — if the target model's provider
+//     matches cfg.Provider, BaseURL/APIKey/Provider are not rewritten.
+//     A no-op cross-provider switch can never silently clobber working
+//     credentials.
+//  2. **Pre-flight before mutation** — for Ollama specifically, ping the
+//     daemon before flipping cfg.API.BaseURL to localhost:11434. If the
+//     daemon is down, return an error and the original cfg untouched.
+//
+// `ping` is injected so tests can stub Ollama reachability. Pass `nil`
+// to skip the daemon check entirely (used in tests for provider routing
+// without an HTTP dependency).
+func resolveSwitchTarget(cfg TGCConfig, modelID string, ping func(baseURL string) error) (TGCConfig, error) {
+	if strings.TrimSpace(modelID) == "" {
+		return cfg, fmt.Errorf("empty model id")
+	}
+	if opt := findModelOption(modelID); opt != nil {
+		p := findProvider(opt.Provider)
+		if p != nil && cfg.Provider != p.Name {
+			key := resolveAPIKey(p, cfg)
+			if key == "" && p.EnvVar != "" {
+				return cfg, errMissingKey(p)
+			}
+			newURL := resolveBaseURL(p, cfg)
+			if p.Name == "ollama" && ping != nil {
+				if err := ping(newURL); err != nil {
+					return cfg, fmt.Errorf("Ollama unreachable at %s — start the daemon (https://ollama.com): %w", newURL, err)
+				}
+			}
+			cfg.Provider = p.Name
+			cfg.API.BaseURL = newURL
+			cfg.API.APIKey = key
+		}
+	}
+	cfg.Models.Super = modelID
+	cfg.Models.Dev = modelID
+	return cfg, nil
+}
+
 // SwitchModel updates the active model in config.yaml and rebuilds the chat
 // engine so the next message uses the new model. Phase 15a: also rewrites
 // api.base_url + api.api_key based on the model's provider so picking a
@@ -155,38 +226,25 @@ func saveTGCConfig(cfg TGCConfig) error {
 // Returns the new model name for toast confirmation. If the chosen
 // provider has no key configured (env var or providers.<name>.api_key)
 // returns an error so the frontend can prompt the user.
+//
+// 2026-05-05 (postmortem 2026-05-03 Bug #2): decision logic split into
+// resolveSwitchTarget so the cross-provider clobber path runs pre-flight
+// validation (Ollama daemon ping) BEFORE saveTGCConfig. Same-provider
+// switches no longer rewrite BaseURL/APIKey at all.
 func (a *App) SwitchModel(modelID string) (string, error) {
-	if strings.TrimSpace(modelID) == "" {
-		return "", fmt.Errorf("empty model id")
+	cur := LoadTGCConfig()
+	next, err := resolveSwitchTarget(cur, modelID, pingOllama)
+	if err != nil {
+		return "", err
 	}
-	cfg := LoadTGCConfig()
-
-	// Look up the chosen model in the catalog (or Ollama discovered tags)
-	// to find its provider. If we don't recognise the model, leave provider
-	// alone — user is overriding base_url manually.
-	if opt := findModelOption(modelID); opt != nil {
-		p := findProvider(opt.Provider)
-		if p != nil {
-			key := resolveAPIKey(p, cfg)
-			if key == "" && p.EnvVar != "" {
-				return "", errMissingKey(p)
-			}
-			cfg.Provider = p.Name
-			cfg.API.BaseURL = resolveBaseURL(p, cfg)
-			cfg.API.APIKey = key
-		}
-	}
-
-	cfg.Models.Super = modelID
-	cfg.Models.Dev = modelID
-	if err := saveTGCConfig(cfg); err != nil {
+	if err := saveTGCConfig(next); err != nil {
 		return "", err
 	}
 	// Rebuild chat with new config so subsequent SendMessage uses the new model.
 	a.chatMu.Lock()
 	defer a.chatMu.Unlock()
 	if a.chat != nil {
-		a.chat = newChatEngine(cfg, a)
+		a.chat = newChatEngine(next, a)
 	}
 	return modelID, nil
 }
