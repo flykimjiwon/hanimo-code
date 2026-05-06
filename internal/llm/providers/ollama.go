@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 const defaultOllamaURL = "http://localhost:11434"
@@ -18,9 +19,15 @@ func NewOllama(baseURL, apiKey string) *OllamaProvider {
 	if baseURL == "" {
 		baseURL = defaultOllamaURL
 	}
-	nativeURL := baseURL
-	// Ollama exposes OpenAI-compatible at /v1
-	compatURL := baseURL + "/v1"
+	// Users (and our default config) commonly pass `http://localhost:11434/v1`
+	// because that's what every other OpenAI-compatible endpoint expects.
+	// Ollama's native API (/api/tags) lives one level above /v1, so we strip
+	// the suffix before computing nativeURL — otherwise ListModels hits
+	// /v1/api/tags and gets back a JSON-but-wrong-shape Ollama error page.
+	trimmed := strings.TrimRight(baseURL, "/")
+	trimmed = strings.TrimSuffix(trimmed, "/v1")
+	nativeURL := strings.TrimRight(trimmed, "/")
+	compatURL := nativeURL + "/v1"
 
 	return &OllamaProvider{
 		OpenAICompatProvider: NewOpenAICompat("ollama", compatURL, apiKey),

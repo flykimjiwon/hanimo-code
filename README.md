@@ -960,6 +960,52 @@ wails build  # macOS .app / Linux binary / Windows .exe
 
 ---
 
+## Ecosystem
+
+`hanimo-code`는 동일한 internal/* 엔진(LLM 멀티프로바이더 + 26 도구 +
+hooks + knowledge + skills)을 여러 프론트엔드/배포 폼팩터에서 공유하는
+모노 엔진 + 다중 클라이언트 구조. 각 클라이언트는 별도 레포로 관리.
+
+| 프로젝트 | 폼팩터 | 백엔드 | 레포 |
+|---|---|---|---|
+| **hanimo** (TUI) | 터미널 | self (in-process) | 본 레포 — `cmd/hanimo` |
+| **hanimo-code-desktop** | Wails 데스크톱 앱 | self (in-process) | `hanimo-code-desktop/` 서브디렉토리 |
+| **hanimo-server** ★ | 헤드리스 HTTP+SSE 서버 | self (in-process) | 본 레포 — `cmd/hanimo-server` |
+| **hanimo-vscode** ★ | VS Code 확장 | spawn `hanimo-server` | [flykimjiwon/hanimo-vscode](https://github.com/flykimjiwon/hanimo-vscode) |
+| **hanimo-webui** | Next.js 셀프호스팅 웹 | 자체 API | [flykimjiwon/hanimo-webui](https://github.com/flykimjiwon/hanimo-webui) |
+| **hanimo-rag** | LLM-네이티브 RAG SDK | (독립) | [flykimjiwon/hanimo-rag](https://github.com/flykimjiwon/hanimo-rag) |
+| **hanimo-community** | 문서 + 디스커션 허브 | — | [flykimjiwon/hanimo-community](https://github.com/flykimjiwon/hanimo-community) |
+
+### `cmd/hanimo-server` — 헤드리스 엔진
+
+VS Code 확장이나 외부 클라이언트가 spawn해서 사용할 HTTP+SSE 서버.
+TUI와 정확히 같은 internal/* 패키지를 호출하므로 동작·도구·권한·지식
+레이어가 100% 동일. 별도 GitHub Release([v0.3.0+](https://github.com/flykimjiwon/hanimo-code/releases))에 4 OS 바이너리 첨부.
+
+```bash
+hanimo-server -port 0 -cwd $(pwd)
+# stdout: "hanimo-server listening on http://127.0.0.1:PORT"
+
+curl http://127.0.0.1:PORT/health
+curl -X POST http://127.0.0.1:PORT/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"hello","mode":"super","client":"cli"}'
+```
+
+엔드포인트 16종 (`/health /version /shutdown /chat /confirm /config
+/models /models/refresh /knowledge /knowledge/files /skills /rules
+/permissions /index/symbols`).
+
+### `hanimo-vscode` — VS Code 확장
+
+8 프로바이더 프리셋 (Anthropic / OpenAI / Gemini / DeepSeek / Novita /
+OpenRouter / Ollama / Custom), 12 테마, Modol 브랜드, 멀티모달 입력.
+.vsix 4개 (per OS) GitHub Release에 첨부:
+
+[**📦 Latest hanimo-vscode releases**](https://github.com/flykimjiwon/hanimo-vscode/releases)
+
+---
+
 ## Architecture
 
 ```
