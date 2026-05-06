@@ -76,6 +76,7 @@ func main() {
 	mux.HandleFunc("/shutdown", srv.handleShutdown)
 	mux.HandleFunc("/config", srv.handleConfig)
 	mux.HandleFunc("/models", srv.handleModels)
+	mux.HandleFunc("/models/refresh", srv.handleModelsRefresh)
 	mux.HandleFunc("/index/symbols", srv.handleIndexSymbols)
 	mux.HandleFunc("/knowledge", srv.handleKnowledge)
 	mux.HandleFunc("/knowledge/files", srv.handleKnowledgeFiles)

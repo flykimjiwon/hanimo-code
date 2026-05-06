@@ -110,6 +110,10 @@ func (s *server) handleModels(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// Static registry first — these have curated descriptions and capability
+	// flags. Live cache (from /models/refresh) is merged on top so newly
+	// shipped models the registry hasn't been updated for still appear.
+	seen := make(map[string]int, len(llm.Models))
 	out := make([]modelDTO, 0, len(llm.Models))
 	for _, m := range llm.Models {
 		cap := llm.GetCapability(m.ID)
@@ -122,6 +126,22 @@ func (s *server) handleModels(w http.ResponseWriter, r *http.Request) {
 			SupportsVision:    supportsVision(m.ID),
 			SupportsReasoning: supportsReasoning(m.ID),
 		})
+		seen[m.ID] = len(out) - 1
+	}
+	provider := detectProviderID(s.cfg.API.BaseURL)
+	for _, m := range liveModelsForCurrentProvider(provider, s.cfg.API.BaseURL) {
+		if i, ok := seen[m.ID]; ok {
+			// Live entry wins for context window / tools when richer.
+			if m.ContextWindow > out[i].ContextWindow {
+				out[i].ContextWindow = m.ContextWindow
+			}
+			if m.SupportsTools {
+				out[i].SupportsTools = true
+			}
+			continue
+		}
+		out = append(out, m)
+		seen[m.ID] = len(out) - 1
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].DisplayName < out[j].DisplayName })
 	writeJSON(w, http.StatusOK, map[string]any{"models": out})
