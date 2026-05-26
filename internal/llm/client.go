@@ -30,8 +30,8 @@ type StreamChunk struct {
 	Content   string
 	Done      bool
 	Err       error
-	ToolCalls []ToolCallInfo  // non-nil when AI wants to call tools
-	Usage     *openai.Usage   // non-nil on the final chunk when the provider returns token counts
+	ToolCalls []ToolCallInfo // non-nil when AI wants to call tools
+	Usage     *openai.Usage  // non-nil on the final chunk when the provider returns token counts
 }
 
 // tokenCountFromUsage extracts a total token count from a Usage struct.
@@ -218,6 +218,11 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 			Model:    model,
 			Messages: messages,
 			Stream:   true,
+			// Ask providers that support it to return a final usage chunk.
+			// Unsupported OpenAI-compatible gateways usually ignore this.
+			StreamOptions: &openai.StreamOptions{
+				IncludeUsage: true,
+			},
 		}
 		if len(toolDefs) > 0 {
 			req.Tools = toolDefs
@@ -263,12 +268,19 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 
 		config.DebugLog("[API-RES] stream opened in %v", streamOpenElapsed)
 
+		// Strip hidden reasoning blocks emitted inline by OSS reasoning models
+		// (Qwen/DeepSeek/Gemma-style <think>...</think> variants) before they
+		// reach any UI, server, or headless exec consumer. The stripper is
+		// stateful so split tags across SSE chunks never leak.
+		thinkStripper := NewThinkingStripper()
+
 		// Accumulate tool calls from deltas
 		tcMap := make(map[int]*ToolCallInfo)
 		chunkNum := 0
 		totalContentLen := 0
 		lastChunkTime := time.Now()
 		firstChunkTime := time.Time{}
+		var lastUsage *openai.Usage
 
 		for {
 			recvStart := time.Now()
@@ -277,6 +289,9 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 
 			if errors.Is(err, io.EOF) {
 				totalElapsed := time.Since(streamStart)
+				if tail := thinkStripper.Flush(); tail != "" {
+					ch <- StreamChunk{Content: tail}
+				}
 				// Stream finished — check for accumulated tool calls
 				if len(tcMap) > 0 {
 					calls := make([]ToolCallInfo, 0, len(tcMap))
@@ -289,9 +304,10 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 					for i, tc := range calls {
 						config.DebugLog("[STREAM-DONE] toolCall[%d] name=%s | argsLen=%d | args=%s", i, tc.Name, len(tc.Arguments), truncateForLog(tc.Arguments, 500))
 					}
-					ch <- StreamChunk{Done: true, ToolCalls: calls}
+					ch <- StreamChunk{Done: true, ToolCalls: calls, Usage: lastUsage}
 				} else {
 					config.DebugLog("[STREAM-DONE] chunks=%d | totalContent=%dbytes | toolCalls=0 | totalTime=%v", chunkNum, totalContentLen, totalElapsed)
+					ch <- StreamChunk{Done: true, Usage: lastUsage}
 				}
 				return
 			}
@@ -312,6 +328,12 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 				config.DebugLog("[STREAM] first chunk after %v (TTFC)", now.Sub(streamStart))
 			}
 
+			if resp.Usage != nil {
+				lastUsage = resp.Usage
+				config.DebugLog("[CHUNK#%d] usage prompt=%d completion=%d total=%d",
+					chunkNum, resp.Usage.PromptTokens, resp.Usage.CompletionTokens, resp.Usage.TotalTokens)
+			}
+
 			if len(resp.Choices) == 0 {
 				config.DebugLog("[CHUNK#%d] empty choices | gap=%v", chunkNum, gap)
 				continue
@@ -324,7 +346,7 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 				config.DebugLog("[CHUNK#%d] finishReason=%s", chunkNum, finishReason)
 			}
 
-			// Stream text content
+			// Stream text content after removing inline reasoning blocks.
 			if delta.Content != "" {
 				totalContentLen += len(delta.Content)
 				hasTC := len(delta.ToolCalls) > 0
@@ -332,7 +354,9 @@ func (c *Client) StreamChat(ctx context.Context, model string, messages []openai
 				if chunkNum <= 5 || chunkNum%50 == 0 {
 					config.DebugLog("[CHUNK#%d] content len=%d | toolCall=%v | gap=%v | preview=%q", chunkNum, len(delta.Content), hasTC, gap, truncateForLog(delta.Content, 100))
 				}
-				ch <- StreamChunk{Content: delta.Content}
+				if visible := thinkStripper.Feed(delta.Content); visible != "" {
+					ch <- StreamChunk{Content: visible}
+				}
 			} else if len(delta.ToolCalls) == 0 && delta.Role == "" {
 				// Empty chunk — might indicate buffering
 				config.DebugLog("[CHUNK#%d] EMPTY (no content, no toolCalls) | gap=%v", chunkNum, gap)
@@ -388,7 +412,7 @@ func (c *Client) Chat(ctx context.Context, model string, messages []openai.ChatC
 	if len(resp.Choices) == 0 {
 		return "", errors.New("no response choices")
 	}
-	return resp.Choices[0].Message.Content, nil
+	return StripThinking(resp.Choices[0].Message.Content), nil
 }
 
 // streamChatViaProvider converts openai types to provider types and delegates.
@@ -442,11 +466,24 @@ func (c *Client) streamChatViaProvider(ctx context.Context, model string, messag
 			return
 		}
 
+		thinkStripper := NewThinkingStripper()
 		for chunk := range provCh {
+			content := ""
+			if chunk.Content != "" {
+				content = thinkStripper.Feed(chunk.Content)
+				if content != "" {
+					ch <- StreamChunk{Content: content}
+				}
+			}
+			if chunk.Done {
+				if tail := thinkStripper.Flush(); tail != "" {
+					ch <- StreamChunk{Content: tail}
+				}
+			}
+
 			sc := StreamChunk{
-				Content: chunk.Content,
-				Done:    chunk.Done,
-				Err:     chunk.Error,
+				Done: chunk.Done,
+				Err:  chunk.Error,
 			}
 			for _, tc := range chunk.ToolCalls {
 				sc.ToolCalls = append(sc.ToolCalls, ToolCallInfo{
@@ -455,7 +492,9 @@ func (c *Client) streamChatViaProvider(ctx context.Context, model string, messag
 					Arguments: tc.Arguments,
 				})
 			}
-			ch <- sc
+			if sc.Done || sc.Err != nil || len(sc.ToolCalls) > 0 {
+				ch <- sc
+			}
 		}
 	}()
 
@@ -506,15 +545,11 @@ func (c *Client) nonStreamChat(ctx context.Context, model string, messages []ope
 			})
 		}
 
-		if choice.Message.Content != "" && len(calls) == 0 {
-			// Text-only: emit content first, then Done separately
-			// so the UI can render progressively.
-			ch <- StreamChunk{Content: choice.Message.Content}
-			ch <- StreamChunk{Done: true}
-		} else {
-			// Tool calls (with or without content): single chunk
-			ch <- StreamChunk{Content: choice.Message.Content, Done: true, ToolCalls: calls}
+		content := StripThinking(choice.Message.Content)
+		if content != "" {
+			ch <- StreamChunk{Content: content}
 		}
+		ch <- StreamChunk{Done: true, ToolCalls: calls}
 	}()
 
 	return ch
@@ -524,6 +559,7 @@ func (c *Client) nonStreamChat(ctx context.Context, model string, messages []ope
 func (c *Client) GetProvider() providers.Provider {
 	return c.provider
 }
+
 // parseToolCallsFromContent extracts tool calls from text content when
 // the API proxy doesn't convert model-native tool call format to OpenAI.
 //
@@ -708,7 +744,6 @@ func parseToolCallJSON(jsonStr string, idx int) (ToolCallInfo, bool) {
 	}, true
 }
 
-//
 // Also handles the explicit closing form: <parameter=key>value</parameter>
 func parseParameterTags(s string) map[string]string {
 	params := make(map[string]string)
@@ -737,36 +772,14 @@ func parseParameterTags(s string) map[string]string {
 }
 
 func stripThinkTags(s string) string {
-	for {
-		start := strings.Index(s, "<think>")
-		if start == -1 {
-			// Also check <|think|> variant
-			start = strings.Index(s, "<|think|>")
-			if start == -1 {
-				break
-			}
-			closeTag := "<|/think|>"
-			end := strings.Index(s[start:], closeTag)
-			if end == -1 {
-				s = s[:start]
-				break
-			}
-			s = s[:start] + s[start+end+len(closeTag):]
-			continue
-		}
-		end := strings.Index(s[start:], "</think>")
-		if end == -1 {
-			// Unclosed — strip from <think> to end
-			s = s[:start]
-			break
-		}
-		s = s[:start] + s[start+end+len("</think>"):]
-	}
-	return s
+	return StripThinking(s)
 }
 
 func partialToolTagSuffix(s string) int {
-	tags := []string{"<tool_call>", "<|tool_call|>", "<function=", "<parameter=", "<think>", "</think>"}
+	tags := []string{
+		"<tool_call>", "<|tool_call|>", "<function=", "<parameter=",
+		"<think>", "</think>", "<thinking>", "</thinking>", "<reasoning>", "</reasoning>", "<|think|>", "<|/think|>",
+	}
 	maxHold := 0
 	for _, tag := range tags {
 		// Check every possible prefix of this tag (length 1..len(tag)-1)
@@ -843,4 +856,3 @@ func StripToolCallTags(s string) string {
 
 	return strings.TrimSpace(s)
 }
-
